@@ -2,6 +2,9 @@ FROM python:3.10
 
 WORKDIR /code
 
+# Copy the .env file from the local directory to the container
+COPY .env /code/.env
+
 COPY ./requirements.txt /code/requirements.txt
 
 RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
