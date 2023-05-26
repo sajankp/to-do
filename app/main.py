@@ -16,21 +16,22 @@ load_dotenv()
 password = urllib.parse.quote(os.getenv("MONGO_PASSWORD"), safe="")
 username = urllib.parse.quote(os.getenv("MONGO_USERNAME"), safe="")
 uri = f"mongodb+srv://{username}:{password}@cluster0.gbaxrnp.mongodb.net/?retryWrites=true&w=majority"
+TIMEOUT = int(os.getenv("MONGO_TIMEOUT", 5))
 
 
-def get_mongo_client(server_selection_timeout_ms):
+def get_mongo_client(server_selection_timeout_ms=TIMEOUT*1000):
     client = MongoClient(uri, serverSelectionTimeoutMS=server_selection_timeout_ms)
     return client
 
 
-async def check_app_readiness(max_attempts=3, timeout=5):
+async def check_app_readiness(max_attempts=3, timeout=TIMEOUT/1000):
     # Add your own readiness check logic here
     # For example, you can check if the necessary resources are available or if certain conditions are met
     attempts = 0
     while attempts < max_attempts:
         try:
             logging.info(f"Attempting readiness check. Attempt #{attempts + 1}")
-            mongo_client = get_mongo_client(server_selection_timeout_ms=timeout * 1000)
+            mongo_client = get_mongo_client()
             mongo_client.admin.command("ping")
             return True
         except ServerSelectionTimeoutError as e:
@@ -47,6 +48,7 @@ async def startup():
     if not await check_app_readiness():
         logging.error("Application failed to start.")
         sys.exit(1)
+    app.mongodb_client = get_mongo_client()
 
 
 @app.on_event("shutdown")
