@@ -1,13 +1,16 @@
-from fastapi import APIRouter
+from typing import List
+
+from fastapi import APIRouter, Request
+from models.todo import Todo
 
 router = APIRouter()
 
 
-@router.get("/")
-def get_todo_list():
-    return {"test"}
-    # Your code to retrieve and return todo list
-    pass
+@router.get("/", response_model=List[Todo])
+def get_todo_list(request: Request):
+    books = list(request.app.todo.find().limit(100))
+    return books
+    
 
 
 @router.post("/")
