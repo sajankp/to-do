@@ -1,9 +1,8 @@
 import asyncio
 import logging
 
-from pymongo.errors import ServerSelectionTimeoutError
-
 from database.mongodb import get_mongo_client
+from pymongo.errors import ServerSelectionTimeoutError
 
 
 def app_check_health(app):
