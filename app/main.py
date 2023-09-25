@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 
 from fastapi import FastAPI
@@ -19,6 +20,8 @@ async def startup():
         logging.error("Application failed to start.")
         sys.exit(1)
     app.mongodb_client = get_mongo_client()
+    app.database = app.mongodb_client[os.getenv("MONGO_DATABASE")]
+    app.todo = app.database[os.getenv("MONGO_COLLECTIONS")]
 
 
 @app.on_event("shutdown")
