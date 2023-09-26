@@ -11,27 +11,27 @@ router = APIRouter()
 def get_todo_list(request: Request):
     books = list(request.app.todo.find().limit(100))
     return books
-    
 
 
 @router.post("/", response_model=TodoBase)
-def create_todo(todo: TodoBase):
+def create_todo(request: Request, todo: TodoBase):
     try:
-        # Get the current timestamp
         current_time = datetime.utcnow()
 
-        # Create a new todo using the provided data
         new_todo = Todo(
             title=todo.title,
             description=todo.description,
             due_date=todo.due_date,
             priority=todo.priority,
-            created_at=current_time, 
-            updated_at=current_time,  
+            created_at=current_time,
+            updated_at=current_time,
         )
-
-        
-        return new_todo
+        result = request.app.todo.insert_one(new_todo.dict())
+        if result.acknowledged:
+            return new_todo
+        else:
+            # Handle the case where insertion failed
+            raise HTTPException(status_code=500, detail="Failed to create todo")
     except Exception as e:
         # Handle any exceptions or validation errors here
         raise HTTPException(status_code=400, detail=str(e))
