@@ -2,10 +2,11 @@ import logging
 import os
 import sys
 
-from database import get_mongo_client
 from fastapi import FastAPI
-from routers.todo import router as todo_router
-from utils.health import app_check_health, check_app_readiness
+
+from app.database import get_mongo_client
+from app.routers.todo import router as todo_router
+from app.utils.health import app_check_health, check_app_readiness
 
 app = FastAPI()
 
