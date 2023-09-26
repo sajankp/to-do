@@ -1,8 +1,7 @@
-import uuid
 from datetime import datetime
 
 from bson import ObjectId
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 
 class TodoBase(BaseModel):
@@ -10,16 +9,37 @@ class TodoBase(BaseModel):
     description: str = Field(...)
     due_date: datetime = Field(...)
     priority: str = Field(...)
-    # tags: List[str]
-    # assignee: str
-    # comments: List[str]
-    # attachments: List[str]
-    # Additional fields for future use
-    # estimated_time: int
-    # completed_at: datetime
-    # reminders: List[datetime]
-    # subtasks: List[str]
-    # project: str
+    """
+    tags: List[str]
+    assignee: str
+    comments: List[str]
+    attachments: List[str]
+    Additional fields for future use
+    estimated_time: int
+    completed_at: datetime
+    reminders: List[datetime]
+    subtasks: List[str]
+    project: str
+    """
+    @validator("due_date", pre=True, always=True)
+    def parse_due_date(cls, value):
+        # Validate and parse due_date as a datetime.
+        if isinstance(value, datetime):
+            return value
+        try:
+            return datetime.fromisoformat(value)
+        except (ValueError, TypeError):
+            raise ValueError("Invalid datetime format")
+
+    @validator("priority")
+    def validate_priority(cls, value):
+        # Validate priority to ensure it's one of the allowed values.
+        if value not in ["low", "medium", "high"]:
+            raise ValueError("Priority must be 'low', 'medium', or 'high'")
+        return value
+
+    class Config:
+        orm_mode = True
 
 
 class TodoCreate(TodoBase):
@@ -28,6 +48,7 @@ class TodoCreate(TodoBase):
 
 class TodoUpdate(TodoBase):
     status: str = Field(...)
+
 
 class PyObjectId(ObjectId):
     @classmethod
@@ -43,6 +64,7 @@ class PyObjectId(ObjectId):
     @classmethod
     def __modify_schema__(cls, field_schema):
         field_schema.update(type="string")
+
 
 class Todo(TodoBase):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
