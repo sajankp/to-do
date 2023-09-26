@@ -1,3 +1,3 @@
-from database.mongodb import get_mongo_client
+from app.database.mongodb import get_mongo_client
 
 mongo_client = get_mongo_client()

@@ -21,9 +21,9 @@ class TodoBase(BaseModel):
     subtasks: List[str]
     project: str
     """
+
     @validator("due_date", pre=True, always=True)
     def parse_due_date(cls, value):
-        # Validate and parse due_date as a datetime.
         if isinstance(value, datetime):
             return value
         try:
