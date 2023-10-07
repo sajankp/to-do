@@ -1,0 +1,5 @@
+TODO_NOT_FOUND = "Todo not found"
+FAILED_DELETE_TODO = "Failed to create todo"
+TODO_UPDATED_SUCCESSFULLY = "Todo updated successfully"
+TODO_DELETED_SUCCESSFULLY = "Todo deleted successfully"
+NO_CHANGES = "No changes were made"
