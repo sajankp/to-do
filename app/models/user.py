@@ -1,4 +1,3 @@
-from bson import ObjectId
 from pydantic import BaseModel, Field
 
 from app.models.base import MyBaseModel

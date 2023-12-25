@@ -1,15 +1,15 @@
 import os
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pymongo.collection import Collection
 
 from app.database.mongodb import get_user_collection
-from app.models.user import CreateUser, User
-from app.utils.constants import FAILED_TO_CREATE_USER, INVALID_TOKEN
+from app.models.user import User
+from app.utils.constants import INVALID_TOKEN
 
 router = APIRouter()
 
@@ -67,8 +67,8 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 
 def authenticate_user(username: str, password: str, user_model: Collection):
     if user := user_model.find_one({"username": username}):
+        verify_password(password, user["hashed_password"])
         user = User(**user)
-        verify_password(password, user.hashed_password)
         return user
     else:
         return None
@@ -91,17 +91,3 @@ def get_current_active_user(token: str = Depends(oauth2_scheme)) -> User:
     user_collection = get_user_collection()
     user = user_collection.find_one({"username": username})
     return user
-
-
-@router.post("/user", response_model=bool)
-def create_user(username: str, email: str, password: str, request: Request):
-    hashed_password = hash_password(password)
-    user = CreateUser(username=username, email=email, hashed_password=hashed_password)
-    result = request.app.user.insert_one(user.dict())
-    if result.acknowledged:
-        return True
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=FAILED_TO_CREATE_USER,
-        )
