@@ -57,12 +57,10 @@ def create_todo(request: Request, todo: TodoCreate):
 @router.put("/{todo_id}")
 def update_todo(todo: TodoUpdate, request: Request):
     existing_todo = request.app.todo.find_one({"_id": todo.id})
-    # Check if the document was not found
     if not existing_todo:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=TODO_NOT_FOUND
         )
-
     result = request.app.todo.update_one(
         {"_id": todo.id}, {"$set": todo.dict(exclude_unset=True)}
     )
