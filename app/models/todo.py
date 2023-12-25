@@ -11,7 +11,6 @@ class TodoBase(BaseModel):
     description: str = Field(...)
     due_date: datetime = Field(...)
     priority: str = Field(...)
-    user_id: int = Field(...)
     """
     tags: List[str]
     assignee: str
@@ -54,4 +53,5 @@ class TodoUpdate(TodoBase):
 
 
 class Todo(TodoBase, MyBaseModel):
+    user_id: int = Field(default=None)
     pass

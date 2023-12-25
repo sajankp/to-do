@@ -3,7 +3,7 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException, Request, status
 
-from app.models.todo import PyObjectId, Todo, TodoCreate, TodoUpdate
+from app.models.todo import PyObjectId, Todo, TodoBase, TodoCreate, TodoUpdate
 from app.utils.constants import (
     FAILED_DELETE_TODO,
     NO_CHANGES,
@@ -15,13 +15,13 @@ from app.utils.constants import (
 router = APIRouter()
 
 
-@router.get("/", response_model=List[Todo])
+@router.get("/", response_model=List[TodoBase])
 def get_todo_list(request: Request):
     todos = list(request.app.todo.find().limit(100))
     return todos
 
 
-@router.get("/{todo_id}", response_model=Todo)
+@router.get("/{todo_id}", response_model=TodoBase)
 def get_todo(todo_id: PyObjectId, request: Request):
     todo = request.app.todo.find_one({"_id": todo_id})
     if not todo:
@@ -31,7 +31,7 @@ def get_todo(todo_id: PyObjectId, request: Request):
     return todo
 
 
-@router.post("/", response_model=Todo)
+@router.post("/", response_model=TodoBase)
 def create_todo(request: Request, todo: TodoCreate):
     current_time = datetime.utcnow()
 
