@@ -3,7 +3,7 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException, Request, status
 
-from app.models.todo import PyObjectId, Todo, TodoCreate, TodoUpdate
+from app.models.todo import PyObjectId, Todo, TodoBase, TodoCreate, TodoUpdate
 from app.utils.constants import (
     FAILED_DELETE_TODO,
     NO_CHANGES,
@@ -15,13 +15,13 @@ from app.utils.constants import (
 router = APIRouter()
 
 
-@router.get("/", response_model=List[Todo])
+@router.get("/", response_model=List[TodoBase])
 def get_todo_list(request: Request):
     todos = list(request.app.todo.find().limit(100))
     return todos
 
 
-@router.get("/{todo_id}", response_model=Todo)
+@router.get("/{todo_id}", response_model=TodoBase)
 def get_todo(todo_id: PyObjectId, request: Request):
     todo = request.app.todo.find_one({"_id": todo_id})
     if not todo:
@@ -31,7 +31,7 @@ def get_todo(todo_id: PyObjectId, request: Request):
     return todo
 
 
-@router.post("/", response_model=Todo)
+@router.post("/", response_model=TodoBase)
 def create_todo(request: Request, todo: TodoCreate):
     current_time = datetime.utcnow()
 
@@ -57,12 +57,10 @@ def create_todo(request: Request, todo: TodoCreate):
 @router.put("/{todo_id}")
 def update_todo(todo: TodoUpdate, request: Request):
     existing_todo = request.app.todo.find_one({"_id": todo.id})
-    # Check if the document was not found
     if not existing_todo:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=TODO_NOT_FOUND
         )
-
     result = request.app.todo.update_one(
         {"_id": todo.id}, {"$set": todo.dict(exclude_unset=True)}
     )
