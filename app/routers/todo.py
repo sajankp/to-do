@@ -1,9 +1,11 @@
 from datetime import datetime
 from typing import List
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.models.todo import PyObjectId, Todo, TodoBase, TodoCreate, TodoUpdate
+from app.models.user import User
+from app.routers.auth import get_current_active_user
 from app.utils.constants import (
     FAILED_DELETE_TODO,
     NO_CHANGES,
@@ -16,8 +18,8 @@ router = APIRouter()
 
 
 @router.get("/", response_model=List[TodoBase])
-def get_todo_list(request: Request):
-    todos = list(request.app.todo.find().limit(100))
+def get_todo_list(request: Request, user: User = Depends(get_current_active_user)):
+    todos = list(request.app.todo.find({"user_id": user.id}).limit(100))
     return todos
 
 

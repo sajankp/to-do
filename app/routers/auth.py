@@ -90,4 +90,4 @@ def get_current_active_user(token: str = Depends(oauth2_scheme)) -> User:
         raise credentials_exception
     user_collection = get_user_collection()
     user = user_collection.find_one({"username": username})
-    return user
+    return User(**user)
