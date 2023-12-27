@@ -18,7 +18,7 @@ This project primarily revolves around three key technologies:
 ### Learning Process
 Throughout this project, I have embraced a proactive learning approach to familiarize myself with FastAPI, MongoDB, Docker. I have explored official documentation, gone through forums and engaged in hands-on coding exercises. This iterative learning process has not only deepened my understanding but also sharpened my problem-solving skills.
 
-To accelerate my learning journey, I have integrated ChatGPT into my development workflow. ChatGPT has served as an AI-powered assistant, providing me with helpful insights, answering my questions, and assisting me in overcoming challenges specific to todo application development. This collaboration with ChatGPT has allowed me to learn and adapt more efficiently, making the most of emerging technologies in my project development.
+To accelerate my learning journey, I have integrated ChatGPT into my development workflow. ChatGPT has served as an AI-powered assistant, providing me with helpful insights, answering my questions, and assisting me in overcoming challenges specific to this application development. This collaboration with ChatGPT has allowed me to learn and adapt more efficiently, making the most of emerging technologies in my project development.
 
 ### Benefits of AI Assistant Integration
 The integration of an AI assistant like ChatGPT has brought numerous advantages to this project. Some notable benefits include:
@@ -38,33 +38,40 @@ To run the FastAPI MongoDB todo application using Docker, please follow the inst
 2. **Clone the Repository**
    - Clone the repository to your local machine by running the following command in your terminal or command prompt:
      ```
-     git clone <repository_url>
+     git clone https://github.com/sajankp/to-do
      ```
-     Replace `<repository_url>` with the URL of the repository.
 
 3. **Navigate to the Project Directory**
    - Navigate to the project directory using the following command:
      ```
-     cd <project_directory>
+     cd to-do
      ```
-     Replace `<project_directory>` with the directory where you cloned the repository.
 
-4. **Build the Docker Image**
+4. **Create a Copy of .env.example with Configurations**
+   - Create a copy of the `.env.example` file in the repository and update it with the necessary configurations:
+     ```
+     cp .env.example .env
+     ```
+     Update the `.env` file as required. 
+
+5. **Build the Docker Image**
    - Build the Docker image using the following command:
      ```
      docker build -t todo .
      ```
      This command will build the Docker image based on the provided Dockerfile.
 
-5. **Run the Docker Container**
+6. **Run the Docker Container**
    - Run the Docker container using the following command:
      ```
      docker run -p 80:80 todo
      ```
      This command will start the Docker container and map port 8000 of the container to port 8000 of your local machine.
 
-6. **Access the Application**
-   - Once the container is running, you can access the application by opening your web browser and navigating to [http://localhost:8000](http://localhost:8000).
+7. **Access the Application**
+   - Once the container is running, you can access the application by opening your web browser and navigating to [http://localhost/docs](http://localhost/docs) to test things out. 
+
+Note: The base path at the moment 
 
 That's it! You have successfully set up the FastAPI MongoDB todo application using Docker. You can now explore and interact with the application through your web browser.
 
