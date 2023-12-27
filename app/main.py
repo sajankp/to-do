@@ -5,6 +5,7 @@ from datetime import timedelta
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.database import get_mongo_client
@@ -35,10 +36,19 @@ async def add_user_info_to_request(request: Request, call_next):
     if request.url.path in ("/token", "/user"):
         response = await call_next(request)
         return response
-    username, user_id = get_user_info_from_token(request.headers.get("Authorization"))
-    request.state.user_id = user_id
-    request.state.username = username
-    response = await call_next(request)
+    try:
+        username, user_id = get_user_info_from_token(
+            request.headers.get("Authorization")
+        )
+        request.state.user_id = user_id
+        request.state.username = username
+        response = await call_next(request)
+    except HTTPException as e:
+        response = JSONResponse(
+            content={"detail": str(e.detail)},
+            status_code=e.status_code,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     return response
 
 

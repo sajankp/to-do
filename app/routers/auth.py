@@ -106,6 +106,10 @@ def get_user_info_from_token(authorization: str = Depends(oauth2_scheme)) -> (st
         user_id: str = payload.get("sub_id")
         if None in (username, user_id):
             raise credentials_exception
-    except JWTError as E:
+    except JWTError as e:
+        if isinstance(e, jwt.ExpiredSignatureError):
+            credentials_exception.detail = "Token has expired"
+        else:
+            credentials_exception.detail = f"JWTError: {str(e)}"
         raise credentials_exception
     return username, user_id
