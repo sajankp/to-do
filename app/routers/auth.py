@@ -90,4 +90,26 @@ def get_current_active_user(token: str = Depends(oauth2_scheme)) -> User:
         raise credentials_exception
     user_collection = get_user_collection()
     user = user_collection.find_one({"username": username})
-    return user
+    return User(**user)
+
+
+def get_user_info_from_token(authorization: str = Depends(oauth2_scheme)) -> (str, str):
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail=INVALID_TOKEN,
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        token = authorization.split(" ")[1]
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
+        username: str = payload.get("sub")
+        user_id: str = payload.get("sub_id")
+        if None in (username, user_id):
+            raise credentials_exception
+    except JWTError as e:
+        if isinstance(e, jwt.ExpiredSignatureError):
+            credentials_exception.detail = "Token has expired"
+        else:
+            credentials_exception.detail = f"JWTError: {str(e)}"
+        raise credentials_exception
+    return username, user_id

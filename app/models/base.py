@@ -22,8 +22,11 @@ class PyObjectId(ObjectId):
 
 class MyBaseModel(BaseModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
-    created_at: datetime = Field(default=datetime.utcnow())
-    updated_at: datetime = Field(default=datetime.utcnow())
+    created_at: datetime = Field(default_factory=datetime.utcnow, alias="createdAt")
+    updated_at: datetime = Field(default_factory=datetime.utcnow, alias="updatedAt")
+
+    def update_timestamp(self):
+        self.updated_at = datetime.utcnow()
 
     class Config:
         allow_population_by_field_name = True
