@@ -58,7 +58,6 @@ def create_todo(request: Request, todo: TodoBase):
 
 
 def are_objects_equal(obj1, obj2):
-    print(obj1, obj2)
     if isinstance(obj1, datetime) and isinstance(obj2, datetime):
         # If both objects are datetime objects, handle timezone comparison
         return obj1.replace(tzinfo=timezone.utc) == obj2.replace(tzinfo=timezone.utc)
