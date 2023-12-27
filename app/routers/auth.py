@@ -91,3 +91,21 @@ def get_current_active_user(token: str = Depends(oauth2_scheme)) -> User:
     user_collection = get_user_collection()
     user = user_collection.find_one({"username": username})
     return User(**user)
+
+
+def get_user_info_from_token(authorization: str = Depends(oauth2_scheme)) -> (str, str):
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail=INVALID_TOKEN,
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        token = authorization.split(" ")[1]
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
+        username: str = payload.get("sub")
+        user_id: str = payload.get("sub_id")
+        if None in (username, user_id):
+            raise credentials_exception
+    except JWTError as E:
+        raise credentials_exception
+    return username, user_id
