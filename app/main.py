@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.database import get_mongo_client
+from app.models.base import PyObjectId
 from app.models.user import CreateUser, Token
 from app.routers.auth import (
     authenticate_user,
@@ -19,7 +20,7 @@ from app.routers.auth import (
 from app.routers.auth import router as auth_router
 from app.routers.todo import router as todo_router
 from app.routers.user import router as user_router
-from app.utils.constants import FAILED_TO_CREATE_USER
+from app.utils.constants import FAILED_TO_CREATE_USER, MISSING_TOKEN
 from app.utils.health import app_check_health, check_app_readiness
 
 app = FastAPI()
@@ -33,16 +34,24 @@ ACCESS_TOKEN_EXPIRE_SECONDS = os.getenv("ACCESS_TOKEN_EXPIRE_SECONDS")
 
 @app.middleware("http")
 async def add_user_info_to_request(request: Request, call_next):
-    if request.url.path in ("/token", "/user"):
+    if request.url.path in ("/token", "/user", "/docs", "/openapi.json"):
         response = await call_next(request)
         return response
     try:
-        username, user_id = get_user_info_from_token(
-            request.headers.get("Authorization")
-        )
-        request.state.user_id = user_id
-        request.state.username = username
-        response = await call_next(request)
+        token = request.headers.get("Authorization")
+        if not token:
+            response = JSONResponse(
+                content={"detail": MISSING_TOKEN},
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        else:
+            username, user_id = get_user_info_from_token(
+                request.headers.get("Authorization")
+            )
+            request.state.user_id = PyObjectId(user_id)
+            request.state.username = username
+            response = await call_next(request)
     except HTTPException as e:
         response = JSONResponse(
             content={"detail": str(e.detail)},
