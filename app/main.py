@@ -34,7 +34,7 @@ ACCESS_TOKEN_EXPIRE_SECONDS = os.getenv("ACCESS_TOKEN_EXPIRE_SECONDS")
 
 @app.middleware("http")
 async def add_user_info_to_request(request: Request, call_next):
-    if request.url.path in ("/token", "/user", "/docs", "/openapi.json"):
+    if request.url.path in ("/token", "/user", "/docs", "/openapi.json", "/"):
         response = await call_next(request)
         return response
     try:
