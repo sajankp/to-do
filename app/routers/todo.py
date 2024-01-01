@@ -4,6 +4,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 
+from app.main import oauth2_scheme
 from app.models.todo import PyObjectId, Todo, TodoBase, TodoUpdate
 from app.utils.constants import (
     FAILED_DELETE_TODO,
@@ -13,7 +14,6 @@ from app.utils.constants import (
     TODO_UPDATED_SUCCESSFULLY,
 )
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 router = APIRouter(dependencies=[Depends(oauth2_scheme)])
 
 
