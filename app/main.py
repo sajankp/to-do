@@ -6,7 +6,7 @@ from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from app.database import get_mongo_client
 from app.models.base import PyObjectId
@@ -30,6 +30,8 @@ app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(user_router, prefix="/user", tags=["user"])
 
 ACCESS_TOKEN_EXPIRE_SECONDS = os.getenv("ACCESS_TOKEN_EXPIRE_SECONDS")
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 @app.middleware("http")
@@ -85,7 +87,7 @@ def read_root():
 
 
 @app.get("/health")
-def check_health():
+def check_health(token: str = Depends(oauth2_scheme)):
     return app_check_health(app)
 
 
