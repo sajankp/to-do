@@ -8,7 +8,6 @@ from passlib.context import CryptContext
 from pymongo.collection import Collection
 
 from app.database.mongodb import get_user_collection
-from app.main import oauth2_scheme
 from app.models.user import User
 from app.utils.constants import INVALID_TOKEN
 
@@ -17,7 +16,7 @@ router = APIRouter()
 SECRET_KEY = os.getenv("SECRET_KEY")
 PASSWORD_ALGORITHM = os.getenv("PASSWORD_ALGORITHM")
 
-
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
