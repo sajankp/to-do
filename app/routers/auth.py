@@ -40,7 +40,7 @@ def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
+def create_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -98,7 +98,10 @@ def get_user_info_from_token(authorization: str = Depends(oauth2_scheme)) -> (st
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        token = authorization.split(" ")[1]
+        if authorization.startswith("Bearer"):
+            token = authorization.split(" ")[1]
+        else:
+            token = authorization
         payload = jwt.decode(token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
         username: str = payload.get("sub")
         user_id: str = payload.get("sub_id")

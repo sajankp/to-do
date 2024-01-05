@@ -9,11 +9,12 @@ from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from app.database import get_mongo_client
+from app.database.mongodb import get_user_collection
 from app.models.base import PyObjectId
 from app.models.user import CreateUser, Token
 from app.routers.auth import (
     authenticate_user,
-    create_access_token,
+    create_token,
     get_user_info_from_token,
     hash_password,
 )
@@ -30,13 +31,21 @@ app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(user_router, prefix="/user", tags=["user"])
 
 ACCESS_TOKEN_EXPIRE_SECONDS = os.getenv("ACCESS_TOKEN_EXPIRE_SECONDS")
+REFRESH_TOKEN_EXPIRE_SECONDS = os.getenv("REFRESH_TOKEN_EXPIRE_SECONDS")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 @app.middleware("http")
 async def add_user_info_to_request(request: Request, call_next):
-    if request.url.path in ("/token", "/user", "/docs", "/openapi.json", "/"):
+    if request.url.path in (
+        "/token",
+        "/user",
+        "/docs",
+        "/openapi.json",
+        "/",
+        "/token/refresh",
+    ):
         response = await call_next(request)
         return response
     try:
@@ -103,11 +112,48 @@ def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(seconds=int(ACCESS_TOKEN_EXPIRE_SECONDS))
-    access_token = create_access_token(
+    access_token = create_token(
         data={"sub": user.username, "sub_id": str(user.id)},
         expires_delta=access_token_expires,
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    refresh_token_expires = timedelta(seconds=int(REFRESH_TOKEN_EXPIRE_SECONDS))
+    refresh_token = create_token(
+        data={"sub": user.username, "sub_id": str(user.id)},
+        expires_delta=refresh_token_expires,
+    )
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+    }
+
+
+@app.post("/token/refresh", response_model=Token)
+def refresh_token(refresh_token: str, request: Request):
+    username, user_id = get_user_info_from_token(refresh_token)
+    if not username or not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+        )
+
+    user_collection = get_user_collection()
+    user = user_collection.find_one({"username": username})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
+        )
+
+    access_token_expires = timedelta(seconds=int(ACCESS_TOKEN_EXPIRE_SECONDS))
+    access_token = create_token(
+        data={"sub": username, "sub_id": user_id},
+        expires_delta=access_token_expires,
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "refresh_token": refresh_token,
+    }
 
 
 @app.post("/user", response_model=bool)
