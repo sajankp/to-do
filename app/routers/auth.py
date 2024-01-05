@@ -1,15 +1,12 @@
 import os
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from pymongo.collection import Collection
 
-from app.database.mongodb import get_user_collection
-from app.main import oauth2_scheme
-from app.models.user import User
+from app.models.user import User, get_user_by_username
 from app.utils.constants import INVALID_TOKEN
 
 router = APIRouter()
@@ -17,7 +14,7 @@ router = APIRouter()
 SECRET_KEY = os.getenv("SECRET_KEY")
 PASSWORD_ALGORITHM = os.getenv("PASSWORD_ALGORITHM")
 
-
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
@@ -41,7 +38,7 @@ def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
+def create_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -52,20 +49,8 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     return encoded_jwt
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
-    payload = decode_jwt_token(token)
-    if payload is None:
-        credentials_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-        raise credentials_exception
-    return payload
-
-
-def authenticate_user(username: str, password: str, user_model: Collection):
-    if user := user_model.find_one({"username": username}):
+def authenticate_user(username: str, password: str):
+    if user := get_user_by_username(username):
         verify_password(password, user["hashed_password"])
         user = User(**user)
         return user
@@ -84,11 +69,9 @@ def get_current_active_user(token: str = Depends(oauth2_scheme)) -> User:
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
-
     except JWTError:
         raise credentials_exception
-    user_collection = get_user_collection()
-    user = user_collection.find_one({"username": username})
+    user = get_user_by_username(username)
     return User(**user)
 
 
@@ -99,7 +82,10 @@ def get_user_info_from_token(authorization: str = Depends(oauth2_scheme)) -> (st
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        token = authorization.split(" ")[1]
+        if authorization.startswith("Bearer"):
+            token = authorization.split(" ")[1]
+        else:
+            token = authorization
         payload = jwt.decode(token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
         username: str = payload.get("sub")
         user_id: str = payload.get("sub_id")
