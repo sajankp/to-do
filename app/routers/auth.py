@@ -1,14 +1,12 @@
 import os
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from pymongo.collection import Collection
 
-from app.database.mongodb import get_user_collection
-from app.models.user import User
+from app.models.user import User, get_user_by_username
 from app.utils.constants import INVALID_TOKEN
 
 router = APIRouter()
@@ -51,20 +49,8 @@ def create_token(data: dict, expires_delta: timedelta | None = None):
     return encoded_jwt
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
-    payload = decode_jwt_token(token)
-    if payload is None:
-        credentials_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-        raise credentials_exception
-    return payload
-
-
-def authenticate_user(username: str, password: str, user_model: Collection):
-    if user := user_model.find_one({"username": username}):
+def authenticate_user(username: str, password: str):
+    if user := get_user_by_username(username):
         verify_password(password, user["hashed_password"])
         user = User(**user)
         return user
@@ -83,11 +69,9 @@ def get_current_active_user(token: str = Depends(oauth2_scheme)) -> User:
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
-
     except JWTError:
         raise credentials_exception
-    user_collection = get_user_collection()
-    user = user_collection.find_one({"username": username})
+    user = get_user_by_username(username)
     return User(**user)
 
 

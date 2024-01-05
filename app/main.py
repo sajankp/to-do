@@ -9,12 +9,12 @@ from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from app.database import get_mongo_client
-from app.database.mongodb import get_user_collection
 from app.models.base import PyObjectId
 from app.models.user import CreateUser, Token
 from app.routers.auth import (
     authenticate_user,
     create_token,
+    get_user_by_username,
     get_user_info_from_token,
     hash_password,
 )
@@ -104,7 +104,7 @@ def check_health(token: str = Depends(oauth2_scheme)):
 def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()], request: Request
 ):
-    user = authenticate_user(form_data.username, form_data.password, request.app.user)
+    user = authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -136,9 +136,8 @@ def refresh_token(refresh_token: str, request: Request):
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
         )
 
-    user_collection = get_user_collection()
-    user = user_collection.find_one({"username": username})
-    if not user:
+    user = get_user_by_username(username)
+    if not user or user.disabled:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
         )
