@@ -5,6 +5,7 @@ from datetime import timedelta
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi.concurrency import asynccontextmanager
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
@@ -24,16 +25,31 @@ from app.routers.user import router as user_router
 from app.utils.constants import FAILED_TO_CREATE_USER, MISSING_TOKEN
 from app.utils.health import app_check_health, check_app_readiness
 
-app = FastAPI()
+ACCESS_TOKEN_EXPIRE_SECONDS = os.getenv("ACCESS_TOKEN_EXPIRE_SECONDS")
+REFRESH_TOKEN_EXPIRE_SECONDS = os.getenv("REFRESH_TOKEN_EXPIRE_SECONDS")
+
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+
+@asynccontextmanager
+async def lifespan(application: FastAPI):
+    if not await check_app_readiness():
+        logging.error("Application failed to start.")
+        sys.exit(1)
+    application.mongodb_client = get_mongo_client()
+    application.database = app.mongodb_client[os.getenv("MONGO_DATABASE")]
+    application.todo = app.database[os.getenv("MONGO_TODO_COLLECTION")]
+    application.user = app.database[os.getenv("MONGO_USER_COLLECTION")]
+    yield
+    application.mongodb_client.close()
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.include_router(todo_router, prefix="/todo", tags=["todo"])
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(user_router, prefix="/user", tags=["user"])
-
-ACCESS_TOKEN_EXPIRE_SECONDS = os.getenv("ACCESS_TOKEN_EXPIRE_SECONDS")
-REFRESH_TOKEN_EXPIRE_SECONDS = os.getenv("REFRESH_TOKEN_EXPIRE_SECONDS")
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 @app.middleware("http")
@@ -72,27 +88,9 @@ async def add_user_info_to_request(request: Request, call_next):
     return response
 
 
-@app.on_event("startup")
-async def startup():
-    # Wait for the application to be ready before continuing
-    if not await check_app_readiness():
-        logging.error("Application failed to start.")
-        sys.exit(1)
-    app.mongodb_client = get_mongo_client()
-    app.database = app.mongodb_client[os.getenv("MONGO_DATABASE")]
-    app.todo = app.database[os.getenv("MONGO_TODO_COLLECTION")]
-    app.user = app.database[os.getenv("MONGO_USER_COLLECTION")]
-
-
-@app.on_event("shutdown")
-async def shutdown():
-    if hasattr(app, "mongodb_client"):
-        app.mongodb_client.close()
-
-
 @app.get("/")
 def read_root():
-    return {"Hello": "World"}
+    return {"message": "Hello, World!"}
 
 
 @app.get("/health")
