@@ -17,13 +17,14 @@ def get_mongo_client(server_selection_timeout_ms=TIMEOUT * 1000):
     return client
 
 
+mongodb_client = get_mongo_client()
+
+
 def get_todo_collection():
-    mongodb_client = get_mongo_client()
     database = mongodb_client[os.getenv("MONGO_DATABASE")]
     return database[os.getenv("MONGO_TODO_COLLECTION")]
 
 
 def get_user_collection():
-    mongodb_client = get_mongo_client()
     database = mongodb_client[os.getenv("MONGO_DATABASE")]
     return database[os.getenv("MONGO_USER_COLLECTION")]
