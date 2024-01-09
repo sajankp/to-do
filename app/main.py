@@ -38,9 +38,9 @@ async def lifespan(application: FastAPI):
         logging.error("Application failed to start.")
         sys.exit(1)
     application.mongodb_client = mongodb_client
-    application.database = app.mongodb_client[os.getenv("MONGO_DATABASE")]
-    application.todo = app.database[os.getenv("MONGO_TODO_COLLECTION")]
-    application.user = app.database[os.getenv("MONGO_USER_COLLECTION")]
+    application.database = application.mongodb_client[os.getenv("MONGO_DATABASE")]
+    application.todo = application.database[os.getenv("MONGO_TODO_COLLECTION")]
+    application.user = application.database[os.getenv("MONGO_USER_COLLECTION")]
     yield
     application.mongodb_client.close()
 

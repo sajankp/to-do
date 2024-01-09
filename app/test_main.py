@@ -1,11 +1,65 @@
+import os
+from unittest.mock import Mock, patch
+
+import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.main import app
+from app.main import app, lifespan
 
 client = TestClient(app)
+mongodb_client = Mock()
+
+
+@pytest.fixture(scope="module")
+def test_client():
+    # Setup code (runs once for the entire module)
+    client = TestClient(app)
+    client.mongodb_client = mongodb_client
+    print(client, client.mongodb_client)
+    # Code to run before the tests
+    print("Setting up test client")
+
+    # Yield the client to the tests
+    yield client
+
+    # Teardown code (runs once after all tests are done)
+    print("Tearing down test client")
 
 
 def test_read_main():
     response = client.get("/")
     assert response.status_code == 200
     assert response.json() == {"message": "Hello, World!"}
+
+
+def test_read_main():
+    response = client.get("/health")
+    assert response.status_code == 401
+
+
+# Assuming a mock for the MongoDB client is available
+os.environ["MONGO_DATABASE"] = "test_database"
+os.environ["MONGO_TODO_COLLECTION"] = "todo"
+os.environ["MONGO_USER_COLLECTION"] = "user"
+
+app = FastAPI()
+
+
+@pytest.mark.asyncio
+@patch(
+    "app.database.mongodb.mongodb_client"
+)  # Assuming the client is imported from `app.database.mongodb`
+async def test_lifespan_with_fastapi_instance(mock_mongodb_client):
+    mock_mongodb_client.return_value = (
+        Mock()
+    )  # Set up a mock for the client's return value
+
+    async with lifespan(app) as _:
+        # assert app.mongodb_client is mock_mongodb_client.return_value
+        assert app.database == mock_mongodb_client.return_value["test_database"]
+        assert app.todo == app.database["todo"]
+        assert app.user == app.database["user"]
+
+    # Ensure MongoDB client is closed after the context manager exits
+    assert mock_mongodb_client.return_value.close.called
