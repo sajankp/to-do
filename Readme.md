@@ -110,6 +110,41 @@ If you prefer not to use Docker, you can set up the project using a virtual envi
 ### 9. Access the Application
    - Once the application is running (either via Docker or a virtual environment), you can access it by opening your web browser and navigating to [http://localhost/docs](http://localhost:8000/docs) to test things out.
 
+### 10. Run Tests Locally
+Once the application is set up and running locally, you can run tests to ensure everything is functioning as expected.
+
+#### Steps to Run Tests:
+1. Make sure you are in the project root directory:
+   ```bash
+   cd to-do
+   ```
+
+2. If you are using a virtual environment, ensure it is activated:
+   - On macOS/Linux:
+     ```bash
+     source env/bin/activate
+     ```
+   - On Windows:
+     ```bash
+     .\env\Scripts\activate
+     ```
+
+3. Run tests using `pytest`:
+   ```bash
+   pytest
+   ```
+   This will execute all the tests defined in the `tests/` directory and provide a report of the results.
+
+4. To check the test coverage, use the following command:
+   ```bash
+   pytest --cov=app
+   ```
+   This will generate a coverage report, showing which parts of the code are covered by the tests.
+
+#### Troubleshooting Tests:
+- If any tests fail, review the error messages in the output to diagnose and fix issues.
+- Ensure that your `.env` file is configured correctly and that the database is accessible for integration tests.
+
 That's it! You have successfully set up the FastAPI MongoDB todo application using either Docker or a virtual environment. You can now explore and interact with the application through your web browser.
 
 If you encounter any issues during the setup process, please refer to the project's documentation or feel free to reach out for assistance.
