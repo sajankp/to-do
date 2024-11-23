@@ -9,7 +9,7 @@ from fastapi.concurrency import asynccontextmanager
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
-from app.database import get_mongo_client
+from app.database.mongodb import mongodb_client
 from app.models.base import PyObjectId
 from app.models.user import CreateUser, Token
 from app.routers.auth import (
@@ -37,10 +37,10 @@ async def lifespan(application: FastAPI):
     if not await check_app_readiness():
         logging.error("Application failed to start.")
         sys.exit(1)
-    application.mongodb_client = get_mongo_client()
-    application.database = app.mongodb_client[os.getenv("MONGO_DATABASE")]
-    application.todo = app.database[os.getenv("MONGO_TODO_COLLECTION")]
-    application.user = app.database[os.getenv("MONGO_USER_COLLECTION")]
+    application.mongodb_client = mongodb_client
+    application.database = application.mongodb_client[os.getenv("MONGO_DATABASE")]
+    application.todo = application.database[os.getenv("MONGO_TODO_COLLECTION")]
+    application.user = application.database[os.getenv("MONGO_USER_COLLECTION")]
     yield
     application.mongodb_client.close()
 
