@@ -61,6 +61,7 @@ async def add_user_info_to_request(request: Request, call_next):
         "/openapi.json",
         "/",
         "/token/refresh",
+        "/health",
     ):
         response = await call_next(request)
         return response

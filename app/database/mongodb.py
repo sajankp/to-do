@@ -4,7 +4,10 @@ import urllib
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
-load_dotenv()
+if os.getenv("TESTING", "0") == "0":
+    pass
+else:
+    load_dotenv()
 
 password = urllib.parse.quote(os.getenv("MONGO_PASSWORD"), safe="")
 username = urllib.parse.quote(os.getenv("MONGO_USERNAME"), safe="")
