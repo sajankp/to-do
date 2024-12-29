@@ -1,17 +1,23 @@
 [paths]
-source =
-   app
+source = app
 
 [run]
-branch = true
+branch = True
+omit =
+    */__init__.py
+    */tests/*
+    app/tests/*
 parallel = true
 source =
     tests
-omit = 
-    app/tests/*
+    
+
 
 [report]
 show_missing = true
 precision = 2
-
-
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    if __name__ == .__main__.:
+    ^__init__\(\)$
