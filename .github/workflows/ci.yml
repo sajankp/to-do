@@ -33,7 +33,7 @@ jobs:
       - name: Run tests with coverage
         run: |
           echo "MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }}" > .env
-          echo "MONGO_USER=${{ secrets.MONGO_PASSWORD }}" >> .env
+          echo "MONGO_USERNAME=${{ secrets.MONGO_USERNAME }}" >> .env
           echo "PASSWORD_ALGORITHM=${{secrets.PASSWORD_ALGORITHM}}" >> .env
           pytest
 
