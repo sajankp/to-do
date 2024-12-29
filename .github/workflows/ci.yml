@@ -31,8 +31,5 @@ jobs:
 
       # Step 4: Run tests and collect coverage
       - name: Run tests with coverage
-        env:
-            MONGO_PASSWORD: "test_password"
-            MONGO_USER: "test_user"
         run: pytest
 
