@@ -12,6 +12,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    env: 
+      MONGO_PASSWORD: "test_password"
+      MONGO_USER: "test_user"
+
     steps:
       # Step 1: Checkout the repository
       - name: Checkout code
