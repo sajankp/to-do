@@ -4,13 +4,10 @@ import urllib
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
-if os.getenv("TESTING", "0") == "0":
-    pass
-else:
-    load_dotenv()
+load_dotenv()
 
-password = urllib.parse.quote(os.getenv("MONGO_PASSWORD"), safe="")
-username = urllib.parse.quote(os.getenv("MONGO_USERNAME"), safe="")
+password = urllib.parse.quote(os.getenv("MONGO_PASSWORD", ""), safe="")
+username = urllib.parse.quote(os.getenv("MONGO_USERNAME", ""), safe="")
 uri = f"mongodb+srv://{username}:{password}@cluster0.gbaxrnp.mongodb.net/?retryWrites=true&w=majority"
 TIMEOUT = int(os.getenv("MONGO_TIMEOUT", 5))
 
