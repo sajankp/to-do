@@ -12,7 +12,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    env: 
+    env:
       MONGO_PASSWORD: "test_password"
       MONGO_USER: "test_user"
 
@@ -35,5 +35,8 @@ jobs:
 
       # Step 4: Run tests and collect coverage
       - name: Run tests with coverage
+        env:
+            MONGO_PASSWORD: ${{ env.MONGO_PASSWORD }}
+            MONGO_USER: ${{ env.MONGO_USER }}
         run: pytest
 
