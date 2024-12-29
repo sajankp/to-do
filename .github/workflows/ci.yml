@@ -35,5 +35,6 @@ jobs:
           echo "MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }}" > .env
           echo "MONGO_USERNAME=${{ secrets.MONGO_USERNAME }}" >> .env
           echo "PASSWORD_ALGORITHM=${{secrets.PASSWORD_ALGORITHM}}" >> .env
+          echo "SECRET_KEY=${{secrets.SECRET_KEY}}" >> .env
           pytest
 
