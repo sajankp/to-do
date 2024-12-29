@@ -6,8 +6,8 @@ from pymongo import MongoClient
 
 load_dotenv()
 
-password = urllib.parse.quote(os.getenv("MONGO_PASSWORD", "test_password"), safe="")
-username = urllib.parse.quote(os.getenv("MONGO_USERNAME", "test_user"), safe="")
+password = urllib.parse.quote(os.getenv("MONGO_PASSWORD"), safe="")
+username = urllib.parse.quote(os.getenv("MONGO_USERNAME"), safe="")
 uri = f"mongodb+srv://{username}:{password}@cluster0.gbaxrnp.mongodb.net/?retryWrites=true&w=majority"
 TIMEOUT = int(os.getenv("MONGO_TIMEOUT", 5))
 
