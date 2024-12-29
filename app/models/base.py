@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from bson import ObjectId
 from pydantic import BaseModel, Field
@@ -26,7 +26,7 @@ class MyBaseModel(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow, alias="updatedAt")
 
     def update_timestamp(self):
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
 
     class Config:
         allow_population_by_field_name = True

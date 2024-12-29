@@ -3,13 +3,20 @@ from unittest.mock import patch
 
 import pytest
 from fastapi import HTTPException
+from jose import JWTError, jwt
 
+from app.models.user import User
 from app.routers.auth import (
     PASSWORD_ALGORITHM,
     SECRET_KEY,
+    authenticate_user,
+    create_jwt_token,
     create_token,
     decode_jwt_token,
+    get_current_active_user,
     get_user_info_from_token,
+    hash_password,
+    verify_password,
 )
 from app.utils.constants import INVALID_TOKEN
 
@@ -84,3 +91,148 @@ class TestTokenExceptions:
         assert (
             exc_info.value.detail == "Token has expired"
         ), "Expected detail to indicate the token has expired."
+
+# Mock constants
+MOCK_SECRET_KEY = "mock_secret"
+MOCK_ALGORITHM = "HS256"
+
+
+@patch("jose.jwt.encode")
+def test_create_jwt_token(mock_encode):
+    mock_data = {"sub": "test_user"}
+    mock_encoded_token = "mock.encoded.jwt"
+    mock_encode.return_value = mock_encoded_token
+
+    token = create_jwt_token(mock_data)
+
+    mock_encode.assert_called_once_with(
+        mock_data, SECRET_KEY, algorithm=PASSWORD_ALGORITHM
+    )
+    assert token == mock_encoded_token
+
+
+@patch("jose.jwt.decode")
+def test_decode_jwt_token(mock_decode):
+    mock_token = "mock.jwt.token"
+    mock_payload = {"sub": "test_user"}
+    mock_decode.return_value = mock_payload
+
+    payload = decode_jwt_token(mock_token)
+
+    mock_decode.assert_called_once_with(
+        mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM]
+    )
+    assert payload == mock_payload
+
+
+@patch("jose.jwt.decode")
+def test_decode_jwt_token_invalid(mock_decode):
+    mock_token = "invalid.jwt.token"
+    mock_decode.side_effect = JWTError
+
+    payload = decode_jwt_token(mock_token)
+
+    assert payload is None
+
+
+def test_create_token():
+    data = {"sub": "test_user"}
+    expires_delta = timedelta(minutes=30)
+    token = create_token(data, expires_delta)
+
+    payload = jwt.decode(token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
+    assert payload["sub"] == "test_user"
+    assert payload["exp"] > datetime.now().timestamp()
+
+
+### Tests for `password`-related functions
+
+
+@patch("app.routers.auth.pwd_context.hash")
+def test_hash_password(mock_hash):
+    mock_hash.return_value = "hashed_password"
+    password = "plain_password"
+
+    hashed_password = hash_password(password)
+
+    mock_hash.assert_called_once_with(password)
+    assert hashed_password == "hashed_password"
+
+
+@patch("app.routers.auth.pwd_context.verify")
+def test_verify_password(mock_verify):
+    mock_verify.return_value = True
+    plain_password = "plain_password"
+    hashed_password = "hashed_password"
+
+    is_valid = verify_password(plain_password, hashed_password)
+
+    mock_verify.assert_called_once_with(plain_password, hashed_password)
+    assert is_valid is True
+
+
+### Tests for user-related functions
+
+
+@patch("app.routers.auth.get_user_by_username")
+@patch("app.routers.auth.verify_password")
+def test_authenticate_user(mock_verify_password, mock_get_user):
+    mock_user = {
+        "username": "test_user",
+        "hashed_password": "hashed_password",
+        "email": "email",
+    }
+    mock_get_user.return_value = mock_user
+    mock_verify_password.return_value = True
+
+    user = authenticate_user("test_user", "plain_password")
+
+    mock_get_user.assert_called_once_with("test_user")
+    mock_verify_password.assert_called_once_with("plain_password", "hashed_password")
+    assert isinstance(user, User)
+    assert user.username == "test_user", "Expected username to match 'test_user'."
+
+
+@patch("app.routers.auth.get_user_by_username")
+def test_authenticate_user_invalid(mock_get_user):
+    mock_get_user.return_value = None
+
+    user = authenticate_user("invalid_user", "plain_password")
+
+    mock_get_user.assert_called_once_with("invalid_user")
+    assert user is None
+
+
+@patch("app.routers.auth.get_user_by_username")
+def test_get_current_active_user(mock_get_user):
+    mock_user = mock_user = {
+        "username": "test_user",
+        "hashed_password": "hashed_password",
+        "email": "email",
+    }
+    mock_get_user.return_value = mock_user
+    mock_token = "mock.jwt.token"
+
+    with patch("jose.jwt.decode", return_value={"sub": "test_user"}):
+        user = get_current_active_user(mock_token)
+
+    mock_get_user.assert_called_once_with("test_user")
+    assert user.username == mock_user["username"]
+
+
+@patch("app.routers.auth.get_user_by_username")
+def test_get_current_active_user_invalid(mock_get_user):
+    mock_get_user.return_value = None
+    mock_token = "mock.jwt.token"
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail=INVALID_TOKEN,
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    with patch("jose.jwt.decode", return_value={"sub": "test_user"}):
+        with pytest.raises(HTTPException) as exc_info:
+            get_current_active_user(mock_token)
+
+    assert exc_info.value.status_code == credentials_exception.status_code
+    assert exc_info.value.detail == credentials_exception.detail

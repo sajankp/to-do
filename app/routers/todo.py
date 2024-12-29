@@ -35,7 +35,7 @@ def get_todo(todo_id: PyObjectId, request: Request):
 
 @router.post("/", response_model=Todo)
 def create_todo(request: Request, todo: TodoBase):
-    current_time = datetime.utcnow()
+    current_time = datetime.now(timezone.utc)
 
     new_todo = Todo(
         title=todo.title,
@@ -78,7 +78,7 @@ def update_todo(todo: TodoUpdate, request: Request):
         for key in ["title", "description", "due_date", "priority"]
     ):
         updated_todo = todo.dict(exclude_unset=True)
-        updated_todo["updated_at"] = datetime.utcnow()
+        updated_todo["updated_at"] = datetime.now(timezone.utc)
         result = request.app.todo.update_one(
             {"_id": todo.id},
             {"$set": updated_todo},
