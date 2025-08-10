@@ -11,6 +11,12 @@ client = TestClient(app)
 mongodb_client = Mock()
 
 
+@pytest.fixture(autouse=True)
+def set_env_vars():
+    os.environ["MONGO_PASSWORD"] = "your_password"
+    os.environ["MONGO_USER"] = "your_user"
+
+
 @pytest.fixture(scope="module")
 def test_client():
     # Setup code (runs once for the entire module)
