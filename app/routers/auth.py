@@ -50,10 +50,9 @@ def create_token(data: dict, expires_delta: timedelta | None = None):
 
 
 def authenticate_user(username: str, password: str):
-    if user := get_user_by_username(username):
-        verify_password(password, user["hashed_password"])
-        user = User(**user)
-        return user
+    user = get_user_by_username(username)
+    if user and verify_password(password, user["hashed_password"]):
+        return User(**user)
     else:
         return None
 
