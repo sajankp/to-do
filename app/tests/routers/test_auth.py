@@ -297,3 +297,21 @@ class TestGetCurrentActiveUser:
         mock_get_user.assert_called_once_with("nonexistent_user")
         assert exc_info.value.status_code == credentials_exception.status_code
         assert exc_info.value.detail == credentials_exception.detail
+
+
+@patch("app.routers.auth.get_user_by_username")
+@patch("app.routers.auth.verify_password")
+def test_authenticate_user_wrong_password(mock_verify_password, mock_get_user):
+    mock_user = {
+        "username": "test_user",
+        "hashed_password": "hashed_password",
+        "email": "email",
+    }
+    mock_get_user.return_value = mock_user
+    mock_verify_password.return_value = False  # Simulate wrong password
+
+    user = authenticate_user("test_user", "wrong_password")
+
+    mock_get_user.assert_called_once_with("test_user")
+    mock_verify_password.assert_called_once_with("wrong_password", "hashed_password")
+    assert user is None, "authenticate_user should return None on wrong password"
