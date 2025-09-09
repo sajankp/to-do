@@ -1,30 +1,26 @@
-import os
-import urllib
-
-from dotenv import load_dotenv
 from pymongo import MongoClient
+from app.config import settings
 
-load_dotenv()
+uri = (
+    f"mongodb+srv://{settings.mongo_username}:"
+    f"{settings.mongo_password}@{settings.mongo_host}/?retryWrites=true&w=majority"
+)
+TIMEOUT = 5  # You can add this to config.py if needed
 
-password = urllib.parse.quote(os.getenv("MONGO_PASSWORD"), safe="")
-username = urllib.parse.quote(os.getenv("MONGO_USERNAME"), safe="")
-uri = f"mongodb+srv://{username}:{password}@cluster0.gbaxrnp.mongodb.net/?retryWrites=true&w=majority"
-TIMEOUT = int(os.getenv("MONGO_TIMEOUT", 5))
 
-
+mongodb_client = get_mongo_client()
+def get_todo_collection():
+def get_user_collection():
 def get_mongo_client(server_selection_timeout_ms=TIMEOUT * 1000):
     client = MongoClient(uri, serverSelectionTimeoutMS=server_selection_timeout_ms)
     return client
 
-
 mongodb_client = get_mongo_client()
 
-
 def get_todo_collection():
-    database = mongodb_client[os.getenv("MONGO_DATABASE")]
-    return database[os.getenv("MONGO_TODO_COLLECTION")]
-
+    database = mongodb_client[settings.mongo_db]
+    return database[settings.mongo_todo_collection]
 
 def get_user_collection():
-    database = mongodb_client[os.getenv("MONGO_DATABASE")]
-    return database[os.getenv("MONGO_USER_COLLECTION")]
+    database = mongodb_client[settings.mongo_db]
+    return database[settings.mongo_user_collection]

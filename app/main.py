@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from app.database.mongodb import mongodb_client
+from app.utils.validate_env import validate_env
 from app.models.base import PyObjectId
 from app.models.user import CreateUser, Token
 from app.routers.auth import (
@@ -34,6 +35,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
+    validate_env()
     if not await check_app_readiness():
         logging.error("Application failed to start.")
         sys.exit(1)
