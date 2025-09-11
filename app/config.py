@@ -13,4 +13,6 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
 
-settings = Settings()
+
+def get_settings() -> Settings:
+    return Settings()

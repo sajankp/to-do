@@ -1,6 +1,9 @@
-from app.config import settings
+from app.config import Settings, get_settings
 
-def validate_env():
+
+def validate_env(settings:Settings | None=None):
+    if settings is None:
+        settings = get_settings()
     required_vars = {
         "MONGO_USERNAME": settings.mongo_username,
         "MONGO_PASSWORD": settings.mongo_password,

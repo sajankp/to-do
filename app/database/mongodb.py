@@ -1,23 +1,33 @@
 from pymongo import MongoClient
 
-from app.config import settings
+from app.config import Settings, get_settings
 
-uri = (
-    f"mongodb+srv://{settings.mongo_username}:"
-    f"{settings.mongo_password}@{settings.mongo_host}/?retryWrites=true&w=majority"
-)
-TIMEOUT = settings.mongo_timeout or 5  # You can add this to config.py if needed
 
-def get_mongo_client(server_selection_timeout_ms=TIMEOUT * 1000):
+def get_mongo_client(settings: Settings | None = None):
+    if settings is None:
+        settings = get_settings()
+    uri = (
+        f"mongodb+srv://{settings.mongo_username}:"
+        f"{settings.mongo_password}@{settings.mongo_host}/?retryWrites=true&w=majority"
+    )
+    timeout = settings.mongo_timeout or 5
+    server_selection_timeout_ms = timeout * 1000
     client = MongoClient(uri, serverSelectionTimeoutMS=server_selection_timeout_ms)
     return client
 
+
 mongodb_client = get_mongo_client()
 
-def get_todo_collection():
+
+def get_todo_collection(settings: Settings | None = None):
+    if settings is None:
+        settings = get_settings()
     database = mongodb_client[settings.mongo_db]
     return database[settings.mongo_todo_collection]
 
-def get_user_collection():
+
+def get_user_collection(settings: Settings | None = None):
+    if settings is None:
+        settings = get_settings()
     database = mongodb_client[settings.mongo_db]
     return database[settings.mongo_user_collection]
