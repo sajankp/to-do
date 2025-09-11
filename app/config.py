@@ -9,6 +9,10 @@ class Settings(BaseSettings):
     mongo_todo_collection: str = Field(..., env="MONGO_TODO_COLLECTION")
     mongo_user_collection: str = Field(..., env="MONGO_USER_COLLECTION")
     mongo_timeout: int = Field(..., env="MONGO_TIMEOUT")
+    secret_key: str = Field(..., env="SECRET_KEY")
+    password_algorithm: str = Field(..., env="PASSWORD_ALGORITHM")
+    access_token_expire_seconds: int = Field(..., env="ACCESS_TOKEN_EXPIRE_SECONDS")
+    refresh_token_expire_seconds: int = Field(..., env="REFRESH_TOKEN_EXPIRE_SECONDS")
 
     class Config:
         env_file = ".env"

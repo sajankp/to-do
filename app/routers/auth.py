@@ -1,4 +1,3 @@
-import os
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -6,13 +5,15 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
+from app.config import get_settings
 from app.models.user import User, get_user_by_username
 from app.utils.constants import INVALID_TOKEN
 
 router = APIRouter()
+settings = get_settings()
 
-SECRET_KEY = os.getenv("SECRET_KEY")
-PASSWORD_ALGORITHM = os.getenv("PASSWORD_ALGORITHM")
+SECRET_KEY = settings.secret_key
+PASSWORD_ALGORITHM = settings.password_algorithm
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
