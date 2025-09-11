@@ -32,11 +32,14 @@ jobs:
       # Step 4: Run tests and collect coverage
       - name: Run tests with coverage
         run: |
-          echo "MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }}" > .env
-          echo "MONGO_USERNAME=${{ secrets.MONGO_USERNAME }}" >> .env
-          echo "PASSWORD_ALGORITHM=${{secrets.PASSWORD_ALGORITHM}}" >> .env
+          echo "MONGO_PASSWORD=${{secrets.MONGO_PASSWORD}}" > .env
+          echo "MONGO_USERNAME=${{secrets.MONGO_USERNAME}}" >> .env
+          echo "PASSWORD_ALGORITHM=${{ secrets.PASSWORD_ALGORITHM }}" >> .env
           echo "SECRET_KEY=${{secrets.SECRET_KEY}}" >> .env
-          echo "MONGO_HOST=${{ secrets.MONGO_HOST }}" >> .env
-          echo "MONGO_TIMEOUT=${{ secrets.MONGO_TIMEOUT }}" >> .env
+          echo "MONGO_HOST=${{secrets.MONGO_HOST}}" >> .env
+          echo "MONGO_TIMEOUT=5" >> .env
+          echo "MONGO_DATABASE=db" >> .env
+          echo "MONGO_TODO_COLLECTION=todo" >> .env
+          echo "MONGO_USER_COLLECTION=user" >> .env
           pytest
 
