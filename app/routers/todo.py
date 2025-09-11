@@ -6,6 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 
 from app.models.todo import PyObjectId, Todo, TodoBase, TodoUpdate
 from app.utils.constants import (
+    FAILED_CREATE_TODO,
     FAILED_DELETE_TODO,
     NO_CHANGES,
     TODO_DELETED_SUCCESSFULLY,
@@ -53,7 +54,7 @@ def create_todo(request: Request, todo: TodoBase):
     else:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=FAILED_DELETE_TODO,
+            detail=FAILED_CREATE_TODO,
         )
 
 
@@ -104,5 +105,5 @@ def delete_todo(todo_id: PyObjectId, request: Request):
     else:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete todo",
+            detail=FAILED_DELETE_TODO,
         )
