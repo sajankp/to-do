@@ -1,5 +1,4 @@
 import logging
-import os
 import sys
 from datetime import timedelta
 from typing import Annotated
@@ -24,23 +23,22 @@ from app.routers.todo import router as todo_router
 from app.routers.user import router as user_router
 from app.utils.constants import FAILED_TO_CREATE_USER, MISSING_TOKEN
 from app.utils.health import app_check_health, check_app_readiness
-
-ACCESS_TOKEN_EXPIRE_SECONDS = os.getenv("ACCESS_TOKEN_EXPIRE_SECONDS")
-REFRESH_TOKEN_EXPIRE_SECONDS = os.getenv("REFRESH_TOKEN_EXPIRE_SECONDS")
-
+from app.utils.validate_env import validate_env
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
+    settings = validate_env()
     if not await check_app_readiness():
         logging.error("Application failed to start.")
         sys.exit(1)
     application.mongodb_client = mongodb_client
-    application.database = application.mongodb_client[os.getenv("MONGO_DATABASE")]
-    application.todo = application.database[os.getenv("MONGO_TODO_COLLECTION")]
-    application.user = application.database[os.getenv("MONGO_USER_COLLECTION")]
+    application.database = application.mongodb_client[settings.mongo_db]
+    application.todo = application.database[settings.mongo_todo_collection]
+    application.user = application.database[settings.mongo_user_collection]
+    application.settings = settings
     yield
     application.mongodb_client.close()
 
@@ -110,12 +108,12 @@ def login_for_access_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(seconds=int(ACCESS_TOKEN_EXPIRE_SECONDS))
+    access_token_expires = timedelta(seconds=request.app.settings.access_token_expire_seconds)
     access_token = create_token(
         data={"sub": user.username, "sub_id": str(user.id)},
         expires_delta=access_token_expires,
     )
-    refresh_token_expires = timedelta(seconds=int(REFRESH_TOKEN_EXPIRE_SECONDS))
+    refresh_token_expires = timedelta(seconds=request.app.settings.refresh_token_expire_seconds)
     refresh_token = create_token(
         data={"sub": user.username, "sub_id": str(user.id)},
         expires_delta=refresh_token_expires,
@@ -141,7 +139,7 @@ def refresh_token(refresh_token: str, request: Request):
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
         )
 
-    access_token_expires = timedelta(seconds=int(ACCESS_TOKEN_EXPIRE_SECONDS))
+    access_token_expires = timedelta(seconds=request.app.settings.access_token_expire_seconds)
     access_token = create_token(
         data={"sub": username, "sub_id": user_id},
         expires_delta=access_token_expires,
