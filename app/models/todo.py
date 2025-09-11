@@ -36,4 +36,4 @@ class TodoUpdate(TodoBase):
 
 
 class Todo(TodoBase, MyBaseModel):
-    pass
+    user_id: PyObjectId = Field(..., description="ID of the user who owns this todo")

@@ -66,7 +66,7 @@ async def add_user_info_to_request(request: Request, call_next):
     try:
         token = request.headers.get("Authorization")
         if not token:
-            response = JSONResponse(
+            return JSONResponse(
                 content={"detail": MISSING_TOKEN},
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 headers={"WWW-Authenticate": "Bearer"},
@@ -78,13 +78,13 @@ async def add_user_info_to_request(request: Request, call_next):
             request.state.user_id = PyObjectId(user_id)
             request.state.username = username
             response = await call_next(request)
+            return response
     except HTTPException as e:
-        response = JSONResponse(
+        return JSONResponse(
             content={"detail": str(e.detail)},
             status_code=e.status_code,
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return response
 
 
 @app.get("/")
