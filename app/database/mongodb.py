@@ -6,7 +6,7 @@ uri = (
     f"mongodb+srv://{settings.mongo_username}:"
     f"{settings.mongo_password}@{settings.mongo_host}/?retryWrites=true&w=majority"
 )
-TIMEOUT = 5  # You can add this to config.py if needed
+TIMEOUT = settings.mongo_timeout or 5  # You can add this to config.py if needed
 
 def get_mongo_client(server_selection_timeout_ms=TIMEOUT * 1000):
     client = MongoClient(uri, serverSelectionTimeoutMS=server_selection_timeout_ms)
