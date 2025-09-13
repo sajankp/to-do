@@ -3,16 +3,17 @@ Integration tests for todo-user association functionality.
 These tests verify the complete flow from middleware to database operations.
 """
 
-import pytest
 from datetime import datetime, timezone
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
+from bson import ObjectId
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
-from bson import ObjectId
 
+from app.main import add_user_info_to_request
 from app.models.base import PyObjectId
 from app.models.todo import PriorityEnum
-from app.main import add_user_info_to_request
 
 
 class TestTodoUserIntegration:
@@ -44,7 +45,7 @@ class TestTodoUserIntegration:
         test_username = "testuser"
         test_user_id = "507f1f77bcf86cd799439011"
         mock_get_user_info.return_value = (test_username, test_user_id)
-        
+
         # Mock the next call
         async def mock_call_next(request):
             # Verify that user_id was set in request state
@@ -54,10 +55,10 @@ class TestTodoUserIntegration:
             assert isinstance(request.state.user_id, PyObjectId)
             assert str(request.state.user_id) == test_user_id
             return Mock(status_code=200)
-        
+
         # Call the middleware
         response = await add_user_info_to_request(mock_request, mock_call_next)
-        
+
         # Verify the middleware processed correctly
         assert response.status_code == 200
         mock_get_user_info.assert_called_once_with("Bearer valid_token")
@@ -70,13 +71,13 @@ class TestTodoUserIntegration:
         request = Mock(spec=Request)
         request.url.path = "/todo/"
         request.headers = {}
-        
+
         async def mock_call_next(request):
             return Mock(status_code=200)
-        
+
         # Call the middleware
         response = await add_user_info_to_request(request, mock_call_next)
-        
+
         # Verify 401 response
         assert response.status_code == 401
         assert "Missing Token" in str(response.body)
@@ -87,39 +88,39 @@ class TestTodoUserIntegration:
     async def test_middleware_handles_invalid_token(self, mock_get_user_info, mock_request):
         """Test that middleware returns 401 when token is invalid"""
         from fastapi import HTTPException
-        
+
         # Mock token validation to raise HTTPException
         mock_get_user_info.side_effect = HTTPException(
             status_code=401, 
             detail="Invalid token"
         )
-        
+
         async def mock_call_next(request):
             return Mock(status_code=200)
-        
+
         # Call the middleware
         response = await add_user_info_to_request(mock_request, mock_call_next)
-        
+
         # Verify 401 response
         assert response.status_code == 401
         assert "Invalid token" in str(response.body)
 
     def test_todo_creation_with_user_association(self, mock_request):
         """Test complete todo creation flow with user association"""
-        from app.routers.todo import create_todo
         from app.models.todo import TodoBase
-        
+        from app.routers.todo import create_todo
+
         # Set up request state (simulating middleware)
         user_id = PyObjectId("507f1f77bcf86cd799439011")
         mock_request.state.user_id = user_id
         mock_request.state.username = "testuser"
-        
+
         # Mock database operations
         mock_result = Mock()
         mock_result.acknowledged = True
         mock_result.inserted_id = ObjectId("507f1f77bcf86cd799439012")
         mock_request.app.todo.insert_one.return_value = mock_result
-        
+
         # Create todo data
         todo_data = TodoBase(
             title="Integration Test Todo",
@@ -127,14 +128,14 @@ class TestTodoUserIntegration:
             due_date=datetime.now(timezone.utc),
             priority=PriorityEnum.high
         )
-        
+
         # Create the todo
         result = create_todo(mock_request, todo_data)
-        
+
         # Verify user association
         assert result.user_id == user_id
         assert result.title == "Integration Test Todo"
-        
+
         # Verify database call included user_id
         mock_request.app.todo.insert_one.assert_called_once()
         call_args = mock_request.app.todo.insert_one.call_args[0][0]
@@ -143,12 +144,12 @@ class TestTodoUserIntegration:
     def test_todo_listing_with_user_filtering(self, mock_request):
         """Test complete todo listing flow with user filtering"""
         from app.routers.todo import get_todo_list
-        
+
         # Set up request state (simulating middleware)
         user_id = PyObjectId("507f1f77bcf86cd799439011")
         mock_request.state.user_id = user_id
         mock_request.state.username = "testuser"
-        
+
         # Mock database operations
         user_todos = [
             {
@@ -172,14 +173,14 @@ class TestTodoUserIntegration:
                 "updated_at": datetime.now(timezone.utc)
             }
         ]
-        
+
         mock_cursor = Mock()
         mock_cursor.limit.return_value = user_todos
         mock_request.app.todo.find.return_value = mock_cursor
-        
+
         # Get todo list
         result = get_todo_list(mock_request)
-        
+
         # Verify filtering and results
         mock_request.app.todo.find.assert_called_once_with({"user_id": user_id})
         assert len(result) == 2
@@ -188,34 +189,34 @@ class TestTodoUserIntegration:
 
     def test_complete_todo_workflow(self, mock_request):
         """Test complete workflow: create todo, then list todos"""
-        from app.routers.todo import create_todo, get_todo_list
         from app.models.todo import TodoBase
-        
+        from app.routers.todo import create_todo, get_todo_list
+
         # Set up request state (simulating middleware)
         user_id = PyObjectId("507f1f77bcf86cd799439011")
         mock_request.state.user_id = user_id
         mock_request.state.username = "testuser"
-        
+
         # Step 1: Create a todo
         mock_create_result = Mock()
         mock_create_result.acknowledged = True
         todo_id = ObjectId("507f1f77bcf86cd799439012")
         mock_create_result.inserted_id = todo_id
         mock_request.app.todo.insert_one.return_value = mock_create_result
-        
+
         todo_data = TodoBase(
             title="Workflow Test Todo",
             description="Testing complete workflow",
             due_date=datetime.now(timezone.utc),
             priority=PriorityEnum.medium
         )
-        
+
         created_todo = create_todo(mock_request, todo_data)
-        
+
         # Verify creation
         assert created_todo.user_id == user_id
         assert created_todo.title == "Workflow Test Todo"
-        
+
         # Step 2: List todos (should include the created todo)
         created_todo_dict = {
             "_id": todo_id,
@@ -227,32 +228,32 @@ class TestTodoUserIntegration:
             "created_at": created_todo.created_at,
             "updated_at": created_todo.updated_at
         }
-        
+
         mock_cursor = Mock()
         mock_cursor.limit.return_value = [created_todo_dict]
         mock_request.app.todo.find.return_value = mock_cursor
-        
+
         todos = get_todo_list(mock_request)
-        
+
         # Verify the created todo appears in the list
         assert len(todos) == 1
         assert todos[0]["_id"] == todo_id
         assert todos[0]["user_id"] == user_id
         assert todos[0]["title"] == "Workflow Test Todo"
-        
+
         # Verify the list query filtered by user_id
         mock_request.app.todo.find.assert_called_with({"user_id": user_id})
 
     def test_user_isolation(self, mock_request):
         """Test that users can only see their own todos"""
         from app.routers.todo import get_todo_list
-        
+
         # Set up request state for user 1
         user1_id = PyObjectId("507f1f77bcf86cd799439011")
         user2_id = PyObjectId("507f1f77bcf86cd799439022")
         mock_request.state.user_id = user1_id
         mock_request.state.username = "user1"
-        
+
         # Mock database to return only user1's todos
         user1_todos = [
             {
@@ -266,20 +267,20 @@ class TestTodoUserIntegration:
                 "updated_at": datetime.now(timezone.utc)
             }
         ]
-        
+
         mock_cursor = Mock()
         mock_cursor.limit.return_value = user1_todos
         mock_request.app.todo.find.return_value = mock_cursor
-        
+
         # Get todos for user1
         result = get_todo_list(mock_request)
-        
+
         # Verify only user1's todos are returned
         mock_request.app.todo.find.assert_called_once_with({"user_id": user1_id})
         assert len(result) == 1
         assert result[0]["user_id"] == user1_id
         assert result[0]["user_id"] != user2_id
-        
+
         # Verify the query specifically filters by user1's ID
         call_args = mock_request.app.todo.find.call_args[0][0]
         assert call_args["user_id"] == user1_id
@@ -287,22 +288,29 @@ class TestTodoUserIntegration:
     @pytest.mark.asyncio
     async def test_middleware_skips_public_endpoints(self):
         """Test that middleware skips processing for public endpoints"""
-        public_endpoints = ["/token", "/user", "/docs", "/openapi.json", "/", "/token/refresh", "/health"]
-        
+        public_endpoints = [
+            "/token",
+            "/docs",
+            "/openapi.json",
+            "/",
+            "/token/refresh",
+            "/health",
+        ]
+
         for endpoint in public_endpoints:
             request = Mock(spec=Request)
             request.url.path = endpoint
             # Don't create state attribute initially
             request.state = None
-            
+
             call_next_called = False
-            
+
             async def mock_call_next(request):
                 nonlocal call_next_called
                 call_next_called = True
                 # For public endpoints, state should not be modified
                 return Mock(status_code=200)
-            
+
             response = await add_user_info_to_request(request, mock_call_next)
             assert response.status_code == 200
             assert call_next_called, f"call_next should be called for public endpoint {endpoint}"
