@@ -54,7 +54,6 @@ app.include_router(user_router, prefix="/user", tags=["user"])
 async def add_user_info_to_request(request: Request, call_next):
     if request.url.path in (
         "/token",
-        "/user",
         "/docs",
         "/openapi.json",
         "/",
