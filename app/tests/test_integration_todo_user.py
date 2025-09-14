@@ -3,7 +3,7 @@ Integration tests for todo-user association functionality.
 These tests verify the complete flow from middleware to database operations.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -125,8 +125,8 @@ class TestTodoUserIntegration:
         todo_data = TodoBase(
             title="Integration Test Todo",
             description="Testing user association",
-            due_date=datetime.now(timezone.utc),
-            priority=PriorityEnum.high
+            due_date=datetime.now(timezone.utc) + timedelta(seconds=60),
+            priority=PriorityEnum.high,
         )
 
         # Create the todo
@@ -207,8 +207,8 @@ class TestTodoUserIntegration:
         todo_data = TodoBase(
             title="Workflow Test Todo",
             description="Testing complete workflow",
-            due_date=datetime.now(timezone.utc),
-            priority=PriorityEnum.medium
+            due_date=datetime.now(timezone.utc) + timedelta(seconds=60),
+            priority=PriorityEnum.medium,
         )
 
         created_todo = create_todo(mock_request, todo_data)
