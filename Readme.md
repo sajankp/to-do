@@ -45,14 +45,15 @@ FastTodo demonstrates modern Python web development practices while showcasing t
 #### **Phase 1: Security & Stability (Weeks 1-2)**
 - [x] Fix authentication bypass vulnerability
 - [ ] Implement rate limiting on auth endpoints
-- [ ] Secure Docker configuration
-- [ ] Add comprehensive input validation
-- [ ] Implement proper error handling
+- [x] Secure Docker configuration
+- [x] Add comprehensive input validation
+- [x] Implement proper error handling
 
 #### **Phase 2: Architecture & Testing (Weeks 3-6)**
 - [ ] Repository pattern implementation
 - [ ] Service layer architecture
 - [ ] Comprehensive test suite (Unit, Integration, E2E)
+- [x] Increase coverage to > 80%
 - [ ] Database indexing and optimization
 - [ ] Structured logging system
 
@@ -93,7 +94,8 @@ FastTodo demonstrates modern Python web development practices while showcasing t
 │       ├── test_main.py     # Application-level tests
 │       ├── routers/         # Router-specific tests
 │       ├── database/        # Database integration tests
-|       └── models/          # Model tests
+|       ├── models/          # Model tests
+|       └── utils/           # utils tests
 ├── .github/workflows/       # CI/CD configuration
 ├── Dockerfile              # Container configuration
 ├── requirements.txt        # Python dependencies
@@ -103,7 +105,7 @@ FastTodo demonstrates modern Python web development practices while showcasing t
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.10+
+- Python 3.12
 - Docker (optional)
 - MongoDB Atlas account or local MongoDB instance
 
@@ -224,19 +226,26 @@ pytest app/tests/test_main.py -v
 
 This project leverages multiple AI tools for enhanced development experience:
 
-### **Perplexity AI Integration**
+### **Perplexity**
 - **Code Analysis**: Deep repository analysis and improvement suggestions
 - **Research**: Latest best practices and security recommendations
 - **Architecture**: Design pattern guidance and scalability advice
-
-### **GitHub Copilot Enhancement**
-- **Code Completion**: Intelligent code suggestions and auto-completion
-- **Test Generation**: Automated test case creation
 - **Documentation**: README and docstring generation
+- **Bug Generation**: Identify and report bugs
+
+### **GitHub Copilot / Qodo**
+- **Test Generation**: Automated test case creation
+
+### **Comet**
+- **Automated Testing**: Run the tests defined in [FASTTODO_TEST_PLAN.md](https://github.com/sajankp/to-do/blob/main/FASTTODO_TEST_PLAN.md)
+
+### **AI Agent Workflow**
+- **Bug Fix**: Automated Bug Fix
+- **Security Scanning**: Make use of Github Code Analysis
+- **Test Generation**: Automated test case creation
 
 ### **AI Agent Workflow** (planned)
 - **Code Review**: Automated pull request analysis
-- **Security Scanning**: AI-powered vulnerability detection
 - **Performance Optimization**: Automated performance bottleneck identification
 
 ## 🔒 Security Features
@@ -246,12 +255,12 @@ This project leverages multiple AI tools for enhanced development experience:
 - Password hashing with bcrypt
 - Environment-based configuration management
 - Input validation with Pydantic models
+- Advanced input sanitization
 
 ### Planned Security Enhancements
 - Rate limiting and DDoS protection
 - OAuth 2.0 provider integration
 - Two-factor authentication (2FA)
-- Advanced input sanitization
 - Security headers middleware
 - Audit logging system
 
@@ -292,7 +301,7 @@ We welcome contributions! Please see our contributing guidelines:
 - Use conventional commit messages
 - Ensure all CI checks pass
 
-## 📈 Performance Metrics
+## 📈 Performance Metrics (To be measured)
 
 ### Current Performance
 - **API Response Time**: < 200ms average
@@ -314,7 +323,7 @@ This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENS
 
 - **FastAPI** community for excellent framework and documentation
 - **MongoDB** for flexible and scalable database solutions
-- **Perplexity AI** for intelligent code analysis and research assistance
+- **Perplexity** for intelligent code analysis and research assistance
 - **GitHub Copilot** for AI-powered development enhancement
 - **Open Source Community** for inspiring best practices and continuous learning
 
