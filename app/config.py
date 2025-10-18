@@ -2,8 +2,13 @@ from pydantic import BaseSettings, Field
 
 
 class Settings(BaseSettings):
-    mongo_username: str = Field(..., env="MONGO_USERNAME")
-    mongo_password: str = Field(..., env="MONGO_PASSWORD")
+    """Application settings with environment variable configuration."""
+    mongo_username: str = Field(
+        ..., env="MONGO_USERNAME", description="MongoDB username"
+    )
+    mongo_password: str = Field(
+        ..., env="MONGO_PASSWORD", description="MongoDB password"
+    )
     mongo_host: str = Field(..., env="MONGO_HOST")
     mongo_db: str = Field(..., env="MONGO_DATABASE")
     mongo_todo_collection: str = Field(..., env="MONGO_TODO_COLLECTION")
