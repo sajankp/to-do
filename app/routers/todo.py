@@ -4,7 +4,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 
-from app.models.todo import PyObjectId, Todo, TodoBase, TodoUpdate
+from app.models.todo import CreateTodo, PyObjectId, Todo, TodoUpdate
 from app.utils.constants import (
     FAILED_CREATE_TODO,
     FAILED_DELETE_TODO,
@@ -28,14 +28,12 @@ def get_todo_list(request: Request):
 def get_todo(todo_id: PyObjectId, request: Request):
     todo = request.app.todo.find_one({"_id": todo_id})
     if not todo:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=TODO_NOT_FOUND
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=TODO_NOT_FOUND)
     return todo
 
 
 @router.post("/", response_model=Todo)
-def create_todo(request: Request, todo: TodoBase):
+def create_todo(request: Request, todo: CreateTodo):
     current_time = datetime.now(timezone.utc)
 
     new_todo = Todo(
@@ -70,9 +68,7 @@ def are_objects_equal(obj1, obj2):
 def update_todo(todo: TodoUpdate, request: Request):
     existing_todo = request.app.todo.find_one({"_id": todo.id})
     if not existing_todo:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=TODO_NOT_FOUND
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=TODO_NOT_FOUND)
     todo_dict = todo.dict()
     if any(
         not are_objects_equal(existing_todo[key], todo_dict[key])
@@ -94,9 +90,7 @@ def delete_todo(todo_id: PyObjectId, request: Request):
     existing_todo = request.app.todo.find_one({"_id": todo_id})
 
     if not existing_todo:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=TODO_NOT_FOUND
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=TODO_NOT_FOUND)
 
     result = request.app.todo.delete_one({"_id": todo_id})
 

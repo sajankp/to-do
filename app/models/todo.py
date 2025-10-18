@@ -12,26 +12,39 @@ class PriorityEnum(str, Enum):
     medium = "medium"
     high = "high"
 
+
 class TodoBase(BaseModel):
+    title: str
+    description: Optional[str] = ""
+    due_date: Optional[datetime] = None
+    priority: PriorityEnum = PriorityEnum.medium
+
+
+class CreateTodo(TodoBase):
     title: str = Field(..., min_length=1, max_length=100)
-    description: Optional[str] = Field("", max_length=500)
+    description: str = Field("", max_length=500)
     due_date: Optional[datetime] = Field(None)
     priority: PriorityEnum = Field(PriorityEnum.medium)
 
     @validator("due_date", pre=True, always=True)
-    def parse_due_date(cls, value):
+    def validate_due_date(cls, value):
         if value is None:
             return value
+
+        # First parse the date
         try:
             if isinstance(value, datetime):
                 dt = value
             else:
                 dt = datetime.fromisoformat(value)
-            if dt < datetime.now(timezone.utc):
-                raise ValueError("Due date cannot be in the past.")
-            return dt
-        except TypeError:
+        except (TypeError, ValueError):
             raise ValueError("Invalid datetime format")
+
+        # Then validate it's not in the past
+        if dt < datetime.now(timezone.utc):
+            raise ValueError("Due date cannot be in the past")
+
+        return dt
 
     class Config:
         orm_mode = True
@@ -58,6 +71,7 @@ class TodoUpdate(BaseModel):
         if dt < datetime.now(timezone.utc):
             raise ValueError("Due date cannot be in the past.")
         return dt
+
 
 class Todo(TodoBase, MyBaseModel):
     user_id: PyObjectId = Field(..., description="ID of the user who owns this todo")
