@@ -37,7 +37,7 @@ class CreateTodo(TodoBase):
     @validator("due_date")
     def validate_future_date(cls, v):
         if v is not None and v < datetime.now(timezone.utc):
-            raise ValueError("Due date cannot be in the past")
+            raise ValueError("Due date cannot be in the past.")
         return v
 
     class Config:
