@@ -67,7 +67,7 @@ PydanticObjectId = Annotated[ObjectId, PyObjectId]
 
 
 class MyBaseModel(BaseModel):
-    id: PyObjectId = Field(
+    id: PydanticObjectId = Field(
         default_factory=PyObjectId, alias="_id", description="MongoDB document ID"
     )
     created_at: datetime = Field(

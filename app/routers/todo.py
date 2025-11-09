@@ -30,7 +30,7 @@ def get_todo(todo_id: PyObjectId, request: Request):
     todo = request.app.todo.find_one({"_id": todo_id, "user_id": request.state.user_id})
     if not todo:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=TODO_NOT_FOUND)
-    return todo
+    return TodoResponse.from_db(TodoInDB(**todo))
 
 
 @router.post("/", response_model=TodoResponse)
