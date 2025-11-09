@@ -27,7 +27,7 @@ def get_todo_list(request: Request):
 
 @router.get("/{todo_id}", response_model=TodoResponse)
 def get_todo(todo_id: PyObjectId, request: Request):
-    todo = request.app.todo.find_one({"_id": todo_id})
+    todo = request.app.todo.find_one({"_id": todo_id, "user_id": request.state.user_id})
     if not todo:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=TODO_NOT_FOUND)
     return todo
