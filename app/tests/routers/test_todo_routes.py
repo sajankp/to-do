@@ -6,7 +6,7 @@ from bson import ObjectId
 from fastapi import HTTPException, Request
 
 from app.models.base import PyObjectId
-from app.models.todo import PriorityEnum, Todo, TodoBase
+from app.models.todo import PriorityEnum, TodoBase, TodoResponse
 from app.routers.todo import create_todo, delete_todo, get_todo, get_todo_list
 from app.utils.constants import (
     FAILED_CREATE_TODO,
@@ -46,7 +46,9 @@ class TestTodoUserAssociation:
         result = create_todo(request, todo_data)
 
         # Critical assertion: verify user_id is set correctly
-        assert result.user_id == user_id, "Todo must be associated with the correct user"
+        assert str(result.user_id) == str(
+            user_id
+        ), "Todo must be associated with the correct user"
 
         # Verify the database call includes the user_id
         mock_collection.insert_one.assert_called_once()
@@ -101,7 +103,9 @@ class TestTodoUserAssociation:
 
         # Verify all returned todos belong to the user
         for todo in result:
-            assert todo["user_id"] == user_id, "All todos must belong to the authenticated user"
+            assert str(todo.user_id) == str(
+                user_id
+            ), "All todos must belong to the authenticated user"
 
     def test_get_todo_list_excludes_other_users_todos(self):
         """Test that todo listing doesn't return todos from other users"""
@@ -140,8 +144,10 @@ class TestTodoUserAssociation:
 
         # Verify no other user's todos are returned
         for todo in result:
-            assert todo["user_id"] == user_id
-            assert todo["user_id"] != other_user_id, "Other user's todos must not be returned"
+            assert str(todo.user_id) == str(user_id)
+            assert str(todo.user_id) != str(
+                other_user_id
+            ), "Other user's todos must not be returned"
 
     def test_create_todo_without_user_id_fails(self):
         """Test that todo creation fails if user_id is not set in request state"""
@@ -173,16 +179,17 @@ class TestTodoUserAssociation:
         user_id = PyObjectId("507f1f77bcf86cd799439011")
 
         # Test successful creation with user_id
-        todo_with_user = Todo(
+        todo_with_user = TodoResponse(
+            id=str(ObjectId()),
             title="Test Todo",
             description="Test Description",
             due_date=current_time + timedelta(seconds=60),
             priority=PriorityEnum.medium,
-            user_id=user_id,
+            user_id=str(user_id),
             created_at=current_time,
             updated_at=current_time,
         )
-        assert todo_with_user.user_id == user_id
+        assert str(todo_with_user.user_id) == str(user_id)
 
         # Test that user_id is required (should fail without it)
         with pytest.raises(Exception):
@@ -222,7 +229,7 @@ class TestTodoUserAssociation:
 
         # Step 1: Create the todo
         created_todo = create_todo(request, todo_data)
-        assert created_todo.user_id == user_id
+        assert str(created_todo.user_id) == str(user_id)
 
         # Step 2: Mock the list query to return the created todo
         created_todo_dict = {
@@ -244,9 +251,9 @@ class TestTodoUserAssociation:
         todos = get_todo_list(request)
 
         assert len(todos) == 1
-        assert todos[0]["_id"] == todo_id
-        assert todos[0]["user_id"] == user_id
-        assert todos[0]["title"] == "Integration Test Todo"
+        assert str(todos[0].id) == str(todo_id)
+        assert str(todos[0].user_id) == str(user_id)
+        assert todos[0].title == "Integration Test Todo"
 
         # Verify the list query filtered by user_id
         mock_collection.find.assert_called_with({"user_id": user_id})
@@ -280,12 +287,12 @@ class TestTodoRouter:
         result = create_todo(request, todo_data)
 
         # Assertions
-        assert isinstance(result, Todo)
+        assert isinstance(result, TodoResponse)
         assert result.title == "Test Todo"
         assert result.description == "Test Description"
         assert result.priority == PriorityEnum.medium
-        assert result.user_id == request.state.user_id
-        assert result.id == mock_result.inserted_id
+        assert str(result.user_id) == str(request.state.user_id)
+        assert str(result.id) == str(mock_result.inserted_id)
 
         # Verify database call
         mock_collection.insert_one.assert_called_once()
@@ -301,26 +308,27 @@ class TestTodoRouter:
 
         # Mock database collection with sample todos
         mock_collection = Mock()
+        now = datetime.now(timezone.utc)
         sample_todos = [
             {
                 "_id": ObjectId("507f1f77bcf86cd799439012"),
                 "title": "Todo 1",
                 "description": "Description 1",
-                "due_date": datetime.now(timezone.utc) + timedelta(seconds=60),
+                "due_date": now + timedelta(seconds=60),
                 "priority": "medium",
                 "user_id": user_id,
-                "created_at": datetime.now(timezone.utc),
-                "updated_at": datetime.now(timezone.utc),
+                "created_at": now,
+                "updated_at": now,
             },
             {
                 "_id": ObjectId("507f1f77bcf86cd799439013"),
                 "title": "Todo 2",
                 "description": "Description 2",
-                "due_date": datetime.now(timezone.utc) + timedelta(seconds=60),
+                "due_date": now + timedelta(seconds=60),
                 "priority": "high",
                 "user_id": user_id,
-                "created_at": datetime.now(timezone.utc),
-                "updated_at": datetime.now(timezone.utc),
+                "created_at": now,
+                "updated_at": now,
             },
         ]
 
@@ -335,7 +343,13 @@ class TestTodoRouter:
 
         # Assertions
         assert len(result) == 2
-        assert result == sample_todos
+        # Verify individual fields since model conversion changes the format
+        for actual, expected in zip(result, sample_todos):
+            assert str(actual.id) == str(expected["_id"])
+            assert actual.title == expected["title"]
+            assert actual.description == expected["description"]
+            assert str(actual.user_id) == str(expected["user_id"])
+            assert actual.priority.value == expected["priority"]
 
         # Verify database call with correct user filter
         mock_collection.find.assert_called_once_with({"user_id": user_id})
@@ -373,18 +387,21 @@ class TestTodoRouter:
         """Test retrieving a specific todo by ID"""
         request = Mock(spec=Request)
         todo_id = PyObjectId("507f1f77bcf86cd799439012")
+        user_id = PyObjectId("507f1f77bcf86cd799439011")
+        request.state.user_id = user_id
 
         # Mock database collection
         mock_collection = Mock()
+        now = datetime.now(timezone.utc)
         sample_todo = {
             "_id": todo_id,
             "title": "Test Todo",
             "description": "Test Description",
-            "due_date": datetime.now(timezone.utc),
+            "due_date": now,
             "priority": "medium",
-            "user_id": PyObjectId("507f1f77bcf86cd799439011"),
-            "created_at": datetime.now(timezone.utc),
-            "updated_at": datetime.now(timezone.utc)
+            "user_id": user_id,
+            "created_at": now,
+            "updated_at": now,
         }
         mock_collection.find_one.return_value = sample_todo
         request.app.todo = mock_collection
@@ -393,8 +410,14 @@ class TestTodoRouter:
         result = get_todo(todo_id, request)
 
         # Assertions
-        assert result == sample_todo
-        mock_collection.find_one.assert_called_once_with({"_id": todo_id})
+        assert str(result.id) == str(sample_todo["_id"])
+        assert result.title == sample_todo["title"]
+        assert result.description == sample_todo["description"]
+        assert str(result.user_id) == str(sample_todo["user_id"])
+        assert result.priority.value == sample_todo["priority"]
+        mock_collection.find_one.assert_called_once_with(
+            {"_id": todo_id, "user_id": user_id}
+        )
 
     def test_get_todo_by_id_not_found(self):
         """Test retrieving a non-existent todo"""

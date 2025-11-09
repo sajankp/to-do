@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.models.base import PyObjectId
-from app.models.todo import CreateTodo, PriorityEnum, Todo, TodoBase, TodoUpdate
+from app.models.todo import CreateTodo, PriorityEnum, TodoBase, TodoInDB, TodoUpdate
 
 
 def future_utc_datetime():
@@ -29,7 +29,7 @@ def test_valid_todo_base():
 def test_missing_title():
     with pytest.raises(ValidationError) as e:
         TodoBase(description="No title")
-    assert "field required" in str(e.value)
+    assert "Field required" in str(e.value)
 
 
 def test_todo_create_title_length():
@@ -51,21 +51,30 @@ def test_create_todo_invalid_due_date_format():
     """Test date format validation for CreateTodo"""
     with pytest.raises(ValidationError) as e:
         CreateTodo(title="Test", due_date="notadate")
-    assert "invalid datetime format" in str(e.value)
+    assert "valid datetime" in str(e.value)
 
 
-def test_todo_base_no_validation():
-    """Test that TodoBase allows values that would fail validation in CreateTodo"""
-    # Empty title and too long title should work in base
-    todo = TodoBase(title="", description="desc")
-    assert todo.title == ""
-    
-    todo = TodoBase(title="x" * 101)
-    assert len(todo.title) == 101
-    
-    # String dates should work in base
-    todo = TodoBase(title="Test", description="desc", due_date="2024-01-01")
-    assert todo.due_date == "2024-01-01"
+def test_todo_base_validation():
+    """Test that TodoBase applies some basic validation"""
+    # Test minimum title length
+    with pytest.raises(ValidationError):
+        TodoBase(title="")
+
+    # Test maximum title length
+    todo = TodoBase(title="x" * 100)  # Max length is 100
+    assert len(todo.title) == 100
+
+    # Test date parsing
+    todo = TodoBase(
+        title="Test",
+        description="desc",
+        due_date=datetime.strptime("2024-01-01", "%Y-%m-%d").replace(
+            tzinfo=timezone.utc
+        ),
+    )
+    assert isinstance(todo.due_date, datetime)
+
+
 def test_default_priority():
     todo = TodoBase(title="Test task")
     assert todo.priority == PriorityEnum.medium
@@ -109,6 +118,6 @@ def test_todo_update_validation():
 
 def test_todo_extends_todobase():
     user_id = PyObjectId("507f1f77bcf86cd799439011")
-    t = Todo(title="X", description="D", user_id=user_id)
+    t = TodoInDB(title="X", description="D", user_id=user_id)
     assert isinstance(t, TodoBase)
     assert t.title == "X"
