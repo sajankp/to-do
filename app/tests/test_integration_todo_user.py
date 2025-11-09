@@ -133,7 +133,7 @@ class TestTodoUserIntegration:
         result = create_todo(mock_request, todo_data)
 
         # Verify user association
-        assert result.user_id == user_id
+        assert str(result.user_id) == str(user_id)
         assert result.title == "Integration Test Todo"
 
         # Verify database call included user_id
@@ -185,7 +185,7 @@ class TestTodoUserIntegration:
         mock_request.app.todo.find.assert_called_once_with({"user_id": user_id})
         assert len(result) == 2
         for todo in result:
-            assert todo["user_id"] == user_id
+            assert str(todo.user_id) == str(user_id)
 
     def test_complete_todo_workflow(self, mock_request):
         """Test complete workflow: create todo, then list todos"""
@@ -214,7 +214,7 @@ class TestTodoUserIntegration:
         created_todo = create_todo(mock_request, todo_data)
 
         # Verify creation
-        assert created_todo.user_id == user_id
+        assert str(created_todo.user_id) == str(user_id)
         assert created_todo.title == "Workflow Test Todo"
 
         # Step 2: List todos (should include the created todo)
@@ -237,9 +237,9 @@ class TestTodoUserIntegration:
 
         # Verify the created todo appears in the list
         assert len(todos) == 1
-        assert todos[0]["_id"] == todo_id
-        assert todos[0]["user_id"] == user_id
-        assert todos[0]["title"] == "Workflow Test Todo"
+        assert str(todos[0].id) == str(todo_id)
+        assert str(todos[0].user_id) == str(user_id)
+        assert todos[0].title == "Workflow Test Todo"
 
         # Verify the list query filtered by user_id
         mock_request.app.todo.find.assert_called_with({"user_id": user_id})
@@ -278,8 +278,8 @@ class TestTodoUserIntegration:
         # Verify only user1's todos are returned
         mock_request.app.todo.find.assert_called_once_with({"user_id": user1_id})
         assert len(result) == 1
-        assert result[0]["user_id"] == user1_id
-        assert result[0]["user_id"] != user2_id
+        assert str(result[0].user_id) == str(user1_id)
+        assert result[0].user_id != user2_id
 
         # Verify the query specifically filters by user1's ID
         call_args = mock_request.app.todo.find.call_args[0][0]
