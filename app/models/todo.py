@@ -49,8 +49,11 @@ class TodoUpdate(MyBaseModel):
     @field_validator("due_date")
     @classmethod
     def validate_future_date(cls, v: Optional[datetime]) -> Optional[datetime]:
-        if v is not None and v < datetime.now(timezone.utc):
-            raise ValueError("Due date cannot be in the past")
+        if v is not None:
+            if v.tzinfo is None:
+                v = v.replace(tzinfo=timezone.utc)
+            if v < datetime.now(timezone.utc):
+                raise ValueError("Due date cannot be in the past")
         return v
 
     model_config = ConfigDict(validate_assignment=True)
@@ -106,6 +109,4 @@ class TodoResponse(TodoBase):
 
     model_config = ConfigDict(
         from_attributes=True,
-        # Pydantic v2 way to customize datetime serialization
-        json_encoders={datetime: lambda v: v.isoformat()},
     )
