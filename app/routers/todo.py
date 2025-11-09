@@ -57,8 +57,8 @@ def create_todo(request: Request, todo: CreateTodo):
 
 @router.patch("/{todo_id}", response_model=TodoResponse)
 def update_todo(
-    todo_id: str,  # ✅ ID from URL path, not body
-    todo_update: TodoUpdate,  # ✅ Renamed for clarity
+    todo_id: str,
+    todo_update: TodoUpdate,
     request: Request,
 ):
     existing_todo = request.app.todo.find_one({"_id": ObjectId(todo_id)})
@@ -88,8 +88,8 @@ def update_todo(
     if result.modified_count == 0:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=NO_CHANGES)
 
-    updated_doc = request.app.todo.find_one({"_id": ObjectId(todo_id)})
-    todo_db = TodoInDB(**updated_doc)
+    updated_todo = request.app.todo.find_one({"_id": ObjectId(todo_id)})
+    todo_db = TodoInDB(**updated_todo)
 
     return TodoResponse.from_db(todo_db)
 

@@ -43,8 +43,8 @@ class TodoUpdate(MyBaseModel):
 
     title: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
-    due_date: Optional[datetime] = None
-    priority: Optional[PriorityEnum] = None
+    due_date: Optional[datetime] = Field(default=None)
+    priority: Optional[PriorityEnum] = Field(default=None)
 
     @field_validator("due_date")
     @classmethod
