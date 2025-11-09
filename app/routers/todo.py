@@ -1,30 +1,31 @@
 from datetime import datetime, timezone
 from typing import List
 
+from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 
-from app.models.todo import CreateTodo, PyObjectId, Todo, TodoUpdate
+from app.models.todo import CreateTodo, PyObjectId, TodoInDB, TodoResponse, TodoUpdate
 from app.utils.constants import (
     FAILED_CREATE_TODO,
     FAILED_DELETE_TODO,
     NO_CHANGES,
     TODO_DELETED_SUCCESSFULLY,
     TODO_NOT_FOUND,
-    TODO_UPDATED_SUCCESSFULLY,
 )
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 router = APIRouter(dependencies=[Depends(oauth2_scheme)])
 
 
-@router.get("/", response_model=List[Todo])
+@router.get("/", response_model=List[TodoResponse])
 def get_todo_list(request: Request):
     todos = list(request.app.todo.find({"user_id": request.state.user_id}).limit(100))
+    todos = [TodoResponse.from_db(TodoInDB(**todo)) for todo in todos]
     return todos
 
 
-@router.get("/{todo_id}", response_model=Todo)
+@router.get("/{todo_id}", response_model=TodoResponse)
 def get_todo(todo_id: PyObjectId, request: Request):
     todo = request.app.todo.find_one({"_id": todo_id})
     if not todo:
@@ -32,23 +33,21 @@ def get_todo(todo_id: PyObjectId, request: Request):
     return todo
 
 
-@router.post("/", response_model=Todo)
+@router.post("/", response_model=TodoResponse)
 def create_todo(request: Request, todo: CreateTodo):
-    current_time = datetime.now(timezone.utc)
 
-    new_todo = Todo(
-        title=todo.title,
-        description=todo.description,
-        due_date=todo.due_date,
-        priority=todo.priority,
-        created_at=current_time,
-        updated_at=current_time,
-        user_id=request.state.user_id,
+    new_todo = TodoInDB(
+        user_id=PyObjectId(request.state.user_id),
+        **todo.model_dump(),
     )
-    result = request.app.todo.insert_one(new_todo.dict())
+
+    todo_dict = new_todo.model_dump(by_alias=True, exclude={"id"})
+
+    result = request.app.todo.insert_one(todo_dict)
+
     if result.acknowledged:
         new_todo.id = result.inserted_id
-        return new_todo
+        return TodoResponse.from_db(new_todo)
     else:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -56,33 +55,43 @@ def create_todo(request: Request, todo: CreateTodo):
         )
 
 
-def are_objects_equal(obj1, obj2):
-    if isinstance(obj1, datetime) and isinstance(obj2, datetime):
-        # If both objects are datetime objects, handle timezone comparison
-        return obj1.replace(tzinfo=timezone.utc) == obj2.replace(tzinfo=timezone.utc)
-    else:
-        return obj1 == obj2
-
-
-@router.put("/{todo_id}")
-def update_todo(todo: TodoUpdate, request: Request):
-    existing_todo = request.app.todo.find_one({"_id": todo.id})
+@router.patch("/{todo_id}", response_model=TodoResponse)
+def update_todo(
+    todo_id: str,  # ✅ ID from URL path, not body
+    todo_update: TodoUpdate,  # ✅ Renamed for clarity
+    request: Request,
+):
+    existing_todo = request.app.todo.find_one({"_id": ObjectId(todo_id)})
+    user_id = request.state.user_id
     if not existing_todo:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=TODO_NOT_FOUND)
-    todo_dict = todo.dict()
-    if any(
-        not are_objects_equal(existing_todo[key], todo_dict[key])
-        for key in ["title", "description", "due_date", "priority"]
-    ):
-        updated_todo = todo.dict(exclude_unset=True)
-        updated_todo["updated_at"] = datetime.now(timezone.utc)
-        result = request.app.todo.update_one(
-            {"_id": todo.id},
-            {"$set": updated_todo},
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=TODO_NOT_FOUND
         )
-        if result.modified_count == 1:
-            return {"message": TODO_UPDATED_SUCCESSFULLY}
-    raise HTTPException(status_code=status.HTTP_200_OK, detail=NO_CHANGES)
+
+    if str(existing_todo.get("user_id")) != str(user_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to update this todo",
+        )
+
+    update_data = todo_update.model_dump(exclude_unset=True)
+
+    if not update_data:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=NO_CHANGES)
+
+    update_data["updatedAt"] = datetime.now(timezone.utc)
+
+    result = request.app.todo.update_one(
+        {"_id": ObjectId(todo_id)}, {"$set": update_data}
+    )
+
+    if result.modified_count == 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=NO_CHANGES)
+
+    updated_doc = request.app.todo.find_one({"_id": ObjectId(todo_id)})
+    todo_db = TodoInDB(**updated_doc)
+
+    return TodoResponse.from_db(todo_db)
 
 
 @router.delete("/{todo_id}")

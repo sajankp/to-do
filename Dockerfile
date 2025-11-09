@@ -1,4 +1,4 @@
-FROM python:3.10.15-slim AS builder
+FROM python:3.13-slim AS builder
 
 RUN useradd -m appuser
 USER appuser
@@ -8,7 +8,7 @@ WORKDIR /code
 COPY ./requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt
 
-FROM python:3.10.15-slim
+FROM python:3.13-slim
 
 # Create app user early
 RUN useradd -m appuser

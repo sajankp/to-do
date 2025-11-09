@@ -105,7 +105,7 @@ FastTodo demonstrates modern Python web development practices while showcasing t
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.12
+- Python 3.13
 - Docker (optional)
 - MongoDB Atlas account or local MongoDB instance
 
