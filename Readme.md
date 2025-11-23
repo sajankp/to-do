@@ -8,6 +8,7 @@ FastTodo demonstrates modern Python web development practices while showcasing t
 
 ## 📚 Documentation
 
+- **[Architecture Decision Records (ADR)](docs/adr/)** - Key architectural decisions and their rationale
 - **[Test Plan](docs/test-plan.md)** - Comprehensive testing and QA checklist
 - **[Agent Guide](docs/agent-guide.md)** - Quick reference for AI agents and new developers
 - **[API Docs (Live)](https://to-do-4w0k.onrender.com/docs)** - Interactive Swagger documentation
