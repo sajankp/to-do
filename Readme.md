@@ -6,6 +6,12 @@ A modern, secure, and scalable Todo application built with **FastAPI** and **Mon
 
 FastTodo demonstrates modern Python web development practices while showcasing the power of AI-assisted development. This project serves as both a functional todo management system and a learning platform for implementing production-ready APIs with comprehensive security, testing, and deployment strategies.
 
+## 📚 Documentation
+
+- **[Test Plan](docs/test-plan.md)** - Comprehensive testing and QA checklist
+- **[Agent Guide](docs/agent-guide.md)** - Quick reference for AI agents and new developers
+- **[API Docs (Live)](https://to-do-4w0k.onrender.com/docs)** - Interactive Swagger documentation
+
 ## � Major Updates & Migrations
 
 ### Pydantic v2 Migration
@@ -218,11 +224,14 @@ ENVIRONMENT=development
 
 ## 🧪 Testing
 
+> **📋 For comprehensive testing guidelines, see [docs/test-plan.md](docs/test-plan.md)**
+
 ### Test Infrastructure
 - **Test Framework**: pytest with async support (pytest-asyncio)
 - **Coverage Tool**: pytest-cov with branch coverage enabled
 - **Configuration**: Custom pytest.ini and .coveragerc
 - **CI Integration**: Automated testing in GitHub Actions
+- **Current Status**: ✅ All 70 tests passing with 81.10% coverage
 
 ### Test Categories
 - **Unit Tests**
@@ -263,7 +272,7 @@ pytest --cov=app --cov-report=html
 ```
 
 ### Coverage Achievement
-- ✅ Reached 80%+ code coverage milestone
+- ✅ Achieved 81.10% code coverage (exceeding 80% target)
 - Branch coverage enabled and maintained
 - Strategic exclusions (init files, test files)
 - Continuous monitoring in CI pipeline
