@@ -180,5 +180,5 @@ docker run -p 80:8000 --env-file .env fasttodo
 - [Docker Multi-Stage Builds](https://docs.docker.com/build/building/multi-stage/)
 - [Docker Security Best Practices](https://docs.docker.com/develop/security-best-practices/)
 - [PR #40](https://github.com/sajankp/to-do/pull/40) - Implementation
-- [Dockerfile](file:///root/projects/to-do/Dockerfile) - Current implementation
+- [Dockerfile](../../Dockerfile) - Current implementation
 - [OWASP Docker Security](https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html)

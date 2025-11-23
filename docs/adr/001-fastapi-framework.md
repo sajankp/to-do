@@ -101,6 +101,5 @@ We chose **FastAPI** as our web framework.
 
 - [FastAPI Official Documentation](https://fastapi.tiangolo.com/)
 - [Python Type Hints](https://docs.python.org/3/library/typing.html)
-- [ASGI Specification](https://asgi.
-readthedocs.io/)
+- [ASGI Specification](https://asgi.readthedocs.io/)
 - Initial commit: First FastAPI implementation

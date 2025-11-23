@@ -151,5 +151,5 @@ We implemented **JWT (JSON Web Tokens)** authentication with:
 - [RFC 7519](https://tools.ietf.org/html/rfc7519) - JWT specification
 - [python-jose](https://python-jose.readthedocs.io/) - JWT library used
 - [bcrypt](https://github.com/pyca/bcrypt/) - Password hashing
-- [app/routers/auth.py](file:///root/projects/to-do/app/routers/auth.py) - Implementation
+- [app/routers/auth.py](../../app/routers/auth.py) - Implementation
 - [Issue #34](https://github.com/sajankp/to-do/issues/34) - Rate limiting tracking

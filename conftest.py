@@ -1,10 +1,6 @@
 """
-Pytest configuration file to ensure proper module imports.
-Adds the project root to sys.path so tests can import from 'app' module.
-"""
-import sys
-from pathlib import Path
+Pytest configuration file for shared fixtures.
 
-# Add project root to Python path
-project_root = Path(__file__).parent
-sys.path.insert(0, str(project_root))
+Note: Python path is configured via pytest.ini (pythonpath = .)
+Future fixtures can be added here as needed.
+"""

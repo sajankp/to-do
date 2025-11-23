@@ -107,5 +107,5 @@ We chose **MongoDB** as our primary database, accessed via **pymongo** driver.
 - [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
 - [PyMongo Documentation](https://pymongo.readthedocs.io/)
 - [MongoDB Best Practices](https://www.mongodb.com/docs/manual/administration/production-notes/)
-- [app/database/mongodb.py](file:///root/projects/to-do/app/database/mongodb.py) - Connection implementation
-- [app/models/base.py](file:///root/projects/to-do/app/models/base.py) - PyObjectId custom type
+- [app/database/mongodb.py](../../app/database/mongodb.py) - Connection implementation
+- [app/models/base.py](../../app/models/base.py) - PyObjectId custom type
