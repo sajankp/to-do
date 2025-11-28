@@ -12,11 +12,11 @@
 - ✅ User authentication with JWT (access + refresh tokens)
 - ✅ Todo CRUD operations with user isolation
 - ✅ Pydantic v2 migration completed
-- ⚠️ **Rate limiting NOT implemented** (critical security gap)
+- ✅ **Rate limiting implemented** (IP/User based)
 
 ### Immediate Priorities
 
-1. **Rate limiting** - Prevent brute force attacks (HIGH PRIORITY)
+1. **Security headers middleware** - OWASP best practices
 2. **Security headers middleware** - OWASP best practices
 3. **Repository pattern** - Better code organization
 4. **Structured logging** - Production readiness
@@ -160,9 +160,10 @@ todo_id = PyObjectId(id_string)
 - User data isolation
 - Environment-based secrets
 - Docker non-root user
+- Rate limiting on auth and API endpoints
 
 ### ⚠️ Missing (High Priority)
-- **Rate limiting** on auth endpoints
+
 - Security headers (HSTS, CSP, etc.)
 - Request size limits
 - IP-based blocking
