@@ -14,7 +14,9 @@ def reset_limiter():
     app.settings = Mock()
     
     # Reset limiter storage before each test
-    if hasattr(limiter.limiter, "_storage"):
+    if hasattr(limiter.limiter, "storage"):
+        limiter.limiter.storage.reset()
+    elif hasattr(limiter.limiter, "_storage"):
         limiter.limiter._storage.reset()
     yield
 
@@ -68,18 +70,13 @@ def test_todo_rate_limiting():
             )
             assert response.status_code == 200
             
-            # Verify that the request was counted in storage
-            # Access the underlying storage
-            # slowapi uses limits library. limiter.limiter is limits.strategies.FixedWindowRateLimiter (or similar)
-            # actually limiter.limiter is the strategy? No, limiter.limiter is the Limiter from limits.
-            # Let's inspect what we can access.
-            # Based on previous debug, limiter has _storage.
-            
+            # Verify that the request was counted against the correct user ID
             storage = limiter.limiter.storage
-            # For MemoryStorage, it usually has a dict or similar.
-            # But let's just check if we can get the counters.
-            # storage.get() might need key.
-            
-            # If storage is MemoryStorage, it has 'storage' attribute which is a dict.
             if hasattr(storage, "storage"):
-                assert len(storage.storage) > 0, "Rate limiter storage should not be empty after request"
+                # Storage should contain exactly one entry for this user
+                assert len(storage.storage) == 1, "Rate limiter storage should contain exactly one entry"
+                
+                # Verify the entry corresponds to the correct user ID
+                storage_keys = list(storage.storage.keys())
+                assert "507f1f77bcf86cd799439013" in storage_keys[0], "Storage key should contain the user ID"
+
