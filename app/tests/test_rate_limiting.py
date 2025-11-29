@@ -30,11 +30,6 @@ def test_auth_rate_limiting():
         with patch("app.main.create_token") as mock_token:
             mock_token.return_value = "fake_token"
             
-            # Ensure storage is empty
-            if hasattr(limiter.limiter, "storage"):
-                limiter.limiter.storage.reset()
-            elif hasattr(limiter.limiter, "_storage"):
-                limiter.limiter._storage.reset()
             
             # Make 5 allowed requests
             for i in range(5):
@@ -65,11 +60,6 @@ def test_todo_rate_limiting():
         with patch("app.main.app.todo.find") as mock_find:
             mock_find.return_value.limit.return_value = []
             
-            # Ensure storage is empty
-            if hasattr(limiter.limiter, "storage"):
-                limiter.limiter.storage.reset()
-            elif hasattr(limiter.limiter, "_storage"):
-                limiter.limiter._storage.reset()
             
             # Make request
             response = client.get(

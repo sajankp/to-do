@@ -69,6 +69,7 @@ async def add_user_info_to_request(request: Request, call_next):
         "/",
         "/token/refresh",
         "/health",
+        "/user",
     ):
         response = await call_next(request)
         return response
@@ -168,7 +169,6 @@ def refresh_token(refresh_token: str, request: Request):
 def create_user(username: str, email: str, password: str, request: Request):
     hashed_password = hash_password(password)
     user = CreateUser(username=username, email=email, hashed_password=hashed_password)
-    # TODO: Pending testing and potential rework
     result = request.app.user.insert_one(user.model_dump())
     if result.acknowledged:
         return True

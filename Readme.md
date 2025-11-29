@@ -104,6 +104,13 @@ FastTodo demonstrates modern Python web development practices while showcasing t
 #### **Phase 4: Production Readiness (Weeks 11-12)**
 - [ ] Monitoring and observability (Prometheus/Grafana)
 - [ ] Advanced security features (2FA, OAuth)
+- [ ] User registration security enhancements:
+  - [ ] Email verification workflow
+  - [ ] Email uniqueness enforcement
+  - [ ] Password strength requirements
+  - [ ] CAPTCHA integration (reCAPTCHA v3)
+  - [ ] Account activation system
+  - [ ] IP-based registration limits
 - [ ] Performance optimization
 - [ ] Deployment automation
 
