@@ -74,14 +74,14 @@ FastTodo demonstrates modern Python web development practices while showcasing t
 
 - ✅ **Password Verification** - Implemented secure password hashing with bcrypt and comprehensive authentication tests
 - ✅ **Credentials Protection** - Environment-based configuration with pydantic validation
-- ⚠️ **Rate Limiting** - Brute force attack vulnerability still needs addressing (HIGH)
+- ✅ **Rate Limiting** - Implemented per-endpoint rate limiting using slowapi (IP/User based)
 - ✅ **Docker Security** - Implemented non-root user, multi-stage builds, and secure secret management
 
 ### 🚧 Upcoming Improvements
 
 #### **Phase 1: Security & Stability (Weeks 1-2)**
 - [x] Fix authentication bypass vulnerability
-- [ ] Implement rate limiting on auth endpoints
+- [x] Implement rate limiting on auth endpoints
 - [x] Secure Docker configuration
 - [x] Add comprehensive input validation
 - [x] Implement proper error handling
@@ -104,6 +104,13 @@ FastTodo demonstrates modern Python web development practices while showcasing t
 #### **Phase 4: Production Readiness (Weeks 11-12)**
 - [ ] Monitoring and observability (Prometheus/Grafana)
 - [ ] Advanced security features (2FA, OAuth)
+- [ ] User registration security enhancements:
+  - [ ] Email verification workflow
+  - [ ] Email uniqueness enforcement
+  - [ ] Password strength requirements
+  - [ ] CAPTCHA integration (reCAPTCHA v3)
+  - [ ] Account activation system
+  - [ ] IP-based registration limits
 - [ ] Performance optimization
 - [ ] Deployment automation
 

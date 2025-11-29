@@ -7,7 +7,11 @@ from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.concurrency import asynccontextmanager
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
+from app.config import get_settings
 from app.database.mongodb import mongodb_client
 from app.models.base import PyObjectId
 from app.models.user import CreateUser, Token
@@ -23,9 +27,11 @@ from app.routers.todo import router as todo_router
 from app.routers.user import router as user_router
 from app.utils.constants import FAILED_TO_CREATE_USER, MISSING_TOKEN
 from app.utils.health import app_check_health, check_app_readiness
+from app.utils.rate_limiter import limiter
 from app.utils.validate_env import validate_env
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+settings = get_settings()
 
 
 @asynccontextmanager
@@ -45,6 +51,10 @@ async def lifespan(application: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
 app.include_router(todo_router, prefix="/todo", tags=["todo"])
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(user_router, prefix="/user", tags=["user"])
@@ -59,6 +69,7 @@ async def add_user_info_to_request(request: Request, call_next):
         "/",
         "/token/refresh",
         "/health",
+        "/user",
     ):
         response = await call_next(request)
         return response
@@ -97,6 +108,7 @@ def check_health(token: str = Depends(oauth2_scheme)):
 
 
 @app.post("/token", response_model=Token)
+@limiter.limit(settings.rate_limit_auth)
 def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()], request: Request
 ):
@@ -107,12 +119,12 @@ def login_for_access_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(seconds=request.app.settings.access_token_expire_seconds)
+    access_token_expires = timedelta(seconds=settings.access_token_expire_seconds)
     access_token = create_token(
         data={"sub": user.username, "sub_id": str(user.id)},
         expires_delta=access_token_expires,
     )
-    refresh_token_expires = timedelta(seconds=request.app.settings.refresh_token_expire_seconds)
+    refresh_token_expires = timedelta(seconds=settings.refresh_token_expire_seconds)
     refresh_token = create_token(
         data={"sub": user.username, "sub_id": str(user.id)},
         expires_delta=refresh_token_expires,
@@ -125,6 +137,7 @@ def login_for_access_token(
 
 
 @app.post("/token/refresh", response_model=Token)
+@limiter.limit(settings.rate_limit_auth)
 def refresh_token(refresh_token: str, request: Request):
     username, user_id = get_user_info_from_token(refresh_token)
     if not username or not user_id:
@@ -138,7 +151,7 @@ def refresh_token(refresh_token: str, request: Request):
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
         )
 
-    access_token_expires = timedelta(seconds=request.app.settings.access_token_expire_seconds)
+    access_token_expires = timedelta(seconds=settings.access_token_expire_seconds)
     access_token = create_token(
         data={"sub": username, "sub_id": user_id},
         expires_delta=access_token_expires,
@@ -152,10 +165,10 @@ def refresh_token(refresh_token: str, request: Request):
 
 
 @app.post("/user", response_model=bool)
+@limiter.limit(settings.rate_limit_auth)
 def create_user(username: str, email: str, password: str, request: Request):
     hashed_password = hash_password(password)
     user = CreateUser(username=username, email=email, hashed_password=hashed_password)
-    # TODO: Pending testing and potential rework
     result = request.app.user.insert_one(user.model_dump())
     if result.acknowledged:
         return True

@@ -19,6 +19,12 @@ class Settings(BaseSettings):
     password_algorithm: str = Field(..., validation_alias="PASSWORD_ALGORITHM")
     access_token_expire_seconds: int = Field(..., validation_alias="ACCESS_TOKEN_EXPIRE_SECONDS")
     refresh_token_expire_seconds: int = Field(..., validation_alias="REFRESH_TOKEN_EXPIRE_SECONDS")
+    
+    # Rate Limiting
+    rate_limit_enabled: bool = Field(True, validation_alias="RATE_LIMIT_ENABLED")
+    rate_limit_default: str = Field("100/minute", validation_alias="RATE_LIMIT_DEFAULT")
+    rate_limit_auth: str = Field("5/minute", validation_alias="RATE_LIMIT_AUTH")
+    redis_url: str | None = Field(None, validation_alias="REDIS_URL")
     model_config = SettingsConfigDict(env_file=".env")
 
 
