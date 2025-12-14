@@ -26,7 +26,41 @@ class Settings(BaseSettings):
     rate_limit_default: str = Field("100/minute", validation_alias="RATE_LIMIT_DEFAULT")
     rate_limit_auth: str = Field("5/minute", validation_alias="RATE_LIMIT_AUTH")
     redis_url: str | None = Field(None, validation_alias="REDIS_URL")
+
+    # CORS Configuration
+    cors_origins: str = Field(
+        "*", validation_alias="CORS_ORIGINS", description="Comma-separated list of allowed origins"
+    )
+    cors_allow_credentials: bool = Field(False, validation_alias="CORS_ALLOW_CREDENTIALS")
+    cors_allow_methods: str = Field("*", validation_alias="CORS_ALLOW_METHODS")
+    cors_allow_headers: str = Field("*", validation_alias="CORS_ALLOW_HEADERS")
+
     model_config = SettingsConfigDict(env_file=".env")
+
+    def _parse_comma_separated_config(self, value: str) -> list[str]:
+        """Parse comma-separated configuration string to list.
+
+        Args:
+            value: Comma-separated string or "*" for wildcard
+
+        Returns:
+            List of parsed values, or ["*"] if value is "*"
+        """
+        if value == "*":
+            return ["*"]
+        return [item.strip() for item in value.split(",") if item.strip()]
+
+    def get_cors_origins_list(self) -> list[str]:
+        """Parse CORS origins from comma-separated string to list."""
+        return self._parse_comma_separated_config(self.cors_origins)
+
+    def get_cors_methods_list(self) -> list[str]:
+        """Parse CORS methods from comma-separated string to list."""
+        return self._parse_comma_separated_config(self.cors_allow_methods)
+
+    def get_cors_headers_list(self) -> list[str]:
+        """Parse CORS headers from comma-separated string to list."""
+        return self._parse_comma_separated_config(self.cors_allow_headers)
 
 
 def get_settings() -> Settings:

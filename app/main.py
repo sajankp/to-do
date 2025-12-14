@@ -5,6 +5,7 @@ from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.concurrency import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from slowapi import _rate_limit_exceeded_handler
@@ -50,6 +51,15 @@ async def lifespan(application: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.get_cors_origins_list(),
+    allow_credentials=settings.cors_allow_credentials,
+    allow_methods=settings.get_cors_methods_list(),
+    allow_headers=settings.get_cors_headers_list(),
+)
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
