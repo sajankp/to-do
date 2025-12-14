@@ -345,7 +345,7 @@ class TestTodoRouter:
         # Assertions
         assert len(result) == 2
         # Verify individual fields since model conversion changes the format
-        for actual, expected in zip(result, sample_todos, strict=False):
+        for actual, expected in zip(result, sample_todos, strict=True):
             assert str(actual.id) == str(expected["_id"])
             assert actual.title == expected["title"]
             assert actual.description == expected["description"]
