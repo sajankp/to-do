@@ -13,7 +13,7 @@ FastTodo demonstrates modern Python web development practices while showcasing t
 - **[Agent Guide](docs/agent-guide.md)** - Quick reference for AI agents and new developers
 - **[API Docs (Live)](https://to-do-4w0k.onrender.com/docs)** - Interactive Swagger documentation
 
-## � Major Updates & Migrations
+## 🔄 Major Updates & Migrations
 
 ### Pydantic v2 Migration
 - ✅ Successfully migrated from Pydantic v1 to v2
@@ -41,7 +41,13 @@ FastTodo demonstrates modern Python web development practices while showcasing t
 - ✅ Automated test coverage reporting
 - ✅ Configured pytest with coverage tracking
 
-## �🛠️ Technology Stack
+### CORS Implementation
+- ✅ Configurable CORS middleware with environment-based settings
+- ✅ Support for multiple origins, methods, and headers
+- ✅ Wildcard and specific origin configuration
+- ✅ Comprehensive CORS testing suite
+
+## 🛠️ Technology Stack
 
 ### **Core Technologies**
 - **FastAPI** - High-performance, modern Python web framework
@@ -57,7 +63,9 @@ FastTodo demonstrates modern Python web development practices while showcasing t
 - **Chat GPT** - Research, code analysis, and architectural guidance
 - **Perplexity AI** - New feature suggestion, Issue tracking
 - **GitHub Copilot** - Code completion and generation
-- **AI Agents** - Automated code review and optimization (to be implemented)
+- **Qodo / Comet** - Automated test generation
+- **Gemini Code Assist** - Automated pull request code review
+- **AI Agents (Antigravity, Claude, Copilot Agent)** - Development assistance, bug fixes, and optimization
 
 ## 📋 Current Status & Roadmap
 
@@ -67,7 +75,10 @@ FastTodo demonstrates modern Python web development practices while showcasing t
 - MongoDB integration with proper connection handling
 - Docker containerization
 - CI/CD pipeline with GitHub Actions
-- Basic API documentation with Swagger/OpenAPI
+- Comprehensive API documentation with Swagger/OpenAPI
+- CORS middleware with configurable origins, methods, and headers
+- Rate limiting on authentication endpoints
+- Pre-commit hooks for code quality (Ruff linting and formatting)
 
 ### 🔧 Security Status
 > **✅ Major Security Improvements**: Several critical security vulnerabilities have been addressed:
@@ -75,6 +86,7 @@ FastTodo demonstrates modern Python web development practices while showcasing t
 - ✅ **Password Verification** - Implemented secure password hashing with bcrypt and comprehensive authentication tests
 - ✅ **Credentials Protection** - Environment-based configuration with pydantic validation
 - ✅ **Rate Limiting** - Implemented per-endpoint rate limiting using slowapi (IP/User based)
+- ✅ **CORS Protection** - Configurable CORS middleware with environment-based origin control and comprehensive testing
 - ✅ **Docker Security** - Implemented non-root user, multi-stage builds, and secure secret management
 
 ### 🚧 Upcoming Improvements
@@ -144,11 +156,17 @@ FastTodo demonstrates modern Python web development practices while showcasing t
 ├── .github/
 │   └── workflows/           # CI/CD configuration
 ├── Dockerfile              # Secure container configuration
-├── FASTTODO_TEST_PLAN.md   # Comprehensive test plan
-├── pytest.ini             # Test configuration
-├── requirements.txt       # Python dependencies
-├── .coveragerc           # Coverage configuration
-└── .env.example          # Environment configuration template
+├── docs/
+│   ├── test-plan.md        # Comprehensive test plan
+│   ├── agent-guide.md      # AI agent quick reference
+│   └── adr/                # Architecture Decision Records
+├── .pre-commit-config.yaml # Pre-commit hooks configuration
+├── conftest.py             # Pytest shared fixtures
+├── pytest.ini              # Test configuration
+├── ruff.toml               # Ruff linter/formatter configuration
+├── requirements.txt        # Python dependencies
+├── .coveragerc             # Coverage configuration
+└── .env.example            # Environment configuration template
 ```
 
 ## 🚀 Quick Start
@@ -219,6 +237,7 @@ Create a `.env` file with the following variables:
 # Database Configuration
 MONGO_USERNAME=your_mongodb_username
 MONGO_PASSWORD=your_mongodb_password
+MONGO_HOST=cluster0.example.mongodb.net
 MONGO_DATABASE=fasttodo
 MONGO_TODO_COLLECTION=todos
 MONGO_USER_COLLECTION=users
@@ -227,8 +246,23 @@ MONGO_TIMEOUT=5
 # Security Configuration
 SECRET_KEY=your-super-secret-key-here
 PASSWORD_ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_SECONDS=3600
-REFRESH_TOKEN_EXPIRE_SECONDS=86400
+ACCESS_TOKEN_EXPIRE_SECONDS=1800
+REFRESH_TOKEN_EXPIRE_SECONDS=3600
+
+# Rate Limiting
+RATE_LIMIT_ENABLED=True
+RATE_LIMIT_DEFAULT=100/minute
+RATE_LIMIT_AUTH=5/minute
+# REDIS_URL=redis://localhost:6379/0  # Optional: for distributed rate limiting
+
+# CORS Configuration
+# For development: Use "*" or specify localhost origins
+# For production: Specify exact allowed origins (comma-separated)
+CORS_ORIGINS=*
+# CORS_ORIGINS=http://localhost:3000,http://localhost:8080,https://yourdomain.com
+CORS_ALLOW_CREDENTIALS=True
+CORS_ALLOW_METHODS=*
+CORS_ALLOW_HEADERS=*
 
 # Application Configuration
 LOG_LEVEL=INFO
@@ -244,7 +278,7 @@ ENVIRONMENT=development
 - **Coverage Tool**: pytest-cov with branch coverage enabled
 - **Configuration**: Custom pytest.ini and .coveragerc
 - **CI Integration**: Automated testing in GitHub Actions
-- **Current Status**: ✅ All 70 tests passing with 81.10% coverage
+- **Current Status**: ✅ All 98 tests passing with 84.53% coverage
 
 ### Test Categories
 - **Unit Tests**
@@ -285,10 +319,11 @@ pytest --cov=app --cov-report=html
 ```
 
 ### Coverage Achievement
-- ✅ Achieved 81.10% code coverage (exceeding 80% target)
+- ✅ Achieved 84.53% code coverage (exceeding 80% target)
 - Branch coverage enabled and maintained
 - Strategic exclusions (init files, test files)
 - Continuous monitoring in CI pipeline
+- 98 comprehensive tests across all modules
 
 ## 📊 API Documentation
 
@@ -326,16 +361,14 @@ This project leverages multiple AI tools for enhanced development experience:
 - **Test Generation**: Automated test case creation
 
 ### **Comet**
-- **Automated Testing**: Run the tests defined in [FASTTODO_TEST_PLAN.md](https://github.com/sajankp/to-do/blob/main/FASTTODO_TEST_PLAN.md)
+- **Automated Testing**: Run the tests defined in [docs/test-plan.md](https://github.com/sajankp/to-do/blob/main/docs/test-plan.md)
 
 ### **AI Agent Workflow**
-- **Bug Fix**: Automated Bug Fix
-- **Security Scanning**: Make use of Github Code Analysis
-- **Test Generation**: Automated test case creation
-
-### **AI Agent Workflow** (planned)
-- **Code Review**: Automated pull request analysis
-- **Performance Optimization**: Automated performance bottleneck identification
+- **Bug Fix**: Automated Bug Fix ✅
+- **Security Scanning**: Make use of Github Code Analysis ✅
+- **Test Generation**: Automated test case creation ✅
+- **Code Review**: Automated pull request analysis ✅
+- **Performance Optimization**: Automated performance bottleneck identification (planned)
 
 ## 🔒 Security Features
 
@@ -362,6 +395,8 @@ This project leverages multiple AI tools for enhanced development experience:
   - Secure environment variable handling
   - Health check endpoints for monitoring
   - Proper error handling and logging
+  - CORS protection with configurable allowed origins
+  - Rate limiting on authentication endpoints (5 requests/minute)
 
 ### Planned Security Enhancements
 - Rate limiting and DDoS protection
@@ -516,7 +551,7 @@ ruff format .
 - **API Response Time**: < 200ms average
 - **Database Query Time**: < 50ms average
 - **Memory Usage**: < 128MB container
-- **Test Coverage**: > 80% achieved
+- **Test Coverage**: 84.53% achieved (98 tests)
 
 ### Performance Goals
 - **API Response Time**: < 100ms (99th percentile)
