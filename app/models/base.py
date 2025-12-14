@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated, Any
 
 from bson import ObjectId
@@ -13,7 +13,6 @@ class PyObjectId(ObjectId):
         _source_type: Any,
         _handler: GetCoreSchemaHandler,
     ) -> core_schema.CoreSchema:
-
         def serialize_objectid(value, serializer, info):
             """
             Serialize ObjectId based on serialization mode.
@@ -63,6 +62,7 @@ class PyObjectId(ObjectId):
             "example": "507f1f77bcf86cd799439011",
         }
 
+
 PydanticObjectId = Annotated[ObjectId, PyObjectId]
 
 
@@ -70,15 +70,11 @@ class MyBaseModel(BaseModel):
     id: PydanticObjectId = Field(
         default_factory=PyObjectId, alias="_id", description="MongoDB document ID"
     )
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc), alias="createdAt"
-    )
-    updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc), alias="updatedAt"
-    )
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), alias="createdAt")
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC), alias="updatedAt")
 
     def update_timestamp(self):
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.now(UTC)
 
     model_config = ConfigDict(
         populate_by_name=True,

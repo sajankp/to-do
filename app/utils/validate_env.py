@@ -1,7 +1,7 @@
 from app.config import Settings, get_settings
 
 
-def validate_env(settings:Settings | None=None):
+def validate_env(settings: Settings | None = None):
     if settings is None:
         settings = get_settings()
     required_vars = {

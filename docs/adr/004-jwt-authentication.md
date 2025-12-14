@@ -6,7 +6,7 @@
 
 **Deciders:** Project team
 
-**Related PRs:** 
+**Related PRs:**
 - [#46 - Fix User create endpoint authentication](https://github.com/sajankp/to-do/pull/46)
 - [#39 - Fix: Incorrect mechanism to handle login](https://github.com/sajankp/to-do/pull/39)
 
@@ -83,19 +83,19 @@ We implemented **JWT (JSON Web Tokens)** authentication with:
 
 ### Positive
 
-✅ **Stateless**: No session storage, horizontally scalable  
-✅ **Cross-Platform**: Works identically for web/mobile/API clients  
-✅ **Standard**: Industry-accepted pattern, many libraries  
-✅ **Flexible**: Easy to add claims (roles, permissions)  
-✅ **Self-Contained**: All info in token, no DB lookup per request  
-✅ **Refresh Strategy**: Short access tokens + refresh tokens balance security/UX  
+✅ **Stateless**: No session storage, horizontally scalable
+✅ **Cross-Platform**: Works identically for web/mobile/API clients
+✅ **Standard**: Industry-accepted pattern, many libraries
+✅ **Flexible**: Easy to add claims (roles, permissions)
+✅ **Self-Contained**: All info in token, no DB lookup per request
+✅ **Refresh Strategy**: Short access tokens + refresh tokens balance security/UX
 
 ### Negative
 
-⚠️ **No Revocation**: Can't invalidate tokens before expiry (mitigation: short expiry)  
-⚠️ **Token Size**: Larger than session IDs (acceptable for HTTP headers)  
-⚠️ **Secret Management**: Leaked SECRET_KEY compromises all tokens  
-⚠️ **Clock Skew**: Expiration depends on accurate server time  
+⚠️ **No Revocation**: Can't invalidate tokens before expiry (mitigation: short expiry)
+⚠️ **Token Size**: Larger than session IDs (acceptable for HTTP headers)
+⚠️ **Secret Management**: Leaked SECRET_KEY compromises all tokens
+⚠️ **Clock Skew**: Expiration depends on accurate server time
 
 ### Security Issues Fixed
 

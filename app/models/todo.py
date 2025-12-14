@@ -1,6 +1,5 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional
 
 from pydantic import ConfigDict, Field, field_validator
 
@@ -18,12 +17,8 @@ class TodoBase(MyBaseModel):
 
     title: str = Field(..., min_length=1, max_length=100, description="Todo title")
     description: str = Field(default="", max_length=500, description="Todo description")
-    due_date: Optional[datetime] = Field(
-        default=None, description="Due date for the todo"
-    )
-    priority: PriorityEnum = Field(
-        default=PriorityEnum.medium, description="Todo priority"
-    )
+    due_date: datetime | None = Field(default=None, description="Due date for the todo")
+    priority: PriorityEnum = Field(default=PriorityEnum.medium, description="Todo priority")
 
 
 class CreateTodo(TodoBase):
@@ -31,9 +26,9 @@ class CreateTodo(TodoBase):
 
     @field_validator("due_date")
     @classmethod
-    def validate_future_date(cls, v: Optional[datetime]) -> Optional[datetime]:
+    def validate_future_date(cls, v: datetime | None) -> datetime | None:
         """Ensure due_date is not in the past"""
-        if v is not None and v < datetime.now(timezone.utc):
+        if v is not None and v < datetime.now(UTC):
             raise ValueError("Due date cannot be in the past")
         return v
 
@@ -41,18 +36,18 @@ class CreateTodo(TodoBase):
 class TodoUpdate(MyBaseModel):
     """Model for updating existing todos with validation."""
 
-    title: Optional[str] = Field(None, min_length=1, max_length=100)
-    description: Optional[str] = Field(None, max_length=500)
-    due_date: Optional[datetime] = Field(default=None)
-    priority: Optional[PriorityEnum] = Field(default=None)
+    title: str | None = Field(None, min_length=1, max_length=100)
+    description: str | None = Field(None, max_length=500)
+    due_date: datetime | None = Field(default=None)
+    priority: PriorityEnum | None = Field(default=None)
 
     @field_validator("due_date")
     @classmethod
-    def validate_future_date(cls, v: Optional[datetime]) -> Optional[datetime]:
+    def validate_future_date(cls, v: datetime | None) -> datetime | None:
         if v is not None:
             if v.tzinfo is None:
-                v = v.replace(tzinfo=timezone.utc)
-            if v < datetime.now(timezone.utc):
+                v = v.replace(tzinfo=UTC)
+            if v < datetime.now(UTC):
                 raise ValueError("Due date cannot be in the past")
         return v
 

@@ -8,7 +8,6 @@ from app.utils.health import app_check_health, check_app_readiness
 
 
 class TestHealthModule:
-
     @pytest.mark.asyncio
     @patch("app.utils.health.get_mongo_client")
     async def test_check_app_readiness_succeeds_on_first_attempt(self, mock_get_client):
@@ -20,9 +19,7 @@ class TestHealthModule:
     @pytest.mark.asyncio
     @patch("asyncio.sleep", new_callable=AsyncMock)
     @patch("app.utils.health.get_mongo_client")
-    async def test_check_app_readiness_retries_on_failure(
-        self, mock_get_client, mock_sleep
-    ):
+    async def test_check_app_readiness_retries_on_failure(self, mock_get_client, mock_sleep):
         # First call raises, second succeeds
         mock_client = Mock()
         mock_get_client.return_value = mock_client
@@ -40,12 +37,8 @@ class TestHealthModule:
     @pytest.mark.asyncio
     @patch("asyncio.sleep", new_callable=AsyncMock)
     @patch("app.utils.health.get_mongo_client")
-    async def test_check_app_readiness_fails_after_max_attempts(
-        self, mock_client, mock_sleep
-    ):
-        mock_client.return_value.admin.command.side_effect = (
-            ServerSelectionTimeoutError("Failed")
-        )
+    async def test_check_app_readiness_fails_after_max_attempts(self, mock_client, mock_sleep):
+        mock_client.return_value.admin.command.side_effect = ServerSelectionTimeoutError("Failed")
         result = await check_app_readiness(max_attempts=3, timeout=0.1)
         assert result is False
         assert mock_client.return_value.admin.command.call_count == 3

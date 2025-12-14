@@ -39,7 +39,7 @@ def test_read_main():
     assert response.json() == {"message": "Hello, World!"}
 
 
-def test_read_main():
+def test_health_endpoint_unauthorized():
     response = client.get("/health")
     assert response.status_code == 401
 
@@ -55,9 +55,7 @@ app = FastAPI()
 @pytest.mark.asyncio
 @patch("app.main.mongodb_client")
 @patch("app.main.check_app_readiness")
-async def test_lifespan_with_fastapi_instance(
-    mock_check_app_readiness, mock_mongodb_client
-):
+async def test_lifespan_with_fastapi_instance(mock_check_app_readiness, mock_mongodb_client):
     mock_database = Mock(side_effect=lambda name: Mock(name=f"MockCollection-{name}"))
     mock_mongodb_client.return_value = mock_database
     mock_check_app_readiness.return_value = True

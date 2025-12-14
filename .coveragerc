@@ -10,7 +10,7 @@ omit =
 parallel = true
 source =
     tests
-    
+
 
 
 [report]

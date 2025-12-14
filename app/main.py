@@ -82,9 +82,7 @@ async def add_user_info_to_request(request: Request, call_next):
                 headers={"WWW-Authenticate": "Bearer"},
             )
         else:
-            username, user_id = get_user_info_from_token(
-                request.headers.get("Authorization")
-            )
+            username, user_id = get_user_info_from_token(request.headers.get("Authorization"))
             request.state.user_id = PyObjectId(user_id)
             request.state.username = username
             response = await call_next(request)
@@ -147,9 +145,7 @@ def refresh_token(refresh_token: str, request: Request):
 
     user = get_user_by_username(username)
     if not user or user.disabled:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
     access_token_expires = timedelta(seconds=settings.access_token_expire_seconds)
     access_token = create_token(

@@ -3,13 +3,12 @@ Integration tests for todo-user association functionality.
 These tests verify the complete flow from middleware to database operations.
 """
 
-from datetime import datetime, timedelta, timezone
-from unittest.mock import MagicMock, Mock, patch
+from datetime import UTC, datetime, timedelta
+from unittest.mock import Mock, patch
 
 import pytest
 from bson import ObjectId
 from fastapi import FastAPI, Request
-from fastapi.testclient import TestClient
 
 from app.main import add_user_info_to_request
 from app.models.base import PyObjectId
@@ -37,7 +36,7 @@ class TestTodoUserIntegration:
         request.state = Mock()
         return request
 
-    @patch('app.main.get_user_info_from_token')
+    @patch("app.main.get_user_info_from_token")
     @pytest.mark.asyncio
     async def test_middleware_sets_user_id_correctly(self, mock_get_user_info, mock_request):
         """Test that middleware correctly sets user_id in request state"""
@@ -49,8 +48,8 @@ class TestTodoUserIntegration:
         # Mock the next call
         async def mock_call_next(request):
             # Verify that user_id was set in request state
-            assert hasattr(request.state, 'user_id')
-            assert hasattr(request.state, 'username')
+            assert hasattr(request.state, "user_id")
+            assert hasattr(request.state, "username")
             assert request.state.username == test_username
             assert isinstance(request.state.user_id, PyObjectId)
             assert str(request.state.user_id) == test_user_id
@@ -63,7 +62,7 @@ class TestTodoUserIntegration:
         assert response.status_code == 200
         mock_get_user_info.assert_called_once_with("Bearer valid_token")
 
-    @patch('app.main.get_user_info_from_token')
+    @patch("app.main.get_user_info_from_token")
     @pytest.mark.asyncio
     async def test_middleware_handles_missing_token(self, mock_get_user_info):
         """Test that middleware returns 401 when token is missing"""
@@ -83,17 +82,14 @@ class TestTodoUserIntegration:
         assert "Missing Token" in str(response.body)
         mock_get_user_info.assert_not_called()
 
-    @patch('app.main.get_user_info_from_token')
+    @patch("app.main.get_user_info_from_token")
     @pytest.mark.asyncio
     async def test_middleware_handles_invalid_token(self, mock_get_user_info, mock_request):
         """Test that middleware returns 401 when token is invalid"""
         from fastapi import HTTPException
 
         # Mock token validation to raise HTTPException
-        mock_get_user_info.side_effect = HTTPException(
-            status_code=401, 
-            detail="Invalid token"
-        )
+        mock_get_user_info.side_effect = HTTPException(status_code=401, detail="Invalid token")
 
         async def mock_call_next(request):
             return Mock(status_code=200)
@@ -125,7 +121,7 @@ class TestTodoUserIntegration:
         todo_data = TodoBase(
             title="Integration Test Todo",
             description="Testing user association",
-            due_date=datetime.now(timezone.utc) + timedelta(seconds=60),
+            due_date=datetime.now(UTC) + timedelta(seconds=60),
             priority=PriorityEnum.high,
         )
 
@@ -156,22 +152,22 @@ class TestTodoUserIntegration:
                 "_id": ObjectId("507f1f77bcf86cd799439012"),
                 "title": "User's Todo 1",
                 "description": "First todo",
-                "due_date": datetime.now(timezone.utc),
+                "due_date": datetime.now(UTC),
                 "priority": "medium",
                 "user_id": user_id,
-                "created_at": datetime.now(timezone.utc),
-                "updated_at": datetime.now(timezone.utc)
+                "created_at": datetime.now(UTC),
+                "updated_at": datetime.now(UTC),
             },
             {
                 "_id": ObjectId("507f1f77bcf86cd799439013"),
                 "title": "User's Todo 2",
                 "description": "Second todo",
-                "due_date": datetime.now(timezone.utc),
+                "due_date": datetime.now(UTC),
                 "priority": "high",
                 "user_id": user_id,
-                "created_at": datetime.now(timezone.utc),
-                "updated_at": datetime.now(timezone.utc)
-            }
+                "created_at": datetime.now(UTC),
+                "updated_at": datetime.now(UTC),
+            },
         ]
 
         mock_cursor = Mock()
@@ -207,7 +203,7 @@ class TestTodoUserIntegration:
         todo_data = TodoBase(
             title="Workflow Test Todo",
             description="Testing complete workflow",
-            due_date=datetime.now(timezone.utc) + timedelta(seconds=60),
+            due_date=datetime.now(UTC) + timedelta(seconds=60),
             priority=PriorityEnum.medium,
         )
 
@@ -226,7 +222,7 @@ class TestTodoUserIntegration:
             "priority": "medium",
             "user_id": user_id,
             "created_at": created_todo.created_at,
-            "updated_at": created_todo.updated_at
+            "updated_at": created_todo.updated_at,
         }
 
         mock_cursor = Mock()
@@ -260,11 +256,11 @@ class TestTodoUserIntegration:
                 "_id": ObjectId("507f1f77bcf86cd799439012"),
                 "title": "User1's Todo",
                 "description": "Belongs to user1",
-                "due_date": datetime.now(timezone.utc),
+                "due_date": datetime.now(UTC),
                 "priority": "medium",
                 "user_id": user1_id,
-                "created_at": datetime.now(timezone.utc),
-                "updated_at": datetime.now(timezone.utc)
+                "created_at": datetime.now(UTC),
+                "updated_at": datetime.now(UTC),
             }
         ]
 

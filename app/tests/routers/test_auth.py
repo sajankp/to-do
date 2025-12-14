@@ -33,9 +33,7 @@ class TestDecodeJWTToken:
 
         result = decode_jwt_token(mock_token)
 
-        mock_decode.assert_called_once_with(
-            mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM]
-        )
+        mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
         assert result == mock_payload, "Expected payload does not match the result."
 
     @patch("jose.jwt.decode")
@@ -92,6 +90,7 @@ class TestTokenExceptions:
             exc_info.value.detail == "Token has expired"
         ), "Expected detail to indicate the token has expired."
 
+
 # Mock constants
 MOCK_SECRET_KEY = "mock_secret"
 MOCK_ALGORITHM = "HS256"
@@ -105,9 +104,7 @@ def test_create_jwt_token(mock_encode):
 
     token = create_jwt_token(mock_data)
 
-    mock_encode.assert_called_once_with(
-        mock_data, SECRET_KEY, algorithm=PASSWORD_ALGORITHM
-    )
+    mock_encode.assert_called_once_with(mock_data, SECRET_KEY, algorithm=PASSWORD_ALGORITHM)
     assert token == mock_encoded_token
 
 
@@ -119,9 +116,7 @@ def test_decode_jwt_token(mock_decode):
 
     payload = decode_jwt_token(mock_token)
 
-    mock_decode.assert_called_once_with(
-        mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM]
-    )
+    mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
     assert payload == mock_payload
 
 
@@ -227,9 +222,7 @@ class TestGetCurrentActiveUser:
 
         user = get_current_active_user(mock_token)
 
-        mock_decode.assert_called_once_with(
-            mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM]
-        )
+        mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
         mock_get_user.assert_called_once_with("test_user")
         assert isinstance(user, User)
         assert user.username == mock_user["username"]
@@ -249,9 +242,7 @@ class TestGetCurrentActiveUser:
         with pytest.raises(HTTPException) as exc_info:
             get_current_active_user(mock_token)
 
-        mock_decode.assert_called_once_with(
-            mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM]
-        )
+        mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
         assert exc_info.value.status_code == credentials_exception.status_code
         assert exc_info.value.detail == credentials_exception.detail
 
@@ -270,9 +261,7 @@ class TestGetCurrentActiveUser:
         with pytest.raises(HTTPException) as exc_info:
             get_current_active_user(mock_token)
 
-        mock_decode.assert_called_once_with(
-            mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM]
-        )
+        mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
         assert exc_info.value.status_code == credentials_exception.status_code
         assert exc_info.value.detail == credentials_exception.detail
 
@@ -291,9 +280,7 @@ class TestGetCurrentActiveUser:
         with pytest.raises(HTTPException) as exc_info:
             get_current_active_user(mock_token)
 
-        mock_decode.assert_called_once_with(
-            mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM]
-        )
+        mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
         mock_get_user.assert_called_once_with("nonexistent_user")
         assert exc_info.value.status_code == credentials_exception.status_code
         assert exc_info.value.detail == credentials_exception.detail

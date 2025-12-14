@@ -1,6 +1,3 @@
-import os
-
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pymongo.collection import Collection
@@ -21,9 +18,7 @@ class TestMongoCollections:
         self.test_user_collection = "test_collection"
         self.test_todo_collection = "test_collection"
 
-    def set_env(
-        self, monkeypatch, database, user_collection=None, todo_collection=None
-    ):
+    def set_env(self, monkeypatch, database, user_collection=None, todo_collection=None):
         monkeypatch.setenv("MONGO_DATABASE", database)
         if user_collection:
             monkeypatch.setenv("MONGO_USER_COLLECTION", user_collection)
