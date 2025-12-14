@@ -65,18 +65,18 @@ We chose **MongoDB** as our primary database, accessed via **pymongo** driver.
 
 ### Positive
 
-✅ **Rapid Development**: No schema migrations during early iterations  
-✅ **Cloud Deployment**: MongoDB Atlas free tier for dev/testing  
-✅ **Flexible Data**: Easy to add fields without ALTER TABLE  
-✅ **JSON Alignment**: Direct mapping between API models and DB documents  
-✅ **Horizontal Scaling**: Sharding available when needed  
+✅ **Rapid Development**: No schema migrations during early iterations
+✅ **Cloud Deployment**: MongoDB Atlas free tier for dev/testing
+✅ **Flexible Data**: Easy to add fields without ALTER TABLE
+✅ **JSON Alignment**: Direct mapping between API models and DB documents
+✅ **Horizontal Scaling**: Sharding available when needed
 
 ### Negative
 
-⚠️ **No Transactions**: Limited multi-document transactions (not needed yet)  
-⚠️ **Query Complexity**: Have to learn MongoDB query language  
-⚠️ **Eventual Consistency**: Possible in replica sets (acceptable for todos)  
-⚠️ **No Joins**: Requires denormalization or multiple queries  
+⚠️ **No Transactions**: Limited multi-document transactions (not needed yet)
+⚠️ **Query Complexity**: Have to learn MongoDB query language
+⚠️ **Eventual Consistency**: Possible in replica sets (acceptable for todos)
+⚠️ **No Joins**: Requires denormalization or multiple queries
 
 ### Technical Debt
 

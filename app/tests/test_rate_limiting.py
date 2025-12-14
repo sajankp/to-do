@@ -1,10 +1,13 @@
+from unittest.mock import Mock, patch
+
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, Mock
+
 from app.main import app
 from app.utils.rate_limiter import limiter
 
 client = TestClient(app)
+
 
 @pytest.fixture(autouse=True)
 def reset_limiter():
@@ -12,13 +15,14 @@ def reset_limiter():
     app.todo = Mock()
     app.user = Mock()
     app.settings = Mock()
-    
+
     # Reset limiter storage before each test
     if hasattr(limiter.limiter, "storage"):
         limiter.limiter.storage.reset()
     elif hasattr(limiter.limiter, "_storage"):
         limiter.limiter._storage.reset()
     yield
+
 
 def test_auth_rate_limiting():
     """Test that auth endpoints are rate limited (5/minute)"""
@@ -28,55 +32,54 @@ def test_auth_rate_limiting():
         mock_user.username = "testuser"
         mock_user.id = "507f1f77bcf86cd799439011"
         mock_auth.return_value = mock_user
-        
+
         with patch("app.main.create_token") as mock_token:
             mock_token.return_value = "fake_token"
-            
-            
+
             # Make 5 allowed requests
             for i in range(5):
                 response = client.post(
-                    "/token", 
+                    "/token",
                     data={"username": "testuser", "password": "password"},
-                    headers={"X-Forwarded-For": "127.0.0.1"}
+                    headers={"X-Forwarded-For": "127.0.0.1"},
                 )
                 assert response.status_code == 200, f"Request {i+1} failed"
-                
+
             # 6th request should fail
             response = client.post(
-                "/token", 
+                "/token",
                 data={"username": "testuser", "password": "password"},
-                headers={"X-Forwarded-For": "127.0.0.1"}
+                headers={"X-Forwarded-For": "127.0.0.1"},
             )
             assert response.status_code == 429
             assert "Rate limit exceeded" in response.text
 
+
 def test_todo_rate_limiting():
     """Test that todo endpoints are rate limited by default"""
-    
+
     # Mock auth middleware
     with patch("app.main.get_user_info_from_token") as mock_info:
         mock_info.return_value = ("testuser", "507f1f77bcf86cd799439013")
-        
+
         # Mock DB find
         with patch("app.main.app.todo.find") as mock_find:
             mock_find.return_value.limit.return_value = []
-            
-            
+
             # Make request
-            response = client.get(
-                "/todo/",
-                headers={"Authorization": "Bearer token"}
-            )
+            response = client.get("/todo/", headers={"Authorization": "Bearer token"})
             assert response.status_code == 200
-            
+
             # Verify that the request was counted against the correct user ID
             storage = limiter.limiter.storage
             if hasattr(storage, "storage"):
                 # Storage should contain exactly one entry for this user
-                assert len(storage.storage) == 1, "Rate limiter storage should contain exactly one entry"
-                
+                assert (
+                    len(storage.storage) == 1
+                ), "Rate limiter storage should contain exactly one entry"
+
                 # Verify the entry corresponds to the correct user ID
                 storage_keys = list(storage.storage.keys())
-                assert "507f1f77bcf86cd799439013" in storage_keys[0], "Storage key should contain the user ID"
-
+                assert (
+                    "507f1f77bcf86cd799439013" in storage_keys[0]
+                ), "Storage key should contain the user ID"

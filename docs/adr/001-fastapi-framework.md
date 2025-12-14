@@ -68,18 +68,18 @@ We chose **FastAPI** as our web framework.
 
 ### Positive
 
-✅ **Rapid Development**: Built-in features reduced boilerplate code  
-✅ **Type Safety**: Caught errors during development, not runtime  
-✅ **API Documentation**: Swagger UI automatically generated and always in sync  
-✅ **Performance**: Async operations handle concurrent requests efficiently  
-✅ **Validation**: Pydantic ensures data integrity without manual checks  
-✅ **Developer Onboarding**: Type hints and docs make code self-documenting  
+✅ **Rapid Development**: Built-in features reduced boilerplate code
+✅ **Type Safety**: Caught errors during development, not runtime
+✅ **API Documentation**: Swagger UI automatically generated and always in sync
+✅ **Performance**: Async operations handle concurrent requests efficiently
+✅ **Validation**: Pydantic ensures data integrity without manual checks
+✅ **Developer Onboarding**: Type hints and docs make code self-documenting
 
 ### Negative
 
-⚠️ **Learning Curve**: Team needed to learn async patterns  
-⚠️ **Younger Ecosystem**: Fewer third-party integrations vs Django  
-⚠️ **Breaking Changes**: Framework evolving rapidly (though stable since 0.100)  
+⚠️ **Learning Curve**: Team needed to learn async patterns
+⚠️ **Younger Ecosystem**: Fewer third-party integrations vs Django
+⚠️ **Breaking Changes**: Framework evolving rapidly (though stable since 0.100)
 
 ### Neutral
 

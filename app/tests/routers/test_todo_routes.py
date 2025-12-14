@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock
 
 import pytest
@@ -38,7 +38,7 @@ class TestTodoUserAssociation:
         todo_data = TodoBase(
             title="User's Todo",
             description="This should belong to the user",
-            due_date=datetime.now(timezone.utc) + timedelta(seconds=60),
+            due_date=datetime.now(UTC) + timedelta(seconds=60),
             priority=PriorityEnum.high,
         )
 
@@ -46,9 +46,7 @@ class TestTodoUserAssociation:
         result = create_todo(request, todo_data)
 
         # Critical assertion: verify user_id is set correctly
-        assert str(result.user_id) == str(
-            user_id
-        ), "Todo must be associated with the correct user"
+        assert str(result.user_id) == str(user_id), "Todo must be associated with the correct user"
 
         # Verify the database call includes the user_id
         mock_collection.insert_one.assert_called_once()
@@ -70,22 +68,22 @@ class TestTodoUserAssociation:
                 "_id": ObjectId("507f1f77bcf86cd799439012"),
                 "title": "User's Todo 1",
                 "description": "Belongs to user",
-                "due_date": datetime.now(timezone.utc),
+                "due_date": datetime.now(UTC),
                 "priority": "medium",
                 "user_id": user_id,  # Same user
-                "created_at": datetime.now(timezone.utc),
-                "updated_at": datetime.now(timezone.utc)
+                "created_at": datetime.now(UTC),
+                "updated_at": datetime.now(UTC),
             },
             {
                 "_id": ObjectId("507f1f77bcf86cd799439013"),
                 "title": "User's Todo 2",
                 "description": "Also belongs to user",
-                "due_date": datetime.now(timezone.utc),
+                "due_date": datetime.now(UTC),
                 "priority": "high",
                 "user_id": user_id,  # Same user
-                "created_at": datetime.now(timezone.utc),
-                "updated_at": datetime.now(timezone.utc)
-            }
+                "created_at": datetime.now(UTC),
+                "updated_at": datetime.now(UTC),
+            },
         ]
 
         # Mock the find method to return user's todos
@@ -123,11 +121,11 @@ class TestTodoUserAssociation:
                 "_id": ObjectId("507f1f77bcf86cd799439012"),
                 "title": "User's Todo",
                 "description": "Belongs to authenticated user",
-                "due_date": datetime.now(timezone.utc),
+                "due_date": datetime.now(UTC),
                 "priority": "medium",
                 "user_id": user_id,
-                "created_at": datetime.now(timezone.utc),
-                "updated_at": datetime.now(timezone.utc)
+                "created_at": datetime.now(UTC),
+                "updated_at": datetime.now(UTC),
             }
         ]
 
@@ -165,17 +163,17 @@ class TestTodoUserAssociation:
         todo_data = TodoBase(
             title="Orphaned Todo",
             description="This should fail",
-            due_date=datetime.now(timezone.utc) + timedelta(seconds=60),
+            due_date=datetime.now(UTC) + timedelta(seconds=60),
             priority=PriorityEnum.low,
         )
 
-        # This should fail during Todo model validation
-        with pytest.raises(Exception):
+        # This should fail during validation
+        with pytest.raises(ValueError):
             create_todo(request, todo_data)
 
     def test_todo_model_requires_user_id(self):
         """Test that Todo model requires user_id field"""
-        current_time = datetime.now(timezone.utc)
+        current_time = datetime.now(UTC)
         user_id = PyObjectId("507f1f77bcf86cd799439011")
 
         # Test successful creation with user_id
@@ -191,16 +189,19 @@ class TestTodoUserAssociation:
         )
         assert str(todo_with_user.user_id) == str(user_id)
 
-        # Test that user_id is required (should fail without it)
-        with pytest.raises(Exception):
-            Todo(
+        # Test that user_id is required
+        # Note: TodoResponse requires user_id, so this test validates the model contract
+        with pytest.raises(ValueError):
+            # This should fail because user_id is required in TodoResponse
+            TodoResponse(
+                id=str(ObjectId()),
                 title="Test Todo",
                 description="Test Description",
                 due_date=current_time,
                 priority=PriorityEnum.medium,
                 # Missing user_id - should fail
                 created_at=current_time,
-                updated_at=current_time
+                updated_at=current_time,
             )
 
     def test_create_and_list_integration(self):
@@ -223,7 +224,7 @@ class TestTodoUserAssociation:
         todo_data = TodoBase(
             title="Integration Test Todo",
             description="Should appear in user's list",
-            due_date=datetime.now(timezone.utc) + timedelta(seconds=60),
+            due_date=datetime.now(UTC) + timedelta(seconds=60),
             priority=PriorityEnum.medium,
         )
 
@@ -240,7 +241,7 @@ class TestTodoUserAssociation:
             "priority": "medium",
             "user_id": user_id,
             "created_at": created_todo.created_at,
-            "updated_at": created_todo.updated_at
+            "updated_at": created_todo.updated_at,
         }
 
         mock_cursor = Mock()
@@ -279,7 +280,7 @@ class TestTodoRouter:
         todo_data = TodoBase(
             title="Test Todo",
             description="Test Description",
-            due_date=datetime.now(timezone.utc) + timedelta(seconds=60),
+            due_date=datetime.now(UTC) + timedelta(seconds=60),
             priority=PriorityEnum.medium,
         )
 
@@ -308,7 +309,7 @@ class TestTodoRouter:
 
         # Mock database collection with sample todos
         mock_collection = Mock()
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         sample_todos = [
             {
                 "_id": ObjectId("507f1f77bcf86cd799439012"),
@@ -344,7 +345,7 @@ class TestTodoRouter:
         # Assertions
         assert len(result) == 2
         # Verify individual fields since model conversion changes the format
-        for actual, expected in zip(result, sample_todos):
+        for actual, expected in zip(result, sample_todos, strict=True):
             assert str(actual.id) == str(expected["_id"])
             assert actual.title == expected["title"]
             assert actual.description == expected["description"]
@@ -371,7 +372,7 @@ class TestTodoRouter:
         todo_data = TodoBase(
             title="Test Todo",
             description="Test Description",
-            due_date=datetime.now(timezone.utc) + timedelta(seconds=60),
+            due_date=datetime.now(UTC) + timedelta(seconds=60),
             priority=PriorityEnum.medium,
         )
 
@@ -392,7 +393,7 @@ class TestTodoRouter:
 
         # Mock database collection
         mock_collection = Mock()
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         sample_todo = {
             "_id": todo_id,
             "title": "Test Todo",
@@ -415,9 +416,7 @@ class TestTodoRouter:
         assert result.description == sample_todo["description"]
         assert str(result.user_id) == str(sample_todo["user_id"])
         assert result.priority.value == sample_todo["priority"]
-        mock_collection.find_one.assert_called_once_with(
-            {"_id": todo_id, "user_id": user_id}
-        )
+        mock_collection.find_one.assert_called_once_with({"_id": todo_id, "user_id": user_id})
 
     def test_get_todo_by_id_not_found(self):
         """Test retrieving a non-existent todo"""

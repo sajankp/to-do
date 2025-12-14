@@ -1,5 +1,4 @@
-from datetime import datetime, timezone
-from typing import List
+from datetime import UTC, datetime
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -18,7 +17,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 router = APIRouter(dependencies=[Depends(oauth2_scheme)])
 
 
-@router.get("/", response_model=List[TodoResponse])
+@router.get("/", response_model=list[TodoResponse])
 def get_todo_list(request: Request):
     todos = list(request.app.todo.find({"user_id": request.state.user_id}).limit(100))
     todos = [TodoResponse.from_db(TodoInDB(**todo)) for todo in todos]
@@ -35,7 +34,6 @@ def get_todo(todo_id: PyObjectId, request: Request):
 
 @router.post("/", response_model=TodoResponse)
 def create_todo(request: Request, todo: CreateTodo):
-
     new_todo = TodoInDB(
         user_id=PyObjectId(request.state.user_id),
         **todo.model_dump(),
@@ -64,9 +62,7 @@ def update_todo(
     existing_todo = request.app.todo.find_one({"_id": ObjectId(todo_id)})
     user_id = request.state.user_id
     if not existing_todo:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=TODO_NOT_FOUND
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=TODO_NOT_FOUND)
 
     if str(existing_todo.get("user_id")) != str(user_id):
         raise HTTPException(
@@ -79,11 +75,9 @@ def update_todo(
     if not update_data:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=NO_CHANGES)
 
-    update_data["updatedAt"] = datetime.now(timezone.utc)
+    update_data["updatedAt"] = datetime.now(UTC)
 
-    result = request.app.todo.update_one(
-        {"_id": ObjectId(todo_id)}, {"$set": update_data}
-    )
+    result = request.app.todo.update_one({"_id": ObjectId(todo_id)}, {"$set": update_data})
 
     if result.modified_count == 0:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=NO_CHANGES)

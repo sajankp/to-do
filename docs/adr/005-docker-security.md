@@ -97,18 +97,18 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 ### Positive
 
-✅ **Security**: Non-root user limits attack surface  
-✅ **Image Size**: Smaller final image (build artifacts excluded)  
-✅ **Build Speed**: Dependencies cached separately from app code  
-✅ **Best Practices**: Follows Docker security recommendations  
-✅ **Container Scanning**: Passes security scans (fewer vulnerabilities)  
-✅ **Platform Compatibility**: Works on Render, AWS, GCP, etc.  
+✅ **Security**: Non-root user limits attack surface
+✅ **Image Size**: Smaller final image (build artifacts excluded)
+✅ **Build Speed**: Dependencies cached separately from app code
+✅ **Best Practices**: Follows Docker security recommendations
+✅ **Container Scanning**: Passes security scans (fewer vulnerabilities)
+✅ **Platform Compatibility**: Works on Render, AWS, GCP, etc.
 
 ### Negative
 
-⚠️ **Complexity**: Two-stage Dockerfile harder to understand initially  
-⚠️ **Port Change**: Had to change from port 80 to 8000 (non-privileged)  
-⚠️ **Permissions**: Need to ensure file permissions match appuser  
+⚠️ **Complexity**: Two-stage Dockerfile harder to understand initially
+⚠️ **Port Change**: Had to change from port 80 to 8000 (non-privileged)
+⚠️ **Permissions**: Need to ensure file permissions match appuser
 
 ### Metrics
 

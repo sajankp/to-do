@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
@@ -42,9 +42,9 @@ def verify_password(plain_password, hashed_password):
 def create_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+        expire = datetime.now(UTC) + timedelta(minutes=15)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=PASSWORD_ALGORITHM)
     return encoded_jwt
@@ -69,8 +69,8 @@ def get_current_active_user(token: str = Depends(oauth2_scheme)) -> User:
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
-    except JWTError:
-        raise credentials_exception
+    except JWTError as e:
+        raise credentials_exception from e
     user = get_user_by_username(username)
     if not user:
         raise credentials_exception
@@ -84,10 +84,7 @@ def get_user_info_from_token(authorization: str = Depends(oauth2_scheme)) -> (st
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        if authorization.startswith("Bearer"):
-            token = authorization.split(" ")[1]
-        else:
-            token = authorization
+        token = authorization.split(" ")[1] if authorization.startswith("Bearer") else authorization
         payload = jwt.decode(token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
         username: str = payload.get("sub")
         user_id: str = payload.get("sub_id")
@@ -98,5 +95,5 @@ def get_user_info_from_token(authorization: str = Depends(oauth2_scheme)) -> (st
             credentials_exception.detail = "Token has expired"
         else:
             credentials_exception.detail = f"JWTError: {str(e)}"
-        raise credentials_exception
+        raise credentials_exception from e
     return username, user_id

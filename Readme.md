@@ -195,13 +195,18 @@ FastTodo demonstrates modern Python web development practices while showcasing t
    pip install -r requirements.txt
    ```
 
-3. **Configure environment**
+3. **Set up pre-commit hooks**
+   ```bash
+   pre-commit install
+   ```
+
+4. **Configure environment**
    ```bash
    cp .env.example .env
    # Edit .env with your configuration
    ```
 
-4. **Run the application**
+5. **Run the application**
    ```bash
    uvicorn app.main:app --reload --port 80
    ```
@@ -246,19 +251,19 @@ ENVIRONMENT=development
   - Model validation and business logic
   - Authentication and token handling
   - Utility functions and helpers
-  
+
 - **Integration Tests**
   - User-Todo association validation
   - Complete workflow testing
   - Database operations
   - Middleware functionality
-  
+
 - **Security Tests**
   - Authentication flow testing
   - Token validation and refresh
   - User isolation verification
   - Permission checking
-  
+
 - **Database Tests**
   - MongoDB connection handling
   - CRUD operations validation
@@ -340,18 +345,18 @@ This project leverages multiple AI tools for enhanced development experience:
   - Configurable token expiration (access and refresh tokens)
   - Secure password hashing using bcrypt with salt
   - Request middleware for consistent authentication checks
-  
+
 - **Data Protection**
   - Strict user data isolation (users can only access their own todos)
   - Environment-based configuration with pydantic-settings validation
   - MongoDB connection security with timeouts and error handling
-  
+
 - **Input Validation & Sanitization**
   - Advanced input validation using Pydantic v2 models
   - Custom validation for critical fields (dates, priorities, etc.)
   - Secure ObjectId handling and validation
   - Comprehensive request payload validation
-  
+
 - **Infrastructure Security**
   - Non-root user container execution
   - Secure environment variable handling
@@ -389,18 +394,75 @@ We welcome contributions! Please see our contributing guidelines:
 
 1. **Fork the repository**
 2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
-3. **Make your changes** with proper tests
-4. **Run the test suite** (`pytest`)
-5. **Commit your changes** (`git commit -m 'Add amazing feature'`)
-6. **Push to the branch** (`git push origin feature/amazing-feature`)
-7. **Open a Pull Request**
+3. **Set up pre-commit hooks** (`pre-commit install`)
+4. **Make your changes** with proper tests
+5. **Run the test suite** (`pytest`)
+6. **Commit your changes** using conventional commit format
+7. **Push to the branch** (`git push origin feature/amazing-feature`)
+8. **Open a Pull Request**
 
 ### Development Guidelines
-- Follow PEP 8 style guidelines
+- Follow PEP 8 style guidelines (enforced by Ruff)
 - Add comprehensive tests for new features
 - Update documentation for API changes
-- Use conventional commit messages
+- Use conventional commit messages (see format below)
 - Ensure all CI checks pass
+- Pre-commit hooks will run automatically before each commit
+
+### Conventional Commit Format
+
+We use [Conventional Commits](https://www.conventionalcommits.org/) for clear and standardized commit messages:
+
+```
+<type>: <description>
+
+[optional body]
+
+[optional footer]
+```
+
+**Supported types:**
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation changes
+- `style`: Code style changes (formatting, etc.)
+- `refactor`: Code refactoring
+- `test`: Adding or updating tests
+- `chore`: Maintenance tasks
+- `perf`: Performance improvements
+- `ci`: CI/CD changes
+- `build`: Build system changes
+- `revert`: Revert previous commit
+
+**Examples:**
+```bash
+git commit -m "feat: add user profile endpoint"
+git commit -m "fix: resolve MongoDB connection timeout"
+git commit -m "docs: update API documentation"
+git commit -m "test: add integration tests for authentication"
+```
+
+**Bypass pre-commit hooks** (use sparingly):
+```bash
+git commit -m "your message" --no-verify
+```
+
+### Code Quality Tools
+
+- **Ruff**: Fast Python linter and formatter (replaces flake8, black, isort)
+- **Pre-commit**: Automated code quality checks before commits
+
+**Run checks manually:**
+```bash
+# Run all pre-commit hooks
+pre-commit run --all-files
+
+# Run ruff linting
+ruff check .
+
+# Run ruff formatting
+ruff format .
+```
 
 ## 🎯 Future Enhancements & Technical Debt
 

@@ -29,7 +29,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Step 4: Run tests with coverage
+      # Step 4: Run pre-commit checks
+      - name: Run pre-commit checks
+        run: |
+          pre-commit run --all-files
+
+      # Step 5: Run tests with coverage
       - name: Run tests with coverage
         run: |
           # Critical secrets from GitHub secrets
@@ -37,7 +42,7 @@ jobs:
           echo "MONGO_USERNAME=${{secrets.MONGO_USERNAME}}" >> .env
           echo "MONGO_HOST=${{secrets.MONGO_HOST}}" >> .env
           echo "SECRET_KEY=${{secrets.SECRET_KEY}}" >> .env
-          
+
           # Non-critical hardcoded values for testing
           echo "PASSWORD_ALGORITHM=HS256" >> .env
           echo "MONGO_TIMEOUT=5" >> .env
@@ -46,6 +51,5 @@ jobs:
           echo "MONGO_USER_COLLECTION=user" >> .env
           echo "ACCESS_TOKEN_EXPIRE_SECONDS=1800" >> .env
           echo "REFRESH_TOKEN_EXPIRE_SECONDS=3600" >> .env
-          
-          pytest
 
+          pytest
