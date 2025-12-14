@@ -72,6 +72,11 @@ app.include_router(user_router, prefix="/user", tags=["user"])
 
 @app.middleware("http")
 async def add_user_info_to_request(request: Request, call_next):
+    # Allow OPTIONS requests (CORS preflight) to pass through without authentication
+    if request.method == "OPTIONS":
+        response = await call_next(request)
+        return response
+
     if request.url.path in (
         "/token",
         "/docs",
