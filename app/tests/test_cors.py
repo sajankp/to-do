@@ -25,9 +25,9 @@ class TestCORSMiddleware:
         """Test that allow-credentials header is set correctly."""
         response = client.get("/", headers={"Origin": "http://localhost:3000"})
         assert response.status_code == 200
-        # Check if credentials are allowed (should be 'true' as string in header)
+        # Check that credentials are NOT allowed (header should be absent or 'false')
         credentials_header = response.headers.get("access-control-allow-credentials")
-        assert credentials_header is not None
+        assert credentials_header in (None, "false")
 
     def test_cors_with_different_origins(self, client):
         """Test CORS with different origin values."""

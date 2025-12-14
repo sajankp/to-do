@@ -109,9 +109,9 @@ class TestCORSConfiguration:
         # Create settings without CORS env vars (will use defaults)
         settings = Settings()
 
-        # Default should be wildcard for development
+        # Default should be wildcard for development but with secure credentials setting
         assert settings.cors_origins == "*"
-        assert settings.cors_allow_credentials is True
+        assert settings.cors_allow_credentials is False  # Secure by default
         assert settings.cors_allow_methods == "*"
         assert settings.cors_allow_headers == "*"
 
