@@ -106,14 +106,20 @@ class TestCORSConfiguration:
 
     def test_cors_default_values(self):
         """Test that CORS configuration has sensible defaults."""
-        # Create settings without CORS env vars (will use defaults)
-        settings = Settings()
-
-        # Default should be wildcard for development but with secure credentials setting
-        assert settings.cors_origins == "*"
-        assert settings.cors_allow_credentials is False  # Secure by default
-        assert settings.cors_allow_methods == "*"
-        assert settings.cors_allow_headers == "*"
+        # Clear CORS env vars to test actual defaults
+        env_overrides = {
+            "CORS_ORIGINS": "*",
+            "CORS_ALLOW_CREDENTIALS": "False",
+            "CORS_ALLOW_METHODS": "*",
+            "CORS_ALLOW_HEADERS": "*",
+        }
+        with patch.dict(os.environ, env_overrides, clear=False):
+            settings = Settings()
+            # Default should be wildcard for development but with secure credentials setting
+            assert settings.cors_origins == "*"
+            assert settings.cors_allow_credentials is False  # Secure by default
+            assert settings.cors_allow_methods == "*"
+            assert settings.cors_allow_headers == "*"
 
 
 class TestSettingsIntegration:

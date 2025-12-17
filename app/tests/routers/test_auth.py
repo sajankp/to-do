@@ -5,7 +5,7 @@ import pytest
 from fastapi import HTTPException
 from jose import JWTError, jwt
 
-from app.models.user import User
+from app.models.user import UserInDB
 from app.routers.auth import (
     PASSWORD_ALGORITHM,
     SECRET_KEY,
@@ -193,7 +193,7 @@ def test_authenticate_user(mock_verify_password, mock_get_user):
 
     mock_get_user.assert_called_once_with("test_user")
     mock_verify_password.assert_called_once_with("plain_password", "hashed_password")
-    assert isinstance(user, User)
+    assert isinstance(user, UserInDB)
     assert user.username == "test_user", "Expected username to match 'test_user'."
 
 
@@ -224,7 +224,7 @@ class TestGetCurrentActiveUser:
 
         mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
         mock_get_user.assert_called_once_with("test_user")
-        assert isinstance(user, User)
+        assert isinstance(user, UserInDB)
         assert user.username == mock_user["username"]
 
     @patch("app.routers.auth.get_user_by_username")

@@ -6,7 +6,7 @@ from bson import ObjectId
 from fastapi import HTTPException, Request
 
 from app.models.base import PyObjectId
-from app.models.todo import PriorityEnum, TodoBase, TodoResponse
+from app.models.todo import CreateTodo, PriorityEnum, TodoResponse
 from app.routers.todo import create_todo, delete_todo, get_todo, get_todo_list
 from app.utils.constants import (
     FAILED_CREATE_TODO,
@@ -35,7 +35,7 @@ class TestTodoUserAssociation:
         request.app.todo = mock_collection
 
         # Create test todo data
-        todo_data = TodoBase(
+        todo_data = CreateTodo(
             title="User's Todo",
             description="This should belong to the user",
             due_date=datetime.now(UTC) + timedelta(seconds=60),
@@ -160,7 +160,7 @@ class TestTodoUserAssociation:
         request.app.todo = mock_collection
 
         # Create test todo data
-        todo_data = TodoBase(
+        todo_data = CreateTodo(
             title="Orphaned Todo",
             description="This should fail",
             due_date=datetime.now(UTC) + timedelta(seconds=60),
@@ -221,7 +221,7 @@ class TestTodoUserAssociation:
         request.app.todo = mock_collection
 
         # Create test todo data
-        todo_data = TodoBase(
+        todo_data = CreateTodo(
             title="Integration Test Todo",
             description="Should appear in user's list",
             due_date=datetime.now(UTC) + timedelta(seconds=60),
@@ -277,7 +277,7 @@ class TestTodoRouter:
         request.app.todo = mock_collection
 
         # Create test todo data
-        todo_data = TodoBase(
+        todo_data = CreateTodo(
             title="Test Todo",
             description="Test Description",
             due_date=datetime.now(UTC) + timedelta(seconds=60),
@@ -369,7 +369,7 @@ class TestTodoRouter:
         request.app.todo = mock_collection
 
         # Create test todo data
-        todo_data = TodoBase(
+        todo_data = CreateTodo(
             title="Test Todo",
             description="Test Description",
             due_date=datetime.now(UTC) + timedelta(seconds=60),

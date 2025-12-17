@@ -6,8 +6,9 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from app.config import get_settings
-from app.models.user import User, get_user_by_username
+from app.models.user import UserInDB
 from app.utils.constants import INVALID_TOKEN
+from app.utils.user import get_user_by_username
 
 router = APIRouter()
 settings = get_settings()
@@ -53,12 +54,12 @@ def create_token(data: dict, expires_delta: timedelta | None = None):
 def authenticate_user(username: str, password: str):
     user = get_user_by_username(username)
     if user and verify_password(password, user["hashed_password"]):
-        return User(**user)
+        return UserInDB(**user)
     else:
         return None
 
 
-def get_current_active_user(token: str = Depends(oauth2_scheme)) -> User:
+def get_current_active_user(token: str = Depends(oauth2_scheme)) -> UserInDB:
     credentials_exception = HTTPException(
         status_code=401,
         detail=INVALID_TOKEN,
@@ -74,7 +75,7 @@ def get_current_active_user(token: str = Depends(oauth2_scheme)) -> User:
     user = get_user_by_username(username)
     if not user:
         raise credentials_exception
-    return User(**user)
+    return UserInDB(**user)
 
 
 def get_user_info_from_token(authorization: str = Depends(oauth2_scheme)) -> (str, str):
