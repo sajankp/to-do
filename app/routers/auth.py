@@ -53,8 +53,8 @@ def create_token(data: dict, expires_delta: timedelta | None = None):
 
 def authenticate_user(username: str, password: str):
     user = get_user_by_username(username)
-    if user and verify_password(password, user["hashed_password"]):
-        return UserInDB(**user)
+    if user and verify_password(password, user.hashed_password):
+        return user
     else:
         return None
 
@@ -75,7 +75,7 @@ def get_current_active_user(token: str = Depends(oauth2_scheme)) -> UserInDB:
     user = get_user_by_username(username)
     if not user:
         raise credentials_exception
-    return UserInDB(**user)
+    return user
 
 
 def get_user_info_from_token(authorization: str = Depends(oauth2_scheme)) -> (str, str):

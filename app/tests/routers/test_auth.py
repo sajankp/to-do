@@ -181,11 +181,11 @@ def test_verify_password(mock_verify):
 @patch("app.routers.auth.get_user_by_username")
 @patch("app.routers.auth.verify_password")
 def test_authenticate_user(mock_verify_password, mock_get_user):
-    mock_user = {
-        "username": "test_user",
-        "hashed_password": "hashed_password",
-        "email": "email",
-    }
+    mock_user = UserInDB(
+        username="test_user",
+        hashed_password="hashed_password",
+        email="email@example.com",
+    )
     mock_get_user.return_value = mock_user
     mock_verify_password.return_value = True
 
@@ -211,11 +211,11 @@ class TestGetCurrentActiveUser:
     @patch("app.routers.auth.get_user_by_username")
     @patch("jose.jwt.decode")
     def test_valid_token_returns_user(self, mock_decode, mock_get_user):
-        mock_user = {
-            "username": "test_user",
-            "hashed_password": "hashed_password",
-            "email": "email@example.com",
-        }
+        mock_user = UserInDB(
+            username="test_user",
+            hashed_password="hashed_password",
+            email="email@example.com",
+        )
         mock_get_user.return_value = mock_user
         mock_decode.return_value = {"sub": "test_user"}
         mock_token = "mock.jwt.token"
@@ -225,7 +225,7 @@ class TestGetCurrentActiveUser:
         mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
         mock_get_user.assert_called_once_with("test_user")
         assert isinstance(user, UserInDB)
-        assert user.username == mock_user["username"]
+        assert user.username == mock_user.username
 
     @patch("app.routers.auth.get_user_by_username")
     @patch("jose.jwt.decode")
@@ -289,11 +289,11 @@ class TestGetCurrentActiveUser:
 @patch("app.routers.auth.get_user_by_username")
 @patch("app.routers.auth.verify_password")
 def test_authenticate_user_wrong_password(mock_verify_password, mock_get_user):
-    mock_user = {
-        "username": "test_user",
-        "hashed_password": "hashed_password",
-        "email": "email",
-    }
+    mock_user = UserInDB(
+        username="test_user",
+        hashed_password="hashed_password",
+        email="email@example.com",
+    )
     mock_get_user.return_value = mock_user
     mock_verify_password.return_value = False  # Simulate wrong password
 
