@@ -124,7 +124,13 @@ def test_todo_indb_has_required_fields():
 def test_create_todo_rejects_system_fields():
     """Verify CreateTodo does not accept id, created_at, updated_at."""
     # Create with extra fields that should be ignored
-    todo = CreateTodo(title="Test")
+    todo = CreateTodo(
+        title="Test",
+        id="507f1f77bcf86cd799439011",
+        _id="507f1f77bcf86cd799439011",
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
     # These fields should NOT be present on the model
     assert not hasattr(todo, "id")
     assert not hasattr(todo, "_id")
@@ -134,7 +140,13 @@ def test_create_todo_rejects_system_fields():
 
 def test_todo_update_rejects_system_fields():
     """Verify TodoUpdate does not accept id, created_at, updated_at."""
-    update = TodoUpdate(title="Updated Title")
+    update = TodoUpdate(
+        title="Updated Title",
+        id="507f1f77bcf86cd799439011",
+        _id="507f1f77bcf86cd799439011",
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
     # These fields should NOT be present on the model
     assert not hasattr(update, "id")
     assert not hasattr(update, "_id")

@@ -13,4 +13,7 @@ def get_user_by_username(username: str) -> UserInDB | None:
         UserInDB if found, None otherwise.
     """
     user_collection = get_user_collection()
-    return user_collection.find_one({"username": username})
+    user_data = user_collection.find_one({"username": username})
+    if user_data:
+        return UserInDB(**user_data)
+    return None

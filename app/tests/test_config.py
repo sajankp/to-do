@@ -105,21 +105,27 @@ class TestCORSConfiguration:
             assert settings.cors_allow_credentials is False
 
     def test_cors_default_values(self):
-        """Test that CORS configuration has sensible defaults."""
-        # Clear CORS env vars to test actual defaults
-        env_overrides = {
-            "CORS_ORIGINS": "*",
-            "CORS_ALLOW_CREDENTIALS": "False",
-            "CORS_ALLOW_METHODS": "*",
-            "CORS_ALLOW_HEADERS": "*",
-        }
-        with patch.dict(os.environ, env_overrides, clear=False):
-            settings = Settings()
-            # Default should be wildcard for development but with secure credentials setting
-            assert settings.cors_origins == "*"
-            assert settings.cors_allow_credentials is False  # Secure by default
-            assert settings.cors_allow_methods == "*"
-            assert settings.cors_allow_headers == "*"
+        """Test that CORS configuration has sensible defaults in the model."""
+        # The Settings class defines defaults for CORS fields.
+        # We verify those defaults are set correctly in the Field definitions.
+        # Note: In practice, .env file may override these, but we test the model defaults.
+
+        # Check that the Field defaults are correct by inspecting the model fields
+        cors_origins_field = Settings.model_fields.get("cors_origins")
+        cors_credentials_field = Settings.model_fields.get("cors_allow_credentials")
+        cors_methods_field = Settings.model_fields.get("cors_allow_methods")
+        cors_headers_field = Settings.model_fields.get("cors_allow_headers")
+
+        assert cors_origins_field is not None
+        assert cors_credentials_field is not None
+        assert cors_methods_field is not None
+        assert cors_headers_field is not None
+
+        # Verify the default values in the model schema
+        assert cors_origins_field.default == "*"
+        assert cors_credentials_field.default is False  # Secure by default
+        assert cors_methods_field.default == "*"
+        assert cors_headers_field.default == "*"
 
 
 class TestSettingsIntegration:
