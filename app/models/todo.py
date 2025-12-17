@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from enum import Enum
 
-from pydantic import ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models.base import MyBaseModel, PyObjectId
 
@@ -12,8 +12,18 @@ class PriorityEnum(str, Enum):
     high = "high"
 
 
-class TodoBase(MyBaseModel):
-    """Base model for todo items without validations - used for reading data."""
+def validate_future_due_date(v: datetime | None) -> datetime | None:
+    """Validate that due_date is not in the past. Adds UTC timezone if missing."""
+    if v is not None:
+        if v.tzinfo is None:
+            v = v.replace(tzinfo=UTC)
+        if v < datetime.now(UTC):
+            raise ValueError("Due date cannot be in the past")
+    return v
+
+
+class TodoInput(BaseModel):
+    """Base input model for creating/updating todos. NO system fields (id, created_at, updated_at)."""
 
     title: str = Field(..., min_length=1, max_length=100, description="Todo title")
     description: str = Field(default="", max_length=500, description="Todo description")
@@ -21,20 +31,18 @@ class TodoBase(MyBaseModel):
     priority: PriorityEnum = Field(default=PriorityEnum.medium, description="Todo priority")
 
 
-class CreateTodo(TodoBase):
+class CreateTodo(TodoInput):
     """Model for creating new todos with validation."""
 
     @field_validator("due_date")
     @classmethod
-    def validate_future_date(cls, v: datetime | None) -> datetime | None:
+    def validate_due_date(cls, v: datetime | None) -> datetime | None:
         """Ensure due_date is not in the past"""
-        if v is not None and v < datetime.now(UTC):
-            raise ValueError("Due date cannot be in the past")
-        return v
+        return validate_future_due_date(v)
 
 
-class TodoUpdate(MyBaseModel):
-    """Model for updating existing todos with validation."""
+class TodoUpdate(BaseModel):
+    """Model for updating existing todos with validation. All fields optional for partial updates."""
 
     title: str | None = Field(None, min_length=1, max_length=100)
     description: str | None = Field(None, max_length=500)
@@ -43,28 +51,24 @@ class TodoUpdate(MyBaseModel):
 
     @field_validator("due_date")
     @classmethod
-    def validate_future_date(cls, v: datetime | None) -> datetime | None:
-        if v is not None:
-            if v.tzinfo is None:
-                v = v.replace(tzinfo=UTC)
-            if v < datetime.now(UTC):
-                raise ValueError("Due date cannot be in the past")
-        return v
+    def validate_due_date(cls, v: datetime | None) -> datetime | None:
+        return validate_future_due_date(v)
 
     model_config = ConfigDict(validate_assignment=True)
 
 
-class TodoInDB(TodoBase, MyBaseModel):
+class TodoInDB(MyBaseModel):
     """
     Model representing a todo in the database.
 
-    Inherits from:
-    - TodoBase: title, description, due_date, priority
-    - MyBaseModel: id, created_at, updated_at
-
-    This model has ObjectId types (for database storage).
+    Inherits from MyBaseModel: id, created_at, updated_at
+    Adds todo-specific fields: title, description, due_date, priority, user_id
     """
 
+    title: str = Field(..., min_length=1, max_length=100, description="Todo title")
+    description: str = Field(default="", max_length=500, description="Todo description")
+    due_date: datetime | None = Field(default=None, description="Due date for the todo")
+    priority: PriorityEnum = Field(default=PriorityEnum.medium, description="Todo priority")
     user_id: PyObjectId = Field(..., description="ID of the user who owns this todo")
 
     model_config = ConfigDict(
@@ -75,9 +79,9 @@ class TodoInDB(TodoBase, MyBaseModel):
     )
 
 
-class TodoResponse(TodoBase):
+class TodoResponse(TodoInput):
     """
-    Model for API responses.
+    Model for API responses. Includes system fields as read-only.
     """
 
     id: str = Field(..., description="Todo ID")

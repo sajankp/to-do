@@ -103,7 +103,7 @@ class TestTodoUserIntegration:
 
     def test_todo_creation_with_user_association(self, mock_request):
         """Test complete todo creation flow with user association"""
-        from app.models.todo import TodoBase
+        from app.models.todo import CreateTodo
         from app.routers.todo import create_todo
 
         # Set up request state (simulating middleware)
@@ -118,7 +118,7 @@ class TestTodoUserIntegration:
         mock_request.app.todo.insert_one.return_value = mock_result
 
         # Create todo data
-        todo_data = TodoBase(
+        todo_data = CreateTodo(
             title="Integration Test Todo",
             description="Testing user association",
             due_date=datetime.now(UTC) + timedelta(seconds=60),
@@ -185,7 +185,7 @@ class TestTodoUserIntegration:
 
     def test_complete_todo_workflow(self, mock_request):
         """Test complete workflow: create todo, then list todos"""
-        from app.models.todo import TodoBase
+        from app.models.todo import CreateTodo
         from app.routers.todo import create_todo, get_todo_list
 
         # Set up request state (simulating middleware)
@@ -200,7 +200,7 @@ class TestTodoUserIntegration:
         mock_create_result.inserted_id = todo_id
         mock_request.app.todo.insert_one.return_value = mock_create_result
 
-        todo_data = TodoBase(
+        todo_data = CreateTodo(
             title="Workflow Test Todo",
             description="Testing complete workflow",
             due_date=datetime.now(UTC) + timedelta(seconds=60),
