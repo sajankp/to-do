@@ -26,6 +26,15 @@ class UserInDB(MyBaseModel):
     disabled: bool = Field(default=False, description="Account status")
 
 
+class UserResponse(MyBaseModel):
+    """Response model for user data - excludes sensitive fields like password."""
+
+    username: str = Field(..., description="Username for authentication")
+    email: str = Field(..., description="User's email address")
+    is_verified: bool = Field(default=False, description="Email verification status")
+    disabled: bool = Field(default=False, description="Account status")
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str
