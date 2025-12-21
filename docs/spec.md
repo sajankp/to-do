@@ -236,6 +236,7 @@ class TodoInDB:
     description: str       # 0-500 chars
     due_date: datetime     # Optional, must be future
     priority: Enum         # low | medium | high
+    completed: bool        # Completion status (default: False)
     created_at: datetime   # Auto-set
     updated_at: datetime   # Auto-updated
 ```
@@ -260,6 +261,7 @@ erDiagram
         string description
         datetime due_date
         enum priority
+        boolean completed
     }
 ```
 
@@ -893,6 +895,81 @@ Frontend has no linting or formatting enforcement, unlike backend which has stri
   - 13 errors don't justify blocking development
 
 **To Document in ADR:** 203-frontend-code-quality-strategy.md (frontend ADR)
+
+---
+
+### Decision 3: Todo Completion Status Field (2025-12-21)
+
+**Context:**
+Current todo implementation supports Create, Read, Update, Delete operations but lacks a way to mark tasks as complete. Users must delete completed tasks, losing history and preventing productivity tracking.
+
+**Problem Statement:**
+- No completion status tracking
+- Users cannot differentiate between active and completed tasks
+- Deleting completed tasks loses historical data
+- Cannot track productivity metrics (completion rate, time to complete, etc.)
+
+**Options Considered:**
+
+| Option | Description | Pros | Cons |
+|--------|-------------|------|------|
+| **A: Boolean Field (Chosen)** | Add `completed: bool` field to Todo model | Simple, efficient, backward-compatible | Limited states (only done/not done) |
+| B: Status Enum | `status: Enum["todo", "in_progress", "done"]` | Supports multi-state workflows | Overkill for MVP, more complex filtering |
+| C: Separate Collection | Move completed todos to `completed_todos` collection | Clean separation | Complex migrations, slower queries, data duplication |
+| D: Soft Delete | Use `deleted_at` field, filter in queries | No additional field | Confuses "deleted" with "completed" |
+
+**Decision:** ✅ **Option A - Boolean `completed` Field**
+
+**Rationale:**
+- **Simplicity**: Single boolean field is easy to understand and implement
+- **Performance**: Boolean filtering is fast, minimal overhead
+- **Backward Compatibility**: Existing todos will default to `completed=False` via Pydantic
+- **YAGNI Principle**: Multi-state workflows (Option B) not needed for MVP
+- **Query Efficiency**: Can add compound index `(user_id, completed)` for fast filtering
+
+**Implementation Details:**
+
+**Backend**:
+- Add `completed: bool = False` to `TodoInput`, `TodoUpdate`, `TodoInDB`, `TodoResponse`
+- GET `/todo/` supports optional `?completed=true|false` query parameter
+- PATCH `/todo/{id}` allows updating `completed` field
+- Database index: `todos.create_index([("user_id", 1), ("completed", 1)])`
+
+**Frontend**:
+- Add `completed: boolean` to `Todo` interface
+- Add checkbox to task cards for toggling completion
+- Visual styling: strikethrough + reduced opacity for completed tasks
+- Filter UI: Tabs for "All" / "Active" / "Completed" views
+- Default view: "Active only" (hide completed by default)
+
+**UX Decisions**:
+- ✅ Strikethrough text for completed tasks
+- ✅ Reduced opacity (60%) for completed tasks
+- ✅ Checkbox on left side of task card
+- ✅ Completed tasks auto-sort to bottom of list
+- ⏸️ Voice assistant "mark complete" command (deferred to Phase 2)
+
+**Trade-offs Accepted:**
+- Limited to binary state (can't track "in progress" separately)
+- Completed tasks remain in main collection (slight query overhead)
+- No automatic archival of old completed tasks
+
+**Migration Strategy:**
+- No database migration required (MongoDB schemaless)
+- Existing documents without `completed` field default to `False` via Pydantic
+- New todos explicitly set `completed=False` on creation
+
+**Testing Strategy:**
+- Backend: Add tests for filtering, updating completion status
+- Frontend: Manual testing (no test infrastructure yet - see TD-010)
+- Integration: Verify persistence across page reloads
+
+**Performance Impact:**
+- **Query**: Minimal - boolean filtering is O(1) with index
+- **Storage**: ~1 byte per todo (negligible)
+- **Index**: Compound index adds ~10-20% storage overhead (acceptable)
+
+**To Document in ADR:** 009-todo-completion-status.md
 
 ---
 
