@@ -13,11 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Troubleshooting guide at `docs/TROUBLESHOOTING.md`
 
 ### Changed
-- Refactored user registration to use JSON body instead of query parameters (security fix)
 - Consolidated documentation structure with cross-references
 
-### Fixed
-- Security: Password no longer exposed in query strings during registration
+### Security
+- Refactored user registration to use JSON body instead of query parameters (password no longer exposed in query strings)
 
 ---
 

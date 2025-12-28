@@ -120,7 +120,7 @@
 | TD-009 | Service layer | Medium | 3 days |
 | TD-010 | Frontend testing setup | Medium | 2 days |
 | TD-011 | Token refresh | Medium | 1 day |
-| TD-012 | Move password to request body | ~~Low~~ | ✅ Done |
+| TD-012 | Move password to request body | Done | ✅ 2 hours |
 | TD-013 | Email uniqueness check | Low | 1 hour |
 | TD-014 | API versioning | Low | 2 days |
 | TD-015 | HttpOnly cookie tokens | Low | 2 days |
