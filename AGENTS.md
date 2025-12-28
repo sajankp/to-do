@@ -74,11 +74,14 @@ users_collection = request.app.user
 - Configured via environment variables
 
 ### ❌ DON'T (Common Mistakes)
+- **DON'T** make changes directly on `main`—always create a branch first, even for docs
 - **DON'T** access `user_id` from request body—always use `request.state.user_id`
 - **DON'T** skip tests—pre-commit hooks won't catch logic bugs
 - **DON'T** modify `ARCHITECTURE.md` without discussion first
 - **DON'T** create ADRs before updating `ARCHITECTURE.md`
 - **DON'T** hardcode secrets—use environment variables via `app/config.py`
+
+> **🔀 Branching Rule:** If you're creating new files, modifying roadmap/architecture, or making more than a trivial typo fix—**create a branch first**. Ask: "Should I create branch `docs/xyz` or `feat/xyz` for this?"
 
 ---
 
