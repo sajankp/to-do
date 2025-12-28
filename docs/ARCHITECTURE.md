@@ -172,7 +172,7 @@ sequenceDiagram
     participant DB as MongoDB
 
     Note over C,A: Registration
-    C->>A: POST /user?username&email&password
+    C->>A: POST /user (body: {username, email, password})
     A->>DB: Insert user (hashed password)
     A-->>C: true
 
@@ -302,14 +302,13 @@ erDiagram
 > [!CAUTION]
 > These are architectural concerns that should be addressed before scaling.
 
-### 1. Synchronous Database Operations
+### 1. (TD-001) Synchronous Database Operations
 
 **Current State:**
 ```python
 # All DB calls block the event loop
 result = request.app.todo.insert_one(todo_dict)  # Blocking!
 ```
-
 **Risk:**
 - Under high load, blocked threads exhaust worker pool
 - 100+ concurrent users could cause timeouts
@@ -322,7 +321,7 @@ result = request.app.todo.insert_one(todo_dict)  # Blocking!
 
 ---
 
-### 2. No Database Indexes
+### 2. (TD-002) No Database Indexes
 
 **Current State:**
 - No indexes defined on collections
@@ -344,7 +343,7 @@ users.create_index([("email", 1)], unique=True)
 
 ---
 
-### 3. Token in localStorage (XSS Vulnerable)
+### 3. (TD-003) Token in localStorage (XSS Vulnerable)
 
 **Current State:**
 ```typescript
@@ -362,7 +361,7 @@ localStorage.setItem('token', response.access_token);
 
 ---
 
-### 4. No Email Uniqueness Enforcement
+### 4. (TD-004) No Email Uniqueness Enforcement
 
 **Current State:**
 ```python
@@ -384,7 +383,7 @@ def create_user(username: str, email: str, password: str):
 
 ---
 
-### 5. Missing Request Validation Limits
+### 5. (TD-005) Missing Request Validation Limits
 
 **Current State:**
 - No max request body size
@@ -403,7 +402,7 @@ request_timeout = 30s
 
 ---
 
-### 6. Frontend Token Refresh Not Implemented
+### 6. (TD-008) Frontend Token Refresh Not Implemented
 
 **Current State:**
 ```typescript
@@ -430,7 +429,7 @@ const fetchWithAuth = async (url, options) => {
 
 ---
 
-### 7. No API Versioning
+### 7. (TD-009) No API Versioning
 
 **Current State:**
 ```
@@ -479,7 +478,7 @@ POST /user?username=X&email=Y&password=Z
 
 ---
 
-### 10. Missing Security Headers Middleware
+### 10. (TD-003) Missing Security Headers Middleware
 
 **Current State:**
 - No security headers middleware configured
@@ -523,7 +522,7 @@ async def add_security_headers(request: Request, call_next):
 
 ---
 
-### 11. No Structured Logging
+### 11. (TD-004) No Structured Logging
 
 **Current State:**
 ```python
@@ -573,7 +572,7 @@ logger.info("todo_created", user_id=user_id, todo_id=todo_id)
 
 ---
 
-### 12. Missing Monitoring & Observability
+### 12. (TD-005) Missing Monitoring & Observability
 
 **Current State:**
 - No metrics collection
@@ -632,7 +631,7 @@ def metrics():
 
 ---
 
-### 13. Gemini API Key Exposed in Frontend Bundle
+### 13. (TD-006) Gemini API Key Exposed in Frontend Bundle
 
 **Current State:**
 ```typescript
@@ -724,7 +723,7 @@ We will implement a backend proxy endpoint for Gemini API calls. This:
 
 ---
 
-### 11. Frontend Linting & Code Quality Enforcement
+### 14. (TD-007) Frontend Linting & Code Quality Enforcement
 
 **Current State:**
 - Backend has `.pre-commit-config.yaml` with Ruff linting
