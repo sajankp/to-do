@@ -15,6 +15,6 @@ pydantic_settings==2.11.0
 email-validator==2.3.0
 uvicorn==0.38.0
 slowapi==0.1.9
-redis==5.0.1
+redis==7.1.0
 pre-commit>=3.6.0
 ruff>=0.1.9
