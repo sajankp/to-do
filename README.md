@@ -1,16 +1,23 @@
 # FastTodo: A Production-Ready Todo Application
 
-A modern, secure, and scalable Todo application built with **FastAPI** and **MongoDB**, enhanced by AI-powered development tools including **Perplexity AI**, **GitHub Copilot**, and intelligent agents.
+A modern, secure, and scalable Todo application built with **FastAPI** and **MongoDB**, enhanced by AI-powered development tools.
 
-## 🚀 Project Overview
+## 📌 About This Project
 
-FastTodo demonstrates modern Python web development practices while showcasing the power of AI-assisted development. This project serves as both a functional todo management system and a learning platform for implementing production-ready APIs with comprehensive security, testing, and deployment strategies.
+FastTodo is a **reference implementation** for building production-grade APIs with FastAPI.
+It emphasizes documentation, testing, and structured decision-making.
+
+**Key aspects:**
+- Architectural decisions documented in [ADRs](docs/adr/)
+- Development workflow with pre-commit hooks and conventional commits
+- AI-assisted development using modern tooling (Copilot, Claude, Gemini)
 
 ## 📚 Documentation
 
-- **[Architecture Decision Records (ADR)](docs/adr/)** - Key architectural decisions and their rationale
+- **[Architecture Specification](docs/spec.md)** - Full system architecture and technical decisions
+- **[Architecture Decision Records](docs/adr/)** - Key decisions and their rationale
 - **[Test Plan](docs/test-plan.md)** - Comprehensive testing and QA checklist
-- **[Agent Guide](docs/agent-guide.md)** - Quick reference for AI agents and new developers
+- **[Agent Context](AGENTS.md)** - Quick reference for AI agents and new developers
 - **[API Docs (Live)](https://to-do-4w0k.onrender.com/docs)** - Interactive Swagger documentation
 
 ## 🔄 Major Updates & Migrations
@@ -157,9 +164,10 @@ FastTodo demonstrates modern Python web development practices while showcasing t
 │   └── workflows/           # CI/CD configuration
 ├── Dockerfile              # Secure container configuration
 ├── docs/
+│   ├── spec.md             # Full system specification
 │   ├── test-plan.md        # Comprehensive test plan
-│   ├── agent-guide.md      # AI agent quick reference
 │   └── adr/                # Architecture Decision Records
+├── AGENTS.md               # AI agent quick reference
 ├── .pre-commit-config.yaml # Pre-commit hooks configuration
 ├── conftest.py             # Pytest shared fixtures
 ├── pytest.ini              # Test configuration

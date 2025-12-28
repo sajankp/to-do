@@ -21,6 +21,10 @@ This repository contains the **backend only**. Frontend is in [sajankp/to-do-fro
 > Discuss → Update spec.md → Create ADR → Implement
 > ```
 
+> 📋 **Project Context:**
+> This is a reference implementation, not a quick prototype.
+> Prioritize documentation quality, clean commit history, and thoughtful decision records.
+
 ## Quick Start for Agents
 
 ### Current Project Status
