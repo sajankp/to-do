@@ -57,11 +57,11 @@ High-level approach to solving the problem.
 - `GET /api/...` - What changes
 
 ### Request/Response Format
-\`\`\`json
+```json
 {
   "field": "value"
 }
-\`\`\`
+```
 
 ## Data Model Changes
 
