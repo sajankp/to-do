@@ -41,7 +41,7 @@
 | TD-004 | Structured logging (structlog) | 1 day | 🔲 |
 | TD-005 | Monitoring/Observability (Prometheus + Grafana) | 3 days | 🔲 |
 | TD-002 | Database indexes | 1 hour | 🔲 |
-| TD-012 | Move password to request body | 2 hours | 🔲 |
+| TD-012 | Move password to request body | 2 hours | ✅ |
 | TD-013 | Email uniqueness check | 1 hour | 🔲 |
 | TD-006 | Gemini API backend proxy | 2 days | 🔲 |
 | TD-011 | Frontend token refresh | 1 day | 🔲 |
@@ -83,6 +83,24 @@
 
 ---
 
+### Phase 5: Portfolio Polish & Quality
+
+> **Goal:** Demonstrate senior-level engineering practices for portfolio presentation.
+
+| Item | Description | Effort | Status |
+|------|-------------|--------|--------|
+| TD-016 | E2E testing with Playwright | 2 days | 🔲 |
+| TD-017 | Performance benchmarks (Locust/k6) | 1 day | 🔲 |
+| TD-018 | OpenAPI contract testing | 1 day | 🔲 |
+| TD-019 | Standardized error responses (RFC 7807) | 4 hours | 🔲 |
+| TD-020 | Database migration strategy | 2 days | 🔲 |
+| TD-021 | Security audit logging | 4 hours | 🔲 |
+| - | Demo video/GIF for README | 1 hour | 🔲 |
+| - | React Query integration (frontend) | 1 day | 🔲 |
+| - | Error Boundaries (frontend) | 2 hours | 🔲 |
+
+---
+
 ## Technical Debt Registry
 
 > Full details for each item are documented in [ARCHITECTURE.md](ARCHITECTURE.md#known-architectural-pitfalls).
@@ -102,10 +120,16 @@
 | TD-009 | Service layer | Medium | 3 days |
 | TD-010 | Frontend testing setup | Medium | 2 days |
 | TD-011 | Token refresh | Medium | 1 day |
-| TD-012 | Move password to request body | Low | 2 hours |
+| TD-012 | Move password to request body | ~~Low~~ | ✅ Done |
 | TD-013 | Email uniqueness check | Low | 1 hour |
 | TD-014 | API versioning | Low | 2 days |
 | TD-015 | HttpOnly cookie tokens | Low | 2 days |
+| TD-016 | E2E testing (Playwright) | Medium | 2 days |
+| TD-017 | Performance benchmarks | Medium | 1 day |
+| TD-018 | OpenAPI contract testing | Medium | 1 day |
+| TD-019 | Standardized errors (RFC 7807) | Medium | 4 hours |
+| TD-020 | Database migration strategy | Medium | 2 days |
+| TD-021 | Security audit logging | Medium | 4 hours |
 
 ---
 
