@@ -12,6 +12,10 @@ It emphasizes documentation, testing, and structured decision-making.
 - Development workflow with pre-commit hooks and conventional commits
 - AI-assisted development using modern tooling (Copilot, Claude, Gemini)
 
+### 🎬 Demo
+
+![FastTodo Demo - Registration, Task Creation, and Logout](docs/demo.webp)
+
 ## 📚 Documentation
 
 - **[Architecture](docs/ARCHITECTURE.md)** - Full system architecture and technical decisions
