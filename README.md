@@ -16,6 +16,7 @@ It emphasizes documentation, testing, and structured decision-making.
 
 - **[Architecture](docs/ARCHITECTURE.md)** - Full system architecture and technical decisions
 - **[Project Roadmap](docs/ROADMAP.md)** - Phases, priorities, and technical debt
+- [**Troubleshooting**](docs/TROUBLESHOOTING.md) - Common issues and solutions
 - **[ADRs](docs/adr/)** - Key architectural decisions and their rationale
 - **[Test Plan](docs/test-plan.md)** - Comprehensive testing and QA checklist
 - **[Agent Context](AGENTS.md)** - Quick reference for AI agents and new developers
