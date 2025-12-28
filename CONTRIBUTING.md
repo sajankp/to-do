@@ -112,11 +112,12 @@ pytest app/tests/routers/test_auth.py -v
 
 ## Documentation
 
+- **[Documentation Index](docs/README.md)** - **Start here**
 - **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System architecture
-- **[ROADMAP.md](docs/ROADMAP.md)** - Project roadmap and priorities
+- **[Feature Specs](docs/specs/)** - Feature specifications (SDD)
 - **[ADRs](docs/adr/)** - Architectural decisions
-- **[Feature Specs](docs/specs/)** - Feature specifications
-- **[AGENTS.md](AGENTS.md)** - Quick reference for AI agents
+- **[ROADMAP.md](docs/ROADMAP.md)** - Priorities
+- **[AGENTS.md](AGENTS.md)** - AI Agent context
 
 ## Questions?
 

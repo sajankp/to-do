@@ -11,6 +11,25 @@
 
 ## Phases
 
+### Phase 0: Foundation ✅ Completed
+
+| Item | Description | Status |
+|------|-------------|--------|
+| - | FastAPI project setup with Pydantic v2 | ✅ |
+| - | MongoDB integration with connection pooling | ✅ |
+| - | JWT authentication with refresh tokens | ✅ |
+| - | Todo CRUD operations with user isolation | ✅ |
+| - | Docker containerization (non-root, multi-stage) | ✅ |
+| - | CI/CD with GitHub Actions | ✅ |
+| - | Pre-commit hooks (Ruff linting/formatting) | ✅ |
+| - | CORS middleware configuration | ✅ |
+| - | Rate limiting on auth endpoints | ✅ |
+| - | 80%+ test coverage (98 tests) | ✅ |
+| - | Spec-Driven Development workflow | ✅ |
+| - | ADRs for architectural decisions | ✅ |
+
+---
+
 ### Phase 1: Stability & Production Readiness ⬅️ Current
 
 | Item | Description | Effort | Status |
