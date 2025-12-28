@@ -119,7 +119,9 @@ Once user approves ADR:
 ### Step 7: Implement Code
 
 Only after spec (and ADR if applicable) are approved:
-1. Create feature branch (if not already on one)
+1. **CRITICAL:** Create a dedicated feature branch (e.g., `feat/my-feature`).
+   - Command: `git checkout -b feat/my-feature`
+   - **Agent/User Check:** Confirm with the user: "I am creating/switching to branch `[branch_name]` to implement this. Is that correct?"
 2. Implement backend changes **following the spec exactly**
 3. Write tests as defined in spec
 4. Implement frontend changes (if applicable)

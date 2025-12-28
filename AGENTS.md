@@ -15,10 +15,17 @@ This repository contains the **backend only**. Frontend is in [sajankp/to-do-fro
 > source venv/bin/activate
 > ```
 
-> 🚨 **For architectural changes** (new endpoints, model changes, security, database schema):
-> Follow the [Development Workflow](.agent/workflows/development-workflow.md) before writing any code.
+> 🚨 **CRITICAL: Spec-Driven Development (SDD) Mandate**
+> You MUST follow the [Development Workflow](.agent/workflows/development-workflow.md) for ANY new feature or architectural change.
+>
+> **The Golden Rule for Agents:**
+> 1. **NEVER** write code based solely on an ADR or a user prompt.
+> 2. **ALWAYS** verify a Feature Spec exists in `docs/specs/` and is marked `Status: Approved`.
+> 3. **IF** Spec is `Planned` or `Draft` → STOP. Ask user to review/approve it first.
+> 4. **IF** ADR is `Accepted` but Spec is `Planned` → STOP. The Spec governs validity.
+>
 > ```
-> Discuss → Update ARCHITECTURE.md → Create ADR → Implement
+> Workflow: Spec (Approve) → ADR (Approve) → Branch (Confirm) → Implement → Update ARCHITECTURE.md
 > ```
 
 > 📋 **Project Context:**

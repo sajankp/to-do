@@ -9,7 +9,7 @@ We follow **Spec-Driven Development (SDD)** for new features and architectural c
 ```
 1. Create Feature Spec → Get approval
 2. Create ADR (if architectural decision) → Get approval
-3. Implement → Test → PR
+3. **Branch (Confirm)** → Implement → Test → PR
 ```
 
 For detailed workflow instructions, see:

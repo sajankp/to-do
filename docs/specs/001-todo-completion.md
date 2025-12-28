@@ -1,7 +1,7 @@
 # Spec: Todo Completion Status
 
 ## Status
-✅ Implemented
+📝 Proposed
 
 ## Problem Statement
 
@@ -69,37 +69,37 @@ todos.create_index([("user_id", 1), ("completed", 1)])
 ## Implementation Plan
 
 ### Backend
-1. ✅ Add `completed: bool = False` to all todo models
-2. ✅ Update GET `/todo/` to support `?completed=` query param
-3. ✅ Ensure PATCH `/todo/{id}` can update `completed`
-4. ✅ Add database index for efficient filtering
-5. ✅ Write unit tests for new field
-6. ✅ Write integration tests for filtering
+1. [ ] Add `completed: bool = False` to all todo models
+2. [ ] Update GET `/todo/` to support `?completed=` query param
+3. [ ] Ensure PATCH `/todo/{id}` can update `completed`
+4. [ ] Add database index for efficient filtering
+5. [ ] Write unit tests for new field
+6. [ ] Write integration tests for filtering
 
 ### Frontend
-1. ✅ Add `completed: boolean` to Todo TypeScript interface
-2. ✅ Add checkbox to task cards
-3. ✅ Visual styling: strikethrough + reduced opacity for completed
-4. ✅ Filter UI: Tabs for "All" / "Active" / "Completed"
-5. ✅ Default view: Active only
+1. [ ] Add `completed: boolean` to Todo TypeScript interface
+2. [ ] Add checkbox to task cards
+3. [ ] Visual styling: strikethrough + reduced opacity for completed
+4. [ ] Filter UI: Tabs for "All" / "Active" / "Completed"
+5. [ ] Default view: Active only
 
 ## Test Strategy
 
 ### Unit Tests
-- ✅ TodoInput accepts `completed` field
-- ✅ Default value is `False`
-- ✅ Validation rejects non-boolean values
+- [ ] TodoInput accepts `completed` field
+- [ ] Default value is `False`
+- [ ] Validation rejects non-boolean values
 
 ### Integration Tests
-- ✅ Create todo → completed defaults to false
-- ✅ Update todo with completed=true → persists
-- ✅ Filter by completed=true returns only completed
-- ✅ Filter by completed=false returns only active
+- [ ] Create todo → completed defaults to false
+- [ ] Update todo with completed=true → persists
+- [ ] Filter by completed=true returns only completed
+- [ ] Filter by completed=false returns only active
 
 ### Manual Verification
-- ✅ Create todo, verify checkbox unchecked
-- ✅ Click checkbox, verify strikethrough appears
-- ✅ Refresh page, verify state persists
+- [ ] Create todo, verify checkbox unchecked
+- [ ] Click checkbox, verify strikethrough appears
+- [ ] Refresh page, verify state persists
 
 ## UX Decisions
 
