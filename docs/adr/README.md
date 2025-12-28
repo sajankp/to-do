@@ -23,6 +23,9 @@ Each ADR follows this structure:
 4. [ADR-004: JWT-Based Authentication Strategy](004-jwt-authentication.md)
 5. [ADR-005: Docker Multi-Stage Build with Non-Root User](005-docker-security.md)
 6. [ADR-006: Pytest with Coverage for Testing](006-pytest-testing.md)
+7. [ADR-007: Rate Limiting Implementation](007-rate-limiting.md)
+8. [ADR-008: Gemini API Backend Proxy](008-gemini-api-backend-proxy.md)
+9. [ADR-009: Add Todo Completion Status](009-add-todo-completion-status.md)
 
 ## How to Use
 
@@ -34,6 +37,6 @@ When making significant architectural decisions:
 
 ## Related Resources
 
-- [Main README](../../Readme.md)
-- [Agent Guide](../agent-guide.md)
+- [Main README](../../README.md)
+- [Agent Context](../../AGENTS.md)
 - [Test Plan](../test-plan.md)
