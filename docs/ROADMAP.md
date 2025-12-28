@@ -13,20 +13,23 @@
 
 ### Phase 0: Foundation ✅ Completed
 
-| Item | Description | Status |
-|------|-------------|--------|
-| - | FastAPI project setup with Pydantic v2 | ✅ |
-| - | MongoDB integration with connection pooling | ✅ |
-| - | JWT authentication with refresh tokens | ✅ |
-| - | Todo CRUD operations with user isolation | ✅ |
-| - | Docker containerization (non-root, multi-stage) | ✅ |
-| - | CI/CD with GitHub Actions | ✅ |
-| - | Pre-commit hooks (Ruff linting/formatting) | ✅ |
-| - | CORS middleware configuration | ✅ |
-| - | Rate limiting on auth endpoints | ✅ |
-| - | 80%+ test coverage (98 tests) | ✅ |
-| - | Spec-Driven Development workflow | ✅ |
-| - | ADRs for architectural decisions | ✅ |
+| Category | Item | Status |
+|----------|------|--------|
+| **Core** | FastAPI project setup with Pydantic v2 | ✅ |
+| **Core** | MongoDB integration with connection pooling | ✅ |
+| **Core** | Todo CRUD operations with user isolation | ✅ |
+| **Auth** | JWT authentication with refresh tokens | ✅ |
+| **Auth** | Secure password hashing (bcrypt) | ✅ |
+| **Auth** | Rate limiting on auth endpoints | ✅ |
+| **Security** | CORS middleware with configurable origins | ✅ |
+| **Security** | User data isolation enforcement | ✅ |
+| **Infra** | Docker containerization (non-root, multi-stage) | ✅ |
+| **Infra** | CI/CD with GitHub Actions | ✅ |
+| **Quality** | Pre-commit hooks (Ruff linting/formatting) | ✅ |
+| **Quality** | 80%+ test coverage achieved | ✅ |
+| **Docs** | Spec-Driven Development workflow | ✅ |
+| **Docs** | ADRs for architectural decisions | ✅ |
+
 
 ---
 
