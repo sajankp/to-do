@@ -15,7 +15,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from app.config import get_settings
 from app.database.mongodb import mongodb_client
 from app.models.base import PyObjectId
-from app.models.user import CreateUser, Token
+from app.models.user import CreateUser, Token, UserRegistration
 from app.routers.auth import (
     authenticate_user,
     create_token,
@@ -177,9 +177,11 @@ def refresh_token(refresh_token: str, request: Request):
 
 @app.post("/user", response_model=bool)
 @limiter.limit(settings.rate_limit_auth)
-def create_user(username: str, email: str, password: str, request: Request):
-    hashed_password = hash_password(password)
-    user = CreateUser(username=username, email=email, hashed_password=hashed_password)
+def create_user(user_in: UserRegistration, request: Request):
+    hashed_password = hash_password(user_in.password)
+    user = CreateUser(
+        username=user_in.username, email=user_in.email, hashed_password=hashed_password
+    )
     result = request.app.user.insert_one(user.model_dump())
     if result.acknowledged:
         return True

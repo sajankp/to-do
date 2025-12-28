@@ -1,16 +1,25 @@
 # FastTodo: A Production-Ready Todo Application
 
-A modern, secure, and scalable Todo application built with **FastAPI** and **MongoDB**, enhanced by AI-powered development tools including **Perplexity AI**, **GitHub Copilot**, and intelligent agents.
+A modern, secure, and scalable Todo application built with **FastAPI** and **MongoDB**, enhanced by AI-powered development tools.
 
-## 🚀 Project Overview
+## 📌 About This Project
 
-FastTodo demonstrates modern Python web development practices while showcasing the power of AI-assisted development. This project serves as both a functional todo management system and a learning platform for implementing production-ready APIs with comprehensive security, testing, and deployment strategies.
+FastTodo is a **reference implementation** for building production-grade APIs with FastAPI.
+It emphasizes documentation, testing, and structured decision-making.
+
+**Key aspects:**
+- Architectural decisions documented in [ADRs](docs/adr/)
+- Development workflow with pre-commit hooks and conventional commits
+- AI-assisted development using modern tooling (Copilot, Claude, Gemini)
 
 ## 📚 Documentation
 
-- **[Architecture Decision Records (ADR)](docs/adr/)** - Key architectural decisions and their rationale
+- **[Architecture](docs/ARCHITECTURE.md)** - Full system architecture and technical decisions
+- **[Project Roadmap](docs/ROADMAP.md)** - Phases, priorities, and technical debt
+- [**Troubleshooting**](docs/TROUBLESHOOTING.md) - Common issues and solutions
+- **[ADRs](docs/adr/)** - Key architectural decisions and their rationale
 - **[Test Plan](docs/test-plan.md)** - Comprehensive testing and QA checklist
-- **[Agent Guide](docs/agent-guide.md)** - Quick reference for AI agents and new developers
+- **[Agent Context](AGENTS.md)** - Quick reference for AI agents and new developers
 - **[API Docs (Live)](https://to-do-4w0k.onrender.com/docs)** - Interactive Swagger documentation
 
 ## 🔄 Major Updates & Migrations
@@ -80,51 +89,7 @@ FastTodo demonstrates modern Python web development practices while showcasing t
 - Rate limiting on authentication endpoints
 - Pre-commit hooks for code quality (Ruff linting and formatting)
 
-### 🔧 Security Status
-> **✅ Major Security Improvements**: Several critical security vulnerabilities have been addressed:
-
-- ✅ **Password Verification** - Implemented secure password hashing with bcrypt and comprehensive authentication tests
-- ✅ **Credentials Protection** - Environment-based configuration with pydantic validation
-- ✅ **Rate Limiting** - Implemented per-endpoint rate limiting using slowapi (IP/User based)
-- ✅ **CORS Protection** - Configurable CORS middleware with environment-based origin control and comprehensive testing
-- ✅ **Docker Security** - Implemented non-root user, multi-stage builds, and secure secret management
-
-### 🚧 Upcoming Improvements
-
-#### **Phase 1: Security & Stability (Weeks 1-2)**
-- [x] Fix authentication bypass vulnerability
-- [x] Implement rate limiting on auth endpoints
-- [x] Secure Docker configuration
-- [x] Add comprehensive input validation
-- [x] Implement proper error handling
-
-#### **Phase 2: Architecture & Testing (Weeks 3-6)**
-- [ ] Repository pattern implementation
-- [ ] Service layer architecture
-- [ ] Comprehensive test suite (Unit, Integration, E2E)
-- [x] Increase coverage to > 80%
-- [ ] Database indexing and optimization
-- [ ] Structured logging system
-
-#### **Phase 3: Performance & Features (Weeks 7-10)**
-- [ ] Redis caching layer
-- [ ] Async database operations with Motor
-- [ ] API versioning and standardization
-- [ ] Pagination and filtering
-- [ ] MCP Server management endpoints
-
-#### **Phase 4: Production Readiness (Weeks 11-12)**
-- [ ] Monitoring and observability (Prometheus/Grafana)
-- [ ] Advanced security features (2FA, OAuth)
-- [ ] User registration security enhancements:
-  - [ ] Email verification workflow
-  - [ ] Email uniqueness enforcement
-  - [ ] Password strength requirements
-  - [ ] CAPTCHA integration (reCAPTCHA v3)
-  - [ ] Account activation system
-  - [ ] IP-based registration limits
-- [ ] Performance optimization
-- [ ] Deployment automation
+> For project roadmap and priorities, see [ROADMAP.md](docs/ROADMAP.md).
 
 ## 🏗️ Architecture
 
@@ -157,9 +122,10 @@ FastTodo demonstrates modern Python web development practices while showcasing t
 │   └── workflows/           # CI/CD configuration
 ├── Dockerfile              # Secure container configuration
 ├── docs/
+│   ├── ARCHITECTURE.md             # Full system specification
 │   ├── test-plan.md        # Comprehensive test plan
-│   ├── agent-guide.md      # AI agent quick reference
 │   └── adr/                # Architecture Decision Records
+├── AGENTS.md               # AI agent quick reference
 ├── .pre-commit-config.yaml # Pre-commit hooks configuration
 ├── conftest.py             # Pytest shared fixtures
 ├── pytest.ini              # Test configuration
@@ -271,59 +237,16 @@ ENVIRONMENT=development
 
 ## 🧪 Testing
 
-> **📋 For comprehensive testing guidelines, see [docs/test-plan.md](docs/test-plan.md)**
+> For comprehensive testing guidelines, see [docs/test-plan.md](docs/test-plan.md).
 
-### Test Infrastructure
-- **Test Framework**: pytest with async support (pytest-asyncio)
-- **Coverage Tool**: pytest-cov with branch coverage enabled
-- **Configuration**: Custom pytest.ini and .coveragerc
-- **CI Integration**: Automated testing in GitHub Actions
-- **Current Status**: ✅ All 98 tests passing with 84.53% coverage
-
-### Test Categories
-- **Unit Tests**
-  - Model validation and business logic
-  - Authentication and token handling
-  - Utility functions and helpers
-
-- **Integration Tests**
-  - User-Todo association validation
-  - Complete workflow testing
-  - Database operations
-  - Middleware functionality
-
-- **Security Tests**
-  - Authentication flow testing
-  - Token validation and refresh
-  - User isolation verification
-  - Permission checking
-
-- **Database Tests**
-  - MongoDB connection handling
-  - CRUD operations validation
-  - Error handling scenarios
-  - Connection pooling
-
-### Run Tests Locally
 ```bash
 # Run all tests with coverage
-pytest --cov=app --cov-report=term --cov-branch
+pytest --cov=app --cov-report=term-missing
 
-# Run specific test categories
-pytest app/tests/test_main.py -v
-pytest app/tests/test_integration_todo_user.py -v
-pytest app/tests/models/ -v  # Run all model tests
-
-# Generate coverage report
-pytest --cov=app --cov-report=html
+# Run specific test file
+pytest app/tests/routers/test_auth.py -v
 ```
 
-### Coverage Achievement
-- ✅ Achieved 84.53% code coverage (exceeding 80% target)
-- Branch coverage enabled and maintained
-- Strategic exclusions (init files, test files)
-- Continuous monitoring in CI pipeline
-- 98 comprehensive tests across all modules
 
 ## 📊 API Documentation
 
@@ -370,40 +293,10 @@ This project leverages multiple AI tools for enhanced development experience:
 - **Code Review**: Automated pull request analysis ✅
 - **Performance Optimization**: Automated performance bottleneck identification (planned)
 
-## 🔒 Security Features
+## 🔒 Security
 
-### Current Security Measures
-- **Authentication & Authorization**
-  - JWT-based authentication with secure refresh token rotation
-  - Configurable token expiration (access and refresh tokens)
-  - Secure password hashing using bcrypt with salt
-  - Request middleware for consistent authentication checks
+For security architecture details, see [ARCHITECTURE.md](docs/ARCHITECTURE.md#security-architecture).
 
-- **Data Protection**
-  - Strict user data isolation (users can only access their own todos)
-  - Environment-based configuration with pydantic-settings validation
-  - MongoDB connection security with timeouts and error handling
-
-- **Input Validation & Sanitization**
-  - Advanced input validation using Pydantic v2 models
-  - Custom validation for critical fields (dates, priorities, etc.)
-  - Secure ObjectId handling and validation
-  - Comprehensive request payload validation
-
-- **Infrastructure Security**
-  - Non-root user container execution
-  - Secure environment variable handling
-  - Health check endpoints for monitoring
-  - Proper error handling and logging
-  - CORS protection with configurable allowed origins
-  - Rate limiting on authentication endpoints (5 requests/minute)
-
-### Planned Security Enhancements
-- Rate limiting and DDoS protection
-- OAuth 2.0 provider integration
-- Two-factor authentication (2FA)
-- Security headers middleware
-- Audit logging system
 
 ## 🚀 Deployment
 
@@ -425,139 +318,10 @@ The application is designed for cloud deployment with the following consideratio
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our contributing guidelines:
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development workflow and guidelines.
 
-1. **Fork the repository**
-2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
-3. **Set up pre-commit hooks** (`pre-commit install`)
-4. **Make your changes** with proper tests
-5. **Run the test suite** (`pytest`)
-6. **Commit your changes** using conventional commit format
-7. **Push to the branch** (`git push origin feature/amazing-feature`)
-8. **Open a Pull Request**
 
-### Development Guidelines
-- Follow PEP 8 style guidelines (enforced by Ruff)
-- Add comprehensive tests for new features
-- Update documentation for API changes
-- Use conventional commit messages (see format below)
-- Ensure all CI checks pass
-- Pre-commit hooks will run automatically before each commit
 
-### Conventional Commit Format
-
-We use [Conventional Commits](https://www.conventionalcommits.org/) for clear and standardized commit messages:
-
-```
-<type>: <description>
-
-[optional body]
-
-[optional footer]
-```
-
-**Supported types:**
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `style`: Code style changes (formatting, etc.)
-- `refactor`: Code refactoring
-- `test`: Adding or updating tests
-- `chore`: Maintenance tasks
-- `perf`: Performance improvements
-- `ci`: CI/CD changes
-- `build`: Build system changes
-- `revert`: Revert previous commit
-
-**Examples:**
-```bash
-git commit -m "feat: add user profile endpoint"
-git commit -m "fix: resolve MongoDB connection timeout"
-git commit -m "docs: update API documentation"
-git commit -m "test: add integration tests for authentication"
-```
-
-**Bypass pre-commit hooks** (use sparingly):
-```bash
-git commit -m "your message" --no-verify
-```
-
-### Code Quality Tools
-
-- **Ruff**: Fast Python linter and formatter (replaces flake8, black, isort)
-- **Pre-commit**: Automated code quality checks before commits
-
-**Run checks manually:**
-```bash
-# Run all pre-commit hooks
-pre-commit run --all-files
-
-# Run ruff linting
-ruff check .
-
-# Run ruff formatting
-ruff format .
-```
-
-## 🎯 Future Enhancements & Technical Debt
-
-### High Priority
-1. **Performance Optimization**
-   - Implement MongoDB indexing strategy
-   - Add Redis caching layer for frequently accessed data
-   - Optimize database queries with proper projection
-
-2. **Security Hardening**
-   - Implement rate limiting for auth endpoints
-   - Add API key management for external integrations
-   - Set up security headers middleware
-   - Implement IP-based blocking for suspicious activities
-
-3. **Code Quality**
-   - Migrate to asyncio with Motor for MongoDB operations
-   - Implement repository pattern for better separation of concerns
-   - Add input/output validation decorators
-   - Enhance error handling with custom exception classes
-
-### Medium Priority
-1. **Developer Experience**
-   - Add OpenAPI schema versioning
-   - Implement API documentation generation
-   - Create development environment setup script
-   - Add database migration system
-
-2. **Monitoring & Observability**
-   - Set up Prometheus metrics
-   - Implement structured logging
-   - Add request tracing with correlation IDs
-   - Create dashboard templates for Grafana
-
-3. **Testing Improvements**
-   - Add performance benchmarking tests
-   - Implement contract testing
-   - Add mutation testing
-   - Create load testing scripts
-
-### Low Priority
-1. **Feature Enhancements**
-   - Add bulk operations support
-   - Implement webhook notifications
-   - Add export/import functionality
-   - Create admin dashboard
-
-## 📈 Performance Metrics
-
-### Current Performance
-- **API Response Time**: < 200ms average
-- **Database Query Time**: < 50ms average
-- **Memory Usage**: < 128MB container
-- **Test Coverage**: 84.53% achieved (98 tests)
-
-### Performance Goals
-- **API Response Time**: < 100ms (99th percentile)
-- **Concurrent Users**: 1000+ simultaneous
-- **Database Performance**: Sub-10ms query time
-- **Container Size**: < 100MB production image
 
 ## 📄 License
 

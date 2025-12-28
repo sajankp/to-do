@@ -10,6 +10,12 @@ class UserInput(BaseModel):
     email: EmailStr = Field(..., description="User's email address")
 
 
+class UserRegistration(UserInput):
+    """Model for user registration input with plain text password."""
+
+    password: str = Field(..., description="Plain text password")
+
+
 class CreateUser(UserInput):
     """Model for user creation with password field."""
 

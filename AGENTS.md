@@ -1,32 +1,53 @@
-# Agent Development Guide
+# AI Agent Context
 
-> **Note:** This guide is specifically for AI agents or developers new to the FastTodo codebase. For general project information, see the main [README.md](../Readme.md).
+**FastTodo** is a production-grade REST API for todo management.
+**Stack:** Python 3.13 · FastAPI · MongoDB · Pydantic v2
+**Live API:** https://to-do-4w0k.onrender.com/docs
+
+This repository contains the **backend only**. Frontend is in [sajankp/to-do-frontend](https://github.com/sajankp/to-do-frontend).
+
+> For general project information, see [README.md](README.md). For architecture details, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ---
 
+> ⚠️ **All commands in this document assume the virtual environment is activated:**
+> ```bash
+> source venv/bin/activate
+> ```
+
+> 🚨 **CRITICAL: Spec-Driven Development (SDD) Mandate**
+> You MUST follow the [Development Workflow](.agent/workflows/development-workflow.md) for ANY new feature or architectural change.
+>
+> **The Golden Rule for Agents:**
+> 1. **NEVER** write code based solely on an ADR or a user prompt.
+> 2. **ALWAYS** verify a Feature Spec exists in `docs/specs/` and is marked `Status: Approved`.
+> 3. **IF** Spec is `Planned` or `Draft` → STOP. Ask user to review/approve it first.
+> 4. **IF** ADR is `Accepted` but Spec is `Planned` → STOP. The Spec governs validity.
+>
+> ```
+> Workflow: Spec (Approve) → ADR (Approve) → Branch (Confirm) → Implement → Update ARCHITECTURE.md
+> ```
+
+> 📋 **Project Context:**
+> This is a reference implementation, not a quick prototype.
+> Prioritize documentation quality, clean commit history, and thoughtful decision records.
+
 ## Quick Start for Agents
 
-### Current Project Status (as of 2025-11-23)
+### Current Project Status
 
-- ✅ **All 70 tests passing** with 81.10% coverage
+- ✅ Comprehensive test suite (run `pytest --cov` for current stats)
 - ✅ User authentication with JWT (access + refresh tokens)
 - ✅ Todo CRUD operations with user isolation
 - ✅ Pydantic v2 migration completed
 - ✅ **Rate limiting implemented** (IP/User based)
-
-### Immediate Priorities
-
-1. **Security headers middleware** - OWASP best practices
-2. **Security headers middleware** - OWASP best practices
-3. **Repository pattern** - Better code organization
-4. **Structured logging** - Production readiness
 
 ---
 
 ## Critical Things to Know
 
 ### 1. Authentication Flow
-- Middleware in `app/main.py` handles all auth (lines 53-86)
+- Auth middleware in `app/main.py` handles token validation for all protected routes
 - User info stored in `request.state.user_id` and `request.state.username`
 - Always filter data by `request.state.user_id` to enforce user isolation
 
@@ -51,6 +72,13 @@ users_collection = request.app.user
 - Access tokens: 1800 seconds (30 minutes)
 - Refresh tokens: 3600 seconds (1 hour)
 - Configured via environment variables
+
+### ❌ DON'T (Common Mistakes)
+- **DON'T** access `user_id` from request body—always use `request.state.user_id`
+- **DON'T** skip tests—pre-commit hooks won't catch logic bugs
+- **DON'T** modify `ARCHITECTURE.md` without discussion first
+- **DON'T** create ADRs before updating `ARCHITECTURE.md`
+- **DON'T** hardcode secrets—use environment variables via `app/config.py`
 
 ---
 
@@ -81,7 +109,7 @@ app/
 
 | File | Purpose | Important Notes |
 |------|---------|-----------------|
-| `app/main.py` | App entry, middleware | Auth middleware on lines 53-86 |
+| `app/main.py` | App entry, middleware | Auth middleware, lifespan events |
 | `app/routers/auth.py` | Authentication | Password hashing, JWT creation |
 | `app/models/base.py` | PyObjectId type | MongoDB ObjectId handling |
 | `conftest.py` | Test configuration | Adds project root to path |
@@ -107,12 +135,16 @@ pytest app/tests/routers/test_auth.py -v
 - All test directories have `__init__.py` files
 - Mock MongoDB operations in tests (no real DB connections)
 
-### Current Coverage: 81.10%
+### Modules Needing Test Attention
+- `app/main.py` - middleware edge cases
+- `app/routers/todo.py` - error scenarios
+- `app/models/base.py` - serialization edge cases
 
-Modules with lower coverage needing attention:
-- `app/main.py`: 64.36% (middleware edge cases)
-- `app/routers/todo.py`: 66.67% (error scenarios)
-- `app/models/base.py`: 64.86% (serialization edge cases)
+### Quick Sanity Check
+```bash
+# Verify everything works after setup or changes
+pytest app/tests/ -q && echo "✅ All tests passing"
+```
 
 ---
 
@@ -124,66 +156,42 @@ Modules with lower coverage needing attention:
 2. Create route handler in `app/routers/`
 3. Add router to `app/main.py` with `app.include_router()`
 4. Write tests in `app/tests/routers/`
-5. Ensure route requires authentication (middleware handles this automatically unless excluded)
-
-### Adding Environment Variables
-
-1. Add to `.env.example`
-2. Update `app/config.py` Settings class
-3. Add validation in `app/utils/validate_env.py` if needed
-4. Update documentation
 
 ### Working with MongoDB
 
 ```python
-# Access in routes
+# Access collections via request.app
 collection = request.app.todo  # or .user
 
-# Insert
-result = collection.insert_one(data.model_dump())
-
-# Find with user isolation
+# Always filter by user for isolation
 todos = collection.find({"user_id": request.state.user_id})
-
-# Use PyObjectId for ID fields
-from app.models.base import PyObjectId
-todo_id = PyObjectId(id_string)
 ```
 
 ---
 
-## Security Considerations
+## Security Best Practices
 
-### ✅ Implemented
-- JWT token authentication
-- Bcrypt password hashing
-- User data isolation
-- Environment-based secrets
-- Docker non-root user
-- Rate limiting on auth and API endpoints
-
-### ⚠️ Missing (High Priority)
-
-- Security headers (HSTS, CSP, etc.)
-- Request size limits
-- IP-based blocking
-
-### Best Practices
 - Never log sensitive data (passwords, tokens)
-- Always validate user_id from `request.state`, never from request body
-- Use type hints for all functions
-- Follow principle of least privilege
+- Always use `request.state.user_id`, never from request body
+- Use environment variables via `app/config.py` for secrets
+
+> For full security status and roadmap, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#security-architecture).
 
 ---
 
 ## Development Workflow
 
-### Local Setup
+### Local Setup (First Time Only)
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+pre-commit install
 cp .env.example .env  # Edit with your credentials
+```
+
+### Running the Server
+```bash
 uvicorn app.main:app --reload --port 80
 ```
 
@@ -194,64 +202,31 @@ docker run -p 80:80 --env-file .env fasttodo
 ```
 
 ### Before Committing
+
+Pre-commit hooks run automatically on `git commit`. To run manually:
 ```bash
-# Run tests
-pytest app/tests/
-
-# Check coverage
-pytest --cov=app --cov-report=term-missing
-
-# Verify formatting (if using black/ruff)
-# Add linter commands here
+pre-commit run --all-files
 ```
 
----
-
-## API Documentation
-
-When app is running, access interactive docs at:
-- Swagger UI: http://localhost/docs
-- ReDoc: http://localhost/redoc
+Hooks enforce: Ruff linting, conventional commits, trailing whitespace removal.
 
 ---
 
 ## Troubleshooting
 
-### Import Errors in Tests
-- Ensure `conftest.py` exists at project root
-- Check `pytest.ini` has `pythonpath = .`
-- Verify all test directories have `__init__.py`
-
-### Database Connection Issues
-- Check `.env` file has correct MongoDB credentials
-- Verify MongoDB Atlas IP whitelist includes your IP
-- Check `MONGO_TIMEOUT` setting (default: 5 seconds)
-
-### Pydantic Validation Errors
-- Ensure using Pydantic v2 syntax (`model_config`, not `Config`)
-- Check `pydantic-settings` is installed
-- Use `model_dump()` instead of `dict()`
-
----
-
-## Performance Notes
-
-### Current Metrics
-- API Response Time: <200ms average
-- Database Query Time: <50ms average
-- Test Suite: 70 tests in ~1.25 seconds
-
-### Optimization Opportunities
-- Add database indexes (priority, due_date, user_id)
-- Implement Redis caching for frequent queries
-- Use Motor for async MongoDB operations
-- Add connection pooling configuration
+| Problem | Fix |
+|---------|-----|
+| Import errors in tests | Ensure `conftest.py` exists, `pytest.ini` has `pythonpath = .` |
+| Database connection fails | Check `.env` credentials, MongoDB Atlas IP whitelist |
+| Pydantic errors | Use `model_config` not `Config`, `model_dump()` not `dict()` |
 
 ---
 
 ## Additional Resources
 
-- [Main README](../Readme.md) - Project overview and setup
-- [Test Plan](test-plan.md) - Comprehensive testing checklist
-- [Live API](https://to-do-4w0k.onrender.com/docs) - Production deployment
+- [README.md](README.md) - Project overview and setup
+- [Architecture Spec](docs/ARCHITECTURE.md) - Full system specification
+- [Test Plan](docs/test-plan.md) - Testing checklist
+- [ADRs](docs/adr/) - Architecture Decision Records
+- [Live API](https://to-do-4w0k.onrender.com/docs) - Production Swagger docs
 - [GitHub Repository](https://github.com/sajankp/to-do/)
