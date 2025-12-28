@@ -63,5 +63,5 @@ Frontend → Backend /api/ai/voice → Gemini API
 
 ## Related
 
-- [docs/spec.md](../spec.md) - Full decision context in "Architectural Decisions Summary"
+- [docs/ARCHITECTURE.md](../ARCHITECTURE.md) - Full decision context in "Architectural Decisions Summary"
 - TD-006 in Technical Debt Registry

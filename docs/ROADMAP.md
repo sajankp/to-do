@@ -1,0 +1,104 @@
+# Project Roadmap
+
+> **Philosophy:** Security and stability first, then architecture, then features.
+> This project prioritizes production-readiness over feature velocity.
+
+## Current Focus
+
+**Phase 1: Production Readiness** - Ensuring the API is secure and observable before adding features.
+
+---
+
+## Phases
+
+### Phase 1: Stability & Production Readiness ⬅️ Current
+
+| Item | Description | Effort | Status |
+|------|-------------|--------|--------|
+| TD-003 | Security headers middleware (OWASP) | 4 hours | 🔲 |
+| TD-004 | Structured logging (structlog) | 1 day | 🔲 |
+| TD-005 | Monitoring/Observability (Prometheus + Grafana) | 3 days | 🔲 |
+| TD-002 | Database indexes | 1 hour | 🔲 |
+| TD-012 | Move password to request body | 2 hours | 🔲 |
+| TD-013 | Email uniqueness check | 1 hour | 🔲 |
+| TD-006 | Gemini API backend proxy | 2 days | 🔲 |
+| TD-011 | Frontend token refresh | 1 day | 🔲 |
+
+---
+
+### Phase 2: Architecture (Short-term)
+
+| Item | Description | Effort | Status |
+|------|-------------|--------|--------|
+| TD-001 | Migrate to Motor (async MongoDB) | 3 days | 🔲 |
+| TD-008 | Repository pattern | 5 days | 🔲 |
+| TD-009 | Service layer | 3 days | 🔲 |
+| TD-010 | Frontend testing infrastructure | 2 days | 🔲 |
+| TD-007 | Frontend linting Phase 1 | 2 hours | 🔲 |
+
+---
+
+### Phase 3: Features (Medium-term)
+
+| Item | Description | Effort | Status |
+|------|-------------|--------|--------|
+| - | Email verification | 2 days | 🔲 |
+| - | Password reset | 1 day | 🔲 |
+| - | Pagination | 4 hours | 🔲 |
+| TD-014 | API versioning | 2 days | 🔲 |
+| TD-007a/b | Frontend linting Phase 2 & 3 | 12 hours | 🔲 |
+
+---
+
+### Phase 4: Advanced (Long-term)
+
+| Item | Description | Effort | Status |
+|------|-------------|--------|--------|
+| - | 2FA & OAuth | 5 days | 🔲 |
+| TD-015 | HttpOnly cookie tokens | 2 days | 🔲 |
+| - | Kubernetes deployment | 3 days | 🔲 |
+| - | Advanced dashboards & alerting | 2 days | 🔲 |
+
+---
+
+## Technical Debt Registry
+
+> Full details for each item are documented in [ARCHITECTURE.md](ARCHITECTURE.md#known-architectural-pitfalls).
+
+| ID | Description | Priority | Effort |
+|----|-------------|----------|--------|
+| TD-001 | Migrate to async Motor | High | 3 days |
+| TD-002 | Add database indexes | High | 1 hour |
+| TD-003 | Security headers middleware | High | 4 hours |
+| TD-004 | Structured logging (structlog) | High | 1 day |
+| TD-005 | Monitoring/Observability | Critical | 3 days |
+| TD-006 | Gemini API backend proxy | Critical | 2 days |
+| TD-007 | Frontend linting - Phase 1 | High | 2 hours |
+| TD-007a | Frontend linting - Phase 2 | Medium | 4 hours |
+| TD-007b | Frontend linting - Phase 3 | Low | 8 hours |
+| TD-008 | Repository pattern | Medium | 5 days |
+| TD-009 | Service layer | Medium | 3 days |
+| TD-010 | Frontend testing setup | Medium | 2 days |
+| TD-011 | Token refresh | Medium | 1 day |
+| TD-012 | Move password to request body | Low | 2 hours |
+| TD-013 | Email uniqueness check | Low | 1 hour |
+| TD-014 | API versioning | Low | 2 days |
+| TD-015 | HttpOnly cookie tokens | Low | 2 days |
+
+---
+
+## Prioritization Rationale
+
+**Why Security/Stability First?**
+- Addressing security issues after launch is 10x more costly
+- Observability enables faster debugging of future issues
+- Stable foundation enables confident feature development
+
+**Why Repository Pattern Before Features?**
+- Clean architecture makes features easier to add
+- Testing is simpler with proper separation of concerns
+- Technical debt compounds if architecture is neglected
+
+---
+
+*Last updated: 2025-12-28*

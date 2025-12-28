@@ -14,8 +14,9 @@ It emphasizes documentation, testing, and structured decision-making.
 
 ## 📚 Documentation
 
-- **[Architecture Specification](docs/spec.md)** - Full system architecture and technical decisions
-- **[Architecture Decision Records](docs/adr/)** - Key decisions and their rationale
+- **[Architecture](docs/ARCHITECTURE.md)** - Full system architecture and technical decisions
+- **[Project Roadmap](docs/ROADMAP.md)** - Phases, priorities, and technical debt
+- **[ADRs](docs/adr/)** - Key architectural decisions and their rationale
 - **[Test Plan](docs/test-plan.md)** - Comprehensive testing and QA checklist
 - **[Agent Context](AGENTS.md)** - Quick reference for AI agents and new developers
 - **[API Docs (Live)](https://to-do-4w0k.onrender.com/docs)** - Interactive Swagger documentation
@@ -164,7 +165,7 @@ It emphasizes documentation, testing, and structured decision-making.
 │   └── workflows/           # CI/CD configuration
 ├── Dockerfile              # Secure container configuration
 ├── docs/
-│   ├── spec.md             # Full system specification
+│   ├── ARCHITECTURE.md             # Full system specification
 │   ├── test-plan.md        # Comprehensive test plan
 │   └── adr/                # Architecture Decision Records
 ├── AGENTS.md               # AI agent quick reference

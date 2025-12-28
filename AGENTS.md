@@ -6,7 +6,7 @@
 
 This repository contains the **backend only**. Frontend is in [sajankp/to-do-frontend](https://github.com/sajankp/to-do-frontend).
 
-> For general project information, see [README.md](README.md). For architecture details, see [docs/spec.md](docs/spec.md).
+> For general project information, see [README.md](README.md). For architecture details, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ---
 
@@ -18,7 +18,7 @@ This repository contains the **backend only**. Frontend is in [sajankp/to-do-fro
 > 🚨 **For architectural changes** (new endpoints, model changes, security, database schema):
 > Follow the [Development Workflow](.agent/workflows/development-workflow.md) before writing any code.
 > ```
-> Discuss → Update spec.md → Create ADR → Implement
+> Discuss → Update ARCHITECTURE.md → Create ADR → Implement
 > ```
 
 > 📋 **Project Context:**
@@ -69,8 +69,8 @@ users_collection = request.app.user
 ### ❌ DON'T (Common Mistakes)
 - **DON'T** access `user_id` from request body—always use `request.state.user_id`
 - **DON'T** skip tests—pre-commit hooks won't catch logic bugs
-- **DON'T** modify `spec.md` without discussion first
-- **DON'T** create ADRs before updating `spec.md`
+- **DON'T** modify `ARCHITECTURE.md` without discussion first
+- **DON'T** create ADRs before updating `ARCHITECTURE.md`
 - **DON'T** hardcode secrets—use environment variables via `app/config.py`
 
 ---
@@ -168,7 +168,7 @@ todos = collection.find({"user_id": request.state.user_id})
 - Always use `request.state.user_id`, never from request body
 - Use environment variables via `app/config.py` for secrets
 
-> For full security status and roadmap, see [docs/spec.md](docs/spec.md#security-architecture).
+> For full security status and roadmap, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#security-architecture).
 
 ---
 
@@ -218,7 +218,7 @@ Hooks enforce: Ruff linting, conventional commits, trailing whitespace removal.
 ## Additional Resources
 
 - [README.md](README.md) - Project overview and setup
-- [Architecture Spec](docs/spec.md) - Full system specification
+- [Architecture Spec](docs/ARCHITECTURE.md) - Full system specification
 - [Test Plan](docs/test-plan.md) - Testing checklist
 - [ADRs](docs/adr/) - Architecture Decision Records
 - [Live API](https://to-do-4w0k.onrender.com/docs) - Production Swagger docs

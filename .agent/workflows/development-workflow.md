@@ -2,161 +2,192 @@
 description: Mandatory workflow for new features and architectural changes
 ---
 
-# Development Workflow for New Features
+# Spec-Driven Development Workflow
 
 This workflow MUST be followed for any new feature or architectural change.
 
-## ⚠️ Critical Rule: No Code Before Documentation
+## ⚠️ Core Principle: Specification Before Implementation
 
-**DO NOT** jump straight to implementation. Follow this sequence:
+**DO NOT** jump straight to coding. Follow the Spec-Driven Development (SDD) process:
 
 ```
-1. Update spec.md (don't commit)
+1. Create Feature Spec (docs/specs/NNN-feature.md)
    ↓
-2. CHECKPOINT: User reviews spec.md → approves → commit spec.md
+2. CHECKPOINT: User reviews spec → Approve → Commit
    ↓
-3. Create ADR (don't commit)
+3. Create ADR (if architectural decision was made)
    ↓
-4. CHECKPOINT: User reviews ADR → approves → commit ADR
+4. (If ADR) CHECKPOINT: User reviews ADR → Approve → Commit
    ↓
-5. Implement code
+5. Implement code (following the spec exactly)
+   ↓
+6. Update ARCHITECTURE.md (only if system architecture changed)
 ```
 
 > [!CAUTION]
 > **INCREMENTAL REVIEW PROCESS**
-> - After spec.md: STOP and request review
-> - After ADR: STOP and request review
+> - After creating spec: STOP and request review
+> - After creating ADR (if needed): STOP and request review
 > - Only proceed to next step after explicit approval
-> - Commits happen ONLY after each checkpoint approval
+
+---
 
 ## Step-by-Step Process
 
-### Step 1: Update spec.md
+### Step 1: Create Feature Spec
 
-When a new feature or architectural change is proposed:
+When a new feature or change is proposed:
 
-1. Open `docs/spec.md`
-2. Add discussion to the appropriate section:
-   - **New architectural concern**: Add to "Known Architectural Pitfalls"
-   - **New decision**: Add to "Architectural Decisions Summary"
-   - **New model field**: Update "Data Models" section
-   - **New API endpoint**: Update "API Contract" section
+1. Create a new file in `docs/specs/` with naming: `NNN-descriptive-title.md`
+2. Use the template in `docs/specs/README.md`
 3. Include:
-   - **Context**: Why is this needed?
-   - **Options Considered**: What alternatives exist?
-   - **Trade-offs**: What are the pros/cons?
-   - **Decision**: What approach are we taking?
+   - **Problem Statement**: Why is this needed?
+   - **Proposed Solution**: How will we solve it?
+   - **API Changes**: New/modified endpoints, request/response format
+   - **Data Model Changes**: Schema changes, new fields
+   - **Implementation Plan**: Step-by-step approach
+   - **Test Strategy**: How to verify correctness
+   - **Open Questions**: Things to clarify
+
 4. **STOP HERE** - Do not commit, do not create ADR yet
 
-### Step 2: CHECKPOINT - Review spec.md
+### Step 2: CHECKPOINT - Review Spec
 
-Use `notify_user` to request review of spec.md ONLY:
+Use `notify_user` to request review of the spec ONLY:
 
 ```
-PathsToReview: ["/absolute/path/to/docs/spec.md"]
+PathsToReview: ["/absolute/path/to/docs/specs/NNN-feature.md"]
 BlockedOnUser: true
-Message: "I've updated spec.md with the proposed changes. Please review.
-         If approved, I'll commit and proceed to create the ADR."
+Message: "I've created a feature spec. Please review.
+         If approved, I'll commit and proceed."
 ```
 
 **Wait for user response:**
 - ✅ User approves → Proceed to Step 3
-- ❌ User requests changes → Update spec.md, return to Step 2
+- ❌ User requests changes → Update spec, return to Step 2
 - ⏸️ User defers → Stop, don't proceed
 
-### Step 3: Commit spec.md (ONLY AFTER APPROVAL)
+### Step 3: Commit Spec (ONLY AFTER APPROVAL)
 
-Once user approves spec.md:
-1. Stage: `git add docs/spec.md`
-2. Commit: `docs: add [feature description] to specification`
-3. **STOP HERE** - Do not create ADR yet, wait for explicit instruction
+Once user approves the spec:
+1. Stage: `git add docs/specs/NNN-feature.md`
+2. Commit: `docs: add spec for [feature description]`
+3. Consider: Does this feature involve an architectural decision?
 
-### Step 4: Create ADR
+### Step 4: Create ADR (If Needed)
 
-Once user instructs to proceed:
+Create an ADR **only if** you made a non-obvious choice between alternatives.
 
-Create Architecture Decision Record in `docs/adr/`:
+**When ADR is needed:**
+- Chose between multiple architectural options
+- Made a trade-off decision
+- Established a new pattern
 
-```bash
-# Naming convention: NNN-descriptive-title.md
-# Example: 009-add-todo-completion-status.md
+**When ADR is NOT needed:**
+- Straightforward feature implementation
+- Following existing patterns
+- No alternatives were considered
+
+If ADR is needed:
+1. Create in `docs/adr/` with naming: `NNN-descriptive-title.md`
+2. Include:
+   - **Context**: Background and problem
+   - **Options Considered**: What alternatives existed
+   - **Decision**: What we chose and why
+   - **Consequences**: Trade-offs accepted
+
+3. **STOP HERE** - Request review before committing
+
+### Step 5: CHECKPOINT - Review ADR (If Applicable)
+
+Use `notify_user` to request review of ADR:
+
 ```
-
-ADR should include:
-- **Status**: Proposed | Accepted | Rejected
-- **Context**: Background and problem statement
-- **Decision**: What we decided to do
-- **Consequences**: Impact of this decision
-- **Alternatives Considered**: Other options we rejected
-
-**STOP HERE** - Do not commit ADR yet
-
-### Step 5: CHECKPOINT - Review ADR
-
-Use `notify_user` to request review of ADR ONLY:
-
-```
-PathsToReview: ["/absolute/path/to/docs/adr/XXX-....md"]
+PathsToReview: ["/absolute/path/to/docs/adr/NNN-....md"]
 BlockedOnUser: true
-Message: "I've created ADR XXX. Please review.
+Message: "I've created ADR-NNN. Please review.
          If approved, I'll commit and proceed to implementation."
 ```
-
-**Wait for user response:**
-- ✅ User approves → Proceed to Step 6
-- ❌ User requests changes → Update ADR, return to Step 5
-- ⏸️ User defers → Stop, don't proceed
 
 ### Step 6: Commit ADR (ONLY AFTER APPROVAL)
 
 Once user approves ADR:
-1. Stage: `git add docs/adr/XXX-....md`
-2. Commit: `docs: create ADR-XXX for [feature]`
-3. **STOP HERE** - Do not start implementation yet
+1. Stage: `git add docs/adr/NNN-....md`
+2. Update ADR index: `git add docs/adr/README.md`
+3. Commit: `docs: create ADR-NNN for [decision]`
 
-### Step 7: Implement Code (ONLY AFTER EXPLICIT INSTRUCTION)
+### Step 7: Implement Code
 
-Only after user explicitly instructs to proceed with implementation:
+Only after spec (and ADR if applicable) are approved:
 1. Create feature branch (if not already on one)
-2. Implement backend changes
-3. Write tests
-4. Implement frontend changes
-5. Create PR referencing the ADR
+2. Implement backend changes **following the spec exactly**
+3. Write tests as defined in spec
+4. Implement frontend changes (if applicable)
+5. Run tests, ensure passing
+6. Commit with conventional commit format
 
-## Examples of Changes Requiring This Workflow
+### Step 8: Update ARCHITECTURE.md (If Needed)
 
-✅ **Requires workflow**:
+Update `docs/ARCHITECTURE.md` **only if** the overall system architecture changed:
+- New component added
+- New architectural pattern introduced
+- Security model changed
+- Data flow changed
+
+**Do NOT** add detailed feature specs to ARCHITECTURE.md. That content stays in `docs/specs/`.
+
+---
+
+## Document Purposes
+
+| Document | Purpose | Contains |
+|----------|---------|----------|
+| `docs/specs/*.md` | Feature blueprint | Problem, solution, API, implementation plan |
+| `docs/adr/*.md` | Decision record | Options, trade-offs, why we chose this |
+| `docs/ARCHITECTURE.md` | System overview | Current state, not decision history |
+| `docs/ROADMAP.md` | Planning | Phases, priorities, technical debt |
+
+---
+
+## Examples
+
+### ✅ Requires This Workflow
 - Adding new model fields (e.g., `completed` field)
 - New API endpoints
 - Authentication/security changes
 - Database schema changes
-- New architectural patterns (repository layer, service layer)
+- New architectural patterns
 - Breaking changes
 - Major refactors
 
-❌ **Does NOT require workflow** (minor changes):
+### ❌ Does NOT Require Workflow (Minor Changes)
 - Bug fixes
 - UI styling tweaks
 - Code formatting
 - Documentation fixes
-- Test additions
+- Adding tests to existing code
+
+---
+
+## Why This Matters
+
+- **Spec-Driven Development**: Industry-standard approach used by AWS Kiro, GitHub Spec Kit
+- **Clear blueprints**: Specs define exactly what to build
+- **Decision transparency**: ADRs capture the "why"
+- **Clean architecture docs**: ARCHITECTURE.md stays lean
+- **AI-friendly**: Specs serve as clear instructions for AI agents
+
+---
 
 ## Enforcement
 
 If you see me jumping to implementation without following this workflow:
 
 1. **Stop me immediately**
-2. **Remind me**: "Follow the spec.md workflow: discuss → spec.md → ADR → approve → implement"
+2. **Remind me**: "Follow the SDD workflow: spec → approve → ADR (if needed) → implement"
 3. **I will backtrack** and do it properly
-
-## Why This Matters
-
-- **Prevents technical debt**: Decisions are documented with context
-- **Future maintainers**: Understand the "why" behind choices
-- **Accountability**: Clear record of architectural decisions
-- **Thoughtful design**: Forces consideration of alternatives
-- **Team alignment**: Everyone understands the architecture
 
 ---
 
-**Current Status**: ✅ Workflow established 2025-12-21
+*Workflow established: 2025-12-21*
+*Updated to SDD: 2025-12-28*

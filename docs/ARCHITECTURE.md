@@ -23,16 +23,16 @@
 > ## 🚨 Development Workflow - READ THIS FIRST
 >
 > **For AI Agents and Developers:**
-> This spec.md is the **single source of truth** for architectural decisions. You MUST follow this workflow:
+> This ARCHITECTURE.md is the **single source of truth** for architectural decisions. You MUST follow this workflow:
 >
 > ```
-> 1. Architecture Discussion → Update spec.md
+> 1. Architecture Discussion → Update ARCHITECTURE.md
 > 2. Create ADR (Architecture Decision Record)
 > 3. Implement code
 > ```
 >
 > **❌ DO NOT:**
-> - Jump straight to coding without updating spec.md
+> - Jump straight to coding without updating ARCHITECTURE.md
 > - Create code before ADR for architectural changes
 > - Make architectural decisions without discussion
 >
@@ -40,7 +40,7 @@
 > - Add new architectural concerns to "Known Architectural Pitfalls"
 > - Document decisions in "Architectural Decisions Summary"
 > - Update Technical Debt Registry with effort estimates
-> - Create ADR referencing spec.md decisions
+> - Create ADR referencing ARCHITECTURE.md decisions
 > - Only then implement
 >
 > **Why:** This prevents technical debt, ensures decisions are documented with context, and helps future maintainers understand the "why" behind choices.
@@ -805,238 +805,26 @@ The codebase is relatively clean (only 13 linting issues). Enforcing strict rule
 ## Architectural Decisions Summary
 
 > [!NOTE]
-> This section documents architectural decisions made during architecture review sessions. Each decision includes options considered, trade-offs, and rationale for ADR creation.
-
-### Decision 1: Gemini API Security Architecture (2025-12-21)
-
-**Context:**
-Voice assistant feature currently bundles Gemini API key in frontend JavaScript, making it visible in browser DevTools and vulnerable to abuse.
-
-**Options Considered:**
-
-| Option | Description | Pros | Cons | Cost |
-|--------|-------------|------|------|------|
-| **A: Backend Proxy** | Frontend → Backend `/api/ai/voice` → Gemini | Key stays secure, user tracking, rate limiting, cost controls | Adds latency, backend complexity, stateful for streaming | 2 days |
-| B: Edge Function | Frontend → Vercel/Netlify Edge → Gemini | Low latency, separate service | Another service to manage, harder auth integration | 1 day |
-| C: AI Studio Only | Use `window.aistudio` API only | No key management | Only works in AI Studio, not production | 0 days |
-
-**Decision:** ✅ **Option A - Backend Proxy**
-
-**Rationale:**
-- Security is critical - API key exposure is unacceptable in production
-- Backend already handles all authentication, keeping it centralized
-- Per-user rate limiting prevents abuse and controls costs
-- Usage logging enables analytics and debugging
-- Streaming complexity is manageable with FastAPI's async support
-
-**Trade-offs Accepted:**
-- ~50-100ms additional latency for AI requests (acceptable for voice UX)
-- Backend state management for streaming WebSocket connections
-
-**Implementation Notes:**
-- New router: `app/routers/ai.py`
-- Rate limit: 10 requests/minute per user
-- Endpoint: `POST /api/ai/voice` with `WebSocket /api/ai/voice/stream`
-
-**To Document in ADR:** 008-gemini-api-backend-proxy.md
+> Individual architectural decisions are documented in [ADRs](adr/).
+> See [ADR Index](adr/README.md) for the complete list (ADR-001 through ADR-009).
 
 ---
 
-### Decision 2: Frontend Code Quality Enforcement Strategy (2025-12-21)
+## Technical Debt & Roadmap
 
-**Context:**
-Frontend has no linting or formatting enforcement, unlike backend which has strict Ruff pre-commit hooks. Need to balance code quality with development velocity.
-
-**Assessment Results:**
-- Current codebase: 13 ESLint errors (8× `any`, 5× unused vars)
-- Missing `@types/react` causing 50+ false strict mode errors
-- VoiceAssistant.tsx has complex Gemini SDK types (hard to fully type)
-
-**Options Considered:**
-
-| Approach | Description | Pros | Cons |
-|----------|-------------|------|------|
-| **Phased (Chosen)** | Gradual enforcement over 2 months | Low disruption, incremental improvement | Slower to full compliance |
-| Strict Upfront | ESLint + TypeScript strict mode immediately | Forces best practices now | Blocks development, breaks experimental features |
-| No Enforcement | Keep as-is | No effort | Code quality drift, inconsistent style |
-
-**Decision:** ✅ **Phased Approach (3 phases)**
-
-**Phase 1: Foundation (Week 1, 2 hours)**
-- Install missing type definitions
-- Add Prettier (auto-format)
-- Add commitlint (conventional commits)
-- Fix 5 unused import errors
-
-**Phase 2: Gradual Strictness (Week 2-3, 4 hours)**
-- ESLint with warnings (not errors) for `any`
-- Fix 2 easy `any` in api.ts, AuthForm.tsx
-- Leave VoiceAssistant `any` types (complex SDK)
-
-**Phase 3: Full Enforcement (Month 2, 8 hours)**
-- Strict TypeScript mode
-- Type Gemini SDK properly
-- Pre-commit hooks blocking errors
-
-**Rationale:**
-- Backend is simpler (Python + Ruff), frontend has external SDK complexity
-- Voice assistant is experimental/AI-generated, needs flexibility
-- Only 13 errors = codebase is relatively clean already
-- Incremental > all-or-nothing (avoid blocking current development)
-
-**Trade-offs Accepted:**
-- Technical debt exists for ~2 months (some `any` types remain)
-- Two-tier enforcement (backend strict, frontend gradual)
-
-**Rejected Alternative:**
-- Matching backend strictness was rejected because:
-  - TypeScript + React + external SDKs more complex than Python
-  - Would block experimental features
-  - 13 errors don't justify blocking development
-
-**To Document in ADR:** 203-frontend-code-quality-strategy.md (frontend ADR)
-
----
-
-### Decision 3: Todo Completion Status Field (2025-12-21)
-
-**Context:**
-Current todo implementation supports Create, Read, Update, Delete operations but lacks a way to mark tasks as complete. Users must delete completed tasks, losing history and preventing productivity tracking.
-
-**Problem Statement:**
-- No completion status tracking
-- Users cannot differentiate between active and completed tasks
-- Deleting completed tasks loses historical data
-- Cannot track productivity metrics (completion rate, time to complete, etc.)
-
-**Options Considered:**
-
-| Option | Description | Pros | Cons |
-|--------|-------------|------|------|
-| **A: Boolean Field (Chosen)** | Add `completed: bool` field to Todo model | Simple, efficient, backward-compatible | Limited states (only done/not done) |
-| B: Status Enum | `status: Enum["todo", "in_progress", "done"]` | Supports multi-state workflows | Overkill for MVP, more complex filtering |
-| C: Separate Collection | Move completed todos to `completed_todos` collection | Clean separation | Complex migrations, slower queries, data duplication |
-| D: Soft Delete | Use `deleted_at` field, filter in queries | No additional field | Confuses "deleted" with "completed" |
-
-**Decision:** ✅ **Option A - Boolean `completed` Field**
-
-**Rationale:**
-- **Simplicity**: Single boolean field is easy to understand and implement
-- **Performance**: Boolean filtering is fast, minimal overhead
-- **Backward Compatibility**: Existing todos will default to `completed=False` via Pydantic
-- **YAGNI Principle**: Multi-state workflows (Option B) not needed for MVP
-- **Query Efficiency**: Can add compound index `(user_id, completed)` for fast filtering
-
-**Implementation Details:**
-
-**Backend**:
-- Add `completed: bool = False` to `TodoInput`, `TodoUpdate`, `TodoInDB`, `TodoResponse`
-- GET `/todo/` supports optional `?completed=true|false` query parameter
-- PATCH `/todo/{id}` allows updating `completed` field
-- Database index: `todos.create_index([("user_id", 1), ("completed", 1)])`
-
-**Frontend**:
-- Add `completed: boolean` to `Todo` interface
-- Add checkbox to task cards for toggling completion
-- Visual styling: strikethrough + reduced opacity for completed tasks
-- Filter UI: Tabs for "All" / "Active" / "Completed" views
-- Default view: "Active only" (hide completed by default)
-
-**UX Decisions**:
-- ✅ Strikethrough text for completed tasks
-- ✅ Reduced opacity (60%) for completed tasks
-- ✅ Checkbox on left side of task card
-- ✅ Completed tasks auto-sort to bottom of list
-- ⏸️ Voice assistant "mark complete" command (deferred to Phase 2)
-
-**Trade-offs Accepted:**
-- Limited to binary state (can't track "in progress" separately)
-- Completed tasks remain in main collection (slight query overhead)
-- No automatic archival of old completed tasks
-
-**Migration Strategy:**
-- No database migration required (MongoDB schemaless)
-- Existing documents without `completed` field default to `False` via Pydantic
-- New todos explicitly set `completed=False` on creation
-
-**Testing Strategy:**
-- Backend: Add tests for filtering, updating completion status
-- Frontend: Manual testing (no test infrastructure yet - see TD-010)
-- Integration: Verify persistence across page reloads
-
-**Performance Impact:**
-- **Query**: Minimal - boolean filtering is O(1) with index
-- **Storage**: ~1 byte per todo (negligible)
-- **Index**: Compound index adds ~10-20% storage overhead (acceptable)
-
-**To Document in ADR:** 009-todo-completion-status.md
-
----
-
-## Technical Debt Registry
-
-| ID | Description | Priority | Effort | Status |
-|----|-------------|----------|--------|--------|
-| TD-001 | Migrate to async Motor | High | 3 days | 🔲 |
-| TD-002 | Add database indexes | High | 1 hour | 🔲 |
-| TD-003 | **Security headers middleware** | **High** | **4 hours** | 🔲 |
-| TD-004 | **Structured logging (structlog)** | **High** | **1 day** | 🔲 |
-| TD-005 | **Monitoring/Observability (Prometheus + Grafana)** | **Critical** | **3 days** | 🔲 |
-| TD-006 | **Gemini API backend proxy** | **Critical** | **2 days** | 🔲 |
-| TD-007 | **Frontend linting - Phase 1 (Foundation)** | **High** | **2 hours** | 🔲 |
-| TD-007a | Frontend linting - Phase 2 (Gradual) | Medium | 4 hours | 🔲 |
-| TD-007b | Frontend linting - Phase 3 (Strict) | Low | 8 hours | 🔲 |
-| TD-008 | Implement repository pattern | Medium | 5 days | 🔲 |
-| TD-009 | Add service layer | Medium | 3 days | 🔲 |
-| TD-010 | Frontend testing setup | Medium | 2 days | 🔲 |
-| TD-011 | Implement token refresh | Medium | 1 day | 🔲 |
-| TD-012 | Move password to request body | Low | 2 hours | 🔲 |
-| TD-013 | Add email uniqueness check | Low | 1 hour | 🔲 |
-| TD-014 | API versioning | Low | 2 days | 🔲 |
-| TD-015 | HttpOnly cookie tokens | Low | 2 days | 🔲 |
-
----
-
-## Evolution Roadmap
-
-### Phase 1: Stability & Production Readiness (Immediate)
-- [ ] **Add security headers middleware** (TD-003, 4 hours)
-- [ ] **Implement structured logging** (TD-004, 1 day)
-- [ ] **Set up monitoring/observability** (TD-005, 3 days)
-- [ ] Add database indexes (TD-002, 1 hour)
-- [ ] Fix password in query string (TD-012, 2 hours)
-- [ ] Add email uniqueness check (TD-013, 1 hour)
-- [ ] Implement Gemini API backend proxy (TD-006, 2 days)
-- [ ] Implement token refresh in frontend (TD-011, 1 day)
-
-### Phase 2: Architecture (Short-term)
-- [ ] Migrate to Motor (async) (TD-001, 3 days)
-- [ ] Implement repository pattern (TD-008, 5 days)
-- [ ] Add service layer (TD-009, 3 days)
-- [ ] Frontend testing infrastructure (TD-010, 2 days)
-- [ ] Frontend linting Phase 1 (TD-007, 2 hours)
-
-### Phase 3: Features (Medium-term)
-- [ ] Email verification
-- [ ] Password reset
-- [ ] Pagination
-- [ ] API versioning (TD-014, 2 days)
-- [ ] Frontend linting Phase 2 & 3 (TD-007a/b, 12 hours)
-
-### Phase 4: Advanced (Long-term)
-- [ ] 2FA & OAuth
-- [ ] HttpOnly cookie tokens (TD-015, 2 days)
-- [ ] Kubernetes deployment
-- [ ] Advanced dashboards & alerting
+> [!NOTE]
+> Technical debt registry and evolution roadmap are maintained in [ROADMAP.md](ROADMAP.md).
 
 ---
 
 ## Cross-References
 
-- [Backend README](https://github.com/sajankp/to-do/blob/main/README.md)
-- [Frontend README](https://github.com/sajankp/to-do-frontend/blob/main/README.md)
-- [Backend ADRs](https://github.com/sajankp/to-do/blob/main/docs/adr/)
+- [Backend README](../README.md)
+- [Agent Context](../AGENTS.md)
+- [Project Roadmap](ROADMAP.md)
+- [ADRs](adr/)
 - [API Documentation](https://to-do-4w0k.onrender.com/docs)
+- [Frontend Repository](https://github.com/sajankp/to-do-frontend)
 
 ---
 
