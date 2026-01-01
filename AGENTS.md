@@ -1,5 +1,17 @@
 # AI Agent Context
 
+> [!CAUTION]
+> **PRE-FLIGHT CHECK — READ BEFORE ANY WORK**
+>
+> Before starting ANY task in this repository, you MUST:
+> 1. Read this file (`AGENTS.md`) completely
+> 2. Review [.agent/workflows/development-workflow.md](.agent/workflows/development-workflow.md)
+> 3. Use the decision flowchart to determine if a Feature Spec is required
+>
+> **This is not optional.** Skipping this step leads to wasted work and incorrect implementations.
+
+---
+
 **FastTodo** is a production-grade REST API for todo management.
 **Stack:** Python 3.13 · FastAPI · MongoDB · Pydantic v2
 **Live API:** https://to-do-4w0k.onrender.com/docs
