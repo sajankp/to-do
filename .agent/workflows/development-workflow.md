@@ -1,7 +1,3 @@
----
-description: Mandatory workflow for new features and architectural changes
----
-
 # Spec-Driven Development Workflow
 
 This workflow MUST be followed for any new feature or architectural change.
@@ -29,6 +25,24 @@ This workflow MUST be followed for any new feature or architectural change.
 > - After creating spec: STOP and request review
 > - After creating ADR (if needed): STOP and request review
 > - Only proceed to next step after explicit approval
+
+---
+
+## 🧭 Decision Flowchart: Do I Need This Workflow?
+
+Before starting, ask yourself:
+
+```
+Is this a new user-facing feature or API change?
+├── YES → Full SDD workflow (spec required)
+└── NO → Is it a breaking change to existing behavior?
+         ├── YES → Full SDD workflow
+         └── NO → Is it CI/infra/dependency maintenance?
+                  ├── YES → Direct fix (no spec needed)
+                  └── NO → Bug fix or minor refactor?
+                           ├── YES → Direct fix (no spec needed)
+                           └── UNSURE → Ask the user
+```
 
 ---
 
@@ -168,6 +182,19 @@ Update `docs/ARCHITECTURE.md` **only if** the overall system architecture change
 - Code formatting
 - Documentation fixes
 - Adding tests to existing code
+- **CI/Infrastructure fixes** (workflow files, Dependabot, pre-commit configs)
+- **Dependency updates** (unless they require code changes beyond version bumps)
+- **Configuration changes** for test/CI environments
+- **Routine security patches**
+
+### 🤔 When Unsure
+
+If the change:
+1. Has **no user-facing impact** AND
+2. Doesn't **change API contracts** AND
+3. Doesn't **alter data models**
+
+→ It's likely a minor change. When in doubt, ask the user.
 
 ---
 
@@ -193,3 +220,4 @@ If you see me jumping to implementation without following this workflow:
 
 *Workflow established: 2025-12-21*
 *Updated to SDD: 2025-12-28*
+*Added decision criteria: 2025-12-30*
