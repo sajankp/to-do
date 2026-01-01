@@ -8,6 +8,9 @@ on:
     branches:
       - main
 
+env:
+  COVERAGE_THRESHOLD: 80
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -52,4 +55,34 @@ jobs:
           echo "ACCESS_TOKEN_EXPIRE_SECONDS=1800" >> .env
           echo "REFRESH_TOKEN_EXPIRE_SECONDS=3600" >> .env
 
-          pytest
+          pytest --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=${{ env.COVERAGE_THRESHOLD }}
+
+      # Step 6: Upload coverage report
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage.xml
+          retention-days: 30
+
+      # Step 7: Security scanning
+      - name: Install security tools
+        run: pip install bandit safety
+
+      - name: Run bandit security scan
+        run: bandit -r app/ -ll --format json --output bandit-report.json || true
+
+      - name: Run safety vulnerability check
+        run: safety check --json --output safety-report.json || true
+        continue-on-error: true  # Don't fail on non-critical vulnerabilities
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            safety-report.json
+          retention-days: 30

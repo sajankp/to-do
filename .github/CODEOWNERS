@@ -1,0 +1,23 @@
+# CODEOWNERS - Automatic PR reviewer assignment
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything
+* @sajankp
+
+# Documentation changes
+/docs/ @sajankp
+/*.md @sajankp
+AGENTS.md @sajankp
+
+# CI/CD and infrastructure
+/.github/ @sajankp
+Makefile @sajankp
+docker-compose.yml @sajankp
+Dockerfile @sajankp
+
+# Core application code
+/app/ @sajankp
+
+# Configuration
+requirements*.txt @sajankp
+.pre-commit-config.yaml @sajankp
