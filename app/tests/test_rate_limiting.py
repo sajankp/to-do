@@ -43,7 +43,7 @@ def test_auth_rate_limiting():
                     data={"username": "testuser", "password": "password"},
                     headers={"X-Forwarded-For": "127.0.0.1"},
                 )
-                assert response.status_code == 200, f"Request {i+1} failed"
+                assert response.status_code == 200, f"Request {i + 1} failed"
 
             # 6th request should fail
             response = client.post(

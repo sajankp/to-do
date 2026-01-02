@@ -1,0 +1,57 @@
+# Docker Compose for Local Development
+# Usage: docker-compose up --build
+# This uses a local MongoDB container for isolated development/testing
+
+services:
+  # FastAPI Application
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      # Use MONGO_URI for direct connection to local MongoDB
+      - MONGO_URI=mongodb://mongo:27017/fasttodo_dev
+      # These are still required by config but not used when MONGO_URI is set
+      - MONGO_USERNAME=unused
+      - MONGO_PASSWORD=unused
+      - MONGO_HOST=unused
+      # Database settings
+      - MONGO_DATABASE=fasttodo_dev
+      - MONGO_TODO_COLLECTION=todos
+      - MONGO_USER_COLLECTION=users
+      - MONGO_TIMEOUT=5
+      # Auth settings
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - PASSWORD_ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_SECONDS=1800
+      - REFRESH_TOKEN_EXPIRE_SECONDS=3600
+      # Development settings
+      - LOG_LEVEL=DEBUG
+      - ENVIRONMENT=development
+      - RATE_LIMIT_ENABLED=False
+      - CORS_ORIGINS=*
+    volumes:
+      # Mount app code for hot-reload (requires uvicorn --reload)
+      - ./app:/code/app:ro
+    depends_on:
+      mongo:
+        condition: service_healthy
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  # Local MongoDB Instance
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  mongo-data:
+    name: fasttodo-mongo-data

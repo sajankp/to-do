@@ -6,10 +6,16 @@ from app.config import Settings, get_settings
 def get_mongo_client(settings: Settings | None = None):
     if settings is None:
         settings = get_settings()
-    uri = (
-        f"mongodb+srv://{settings.mongo_username}:"
-        f"{settings.mongo_password}@{settings.mongo_host}/?retryWrites=true&w=majority"
-    )
+
+    # Use direct URI if provided, otherwise construct from parts
+    if settings.mongo_uri:
+        uri = settings.mongo_uri
+    else:
+        uri = (
+            f"mongodb+srv://{settings.mongo_username}:"
+            f"{settings.mongo_password}@{settings.mongo_host}/?retryWrites=true&w=majority"
+        )
+
     timeout = settings.mongo_timeout or 5
     server_selection_timeout_ms = timeout * 1000
     client = MongoClient(uri, serverSelectionTimeoutMS=server_selection_timeout_ms)
