@@ -93,6 +93,22 @@ users_collection = request.app.user
 - **DON'T** create ADRs before updating `ARCHITECTURE.md`
 - **DON'T** hardcode secrets—use environment variables via `app/config.py`
 
+### 🛑 Agent Commit Rules
+
+> [!CAUTION]
+> **NEVER commit without explicit user approval**
+>
+> 1. **Stage changes** and show the user what will be committed
+> 2. **Request approval** before running `git commit`
+> 3. **Only commit** after receiving explicit "yes", "approved", "proceed", or similar confirmation
+
+### 📝 Agent Documentation Rules
+
+- **Operational guidance** (e.g., "how to configure branch protection in GitHub UI") should be provided **in chat**, not as committed documentation files
+- Only commit documentation that is **reference material** users will look up later (e.g., API specs, architecture docs)
+- **No obvious comments** — Don't add comments that simply restate what the code does. Comments should explain *why*, not *what*.
+- When unsure, ask: "Should I add this as a committed doc or just explain it here?"
+
 > **🔀 Branching Rule:** If you're creating new files, modifying roadmap/architecture, or making more than a trivial typo fix—**create a branch first**. Ask: "Should I create branch `docs/xyz` or `feat/xyz` for this?"
 
 ---

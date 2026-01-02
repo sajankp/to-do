@@ -1,6 +1,6 @@
 # Docker Compose for Local Development
 # Usage: docker-compose up --build
-# Note: This uses a local MongoDB container, NOT your Atlas cluster
+# This uses a local MongoDB container for isolated development/testing
 
 services:
   # FastAPI Application
@@ -9,11 +9,13 @@ services:
     ports:
       - "8000:8000"
     environment:
-      # Override for local MongoDB
-      - MONGO_HOST=mongo:27017
-      - MONGO_USERNAME=
-      - MONGO_PASSWORD=
-      # Use test database locally
+      # Use MONGO_URI for direct connection to local MongoDB
+      - MONGO_URI=mongodb://mongo:27017/fasttodo_dev
+      # These are still required by config but not used when MONGO_URI is set
+      - MONGO_USERNAME=unused
+      - MONGO_PASSWORD=unused
+      - MONGO_HOST=unused
+      # Database settings
       - MONGO_DATABASE=fasttodo_dev
       - MONGO_TODO_COLLECTION=todos
       - MONGO_USER_COLLECTION=users

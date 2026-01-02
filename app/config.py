@@ -12,6 +12,11 @@ class Settings(BaseSettings):
         ..., validation_alias="MONGO_PASSWORD", description="MongoDB password"
     )
     mongo_host: str = Field(..., validation_alias="MONGO_HOST")
+    mongo_uri: str | None = Field(
+        None,
+        validation_alias="MONGO_URI",
+        description="Optional direct MongoDB URI (overrides username/password/host)",
+    )
     mongo_db: str = Field(..., validation_alias="MONGO_DATABASE")
     mongo_todo_collection: str = Field(..., validation_alias="MONGO_TODO_COLLECTION")
     mongo_user_collection: str = Field(..., validation_alias="MONGO_USER_COLLECTION")

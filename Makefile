@@ -59,11 +59,10 @@ format:
 docker-build:
 	docker build -t fasttodo .
 
-# Start docker-compose development stack
 docker-dev:
+	docker-compose down --remove-orphans 2>/dev/null || true
 	docker-compose up --build
 
-# Stop docker-compose stack
 docker-down:
 	docker-compose down
 
