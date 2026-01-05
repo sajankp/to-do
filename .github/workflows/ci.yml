@@ -40,8 +40,11 @@ jobs:
       # Step 5: Run tests with coverage
       - name: Run tests with coverage
         run: |
-          # Critical secrets from GitHub secrets
-          echo "MONGO_PASSWORD=${{secrets.MONGO_PASSWORD}}" > .env
+          # Use MONGO_URI for test environment (works even if individual secrets are empty)
+          echo "MONGO_URI=mongodb://localhost:27017/test_db" > .env
+
+          # MongoDB secrets (optional - MONGO_URI takes precedence)
+          echo "MONGO_PASSWORD=${{secrets.MONGO_PASSWORD}}" >> .env
           echo "MONGO_USERNAME=${{secrets.MONGO_USERNAME}}" >> .env
           echo "MONGO_HOST=${{secrets.MONGO_HOST}}" >> .env
           echo "SECRET_KEY=${{secrets.SECRET_KEY}}" >> .env
