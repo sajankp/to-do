@@ -92,6 +92,7 @@ users_collection = request.app.user
 - **DON'T** modify `ARCHITECTURE.md` without discussion first
 - **DON'T** create ADRs before updating `ARCHITECTURE.md`
 - **DON'T** hardcode secrets—use environment variables via `app/config.py`
+- **DON'T** duplicate validation logic—Pydantic `model_validator` in `config.py` is the single source of truth for env validation. Don't re-check the same constraints elsewhere.
 
 ### 🛑 Agent Commit Rules
 
