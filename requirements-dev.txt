@@ -1,0 +1,15 @@
+# Development-only dependencies
+# Install with: pip install -r requirements-dev.txt
+#
+# These are NOT needed for production deployment
+
+# Include base requirements
+-r requirements.txt
+
+# Security scanning
+bandit>=1.7.0          # Python security linter
+safety>=2.3.0          # Dependency vulnerability scanner
+
+# Code quality (if not using pre-commit)
+mypy>=1.0.0            # Static type checking
+types-requests>=2.31   # Type stubs for requests

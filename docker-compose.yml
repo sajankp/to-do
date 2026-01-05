@@ -1,0 +1,43 @@
+# Docker Compose for Local Development
+# Usage: docker-compose up --build
+# This uses a local MongoDB container for isolated development/testing
+
+services:
+  # FastAPI Application
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # Docker-specific overrides (these take precedence over .env)
+      - MONGO_URI=mongodb://mongo:27017/fasttodo_dev
+      - LOG_LEVEL=DEBUG
+      - ENVIRONMENT=development
+      - RATE_LIMIT_ENABLED=False
+    volumes:
+      # Mount app code for hot-reload (requires uvicorn --reload)
+      - ./app:/code/app:ro
+    depends_on:
+      mongo:
+        condition: service_healthy
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  # Local MongoDB Instance
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  mongo-data:
+    name: fasttodo-mongo-data
