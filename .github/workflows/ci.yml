@@ -47,7 +47,13 @@ jobs:
           echo "MONGO_PASSWORD=${{secrets.MONGO_PASSWORD}}" >> .env
           echo "MONGO_USERNAME=${{secrets.MONGO_USERNAME}}" >> .env
           echo "MONGO_HOST=${{secrets.MONGO_HOST}}" >> .env
-          echo "SECRET_KEY=${{secrets.SECRET_KEY}}" >> .env
+
+          # Use secret if available, otherwise use test fallback
+          if [ -n "${{secrets.SECRET_KEY}}" ]; then
+            echo "SECRET_KEY=${{secrets.SECRET_KEY}}" >> .env
+          else
+            echo "SECRET_KEY=test-secret-key-for-ci" >> .env
+          fi
 
           # Non-critical hardcoded values for testing
           echo "PASSWORD_ALGORITHM=HS256" >> .env
