@@ -1,17 +1,17 @@
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Application settings with environment variable configuration."""
 
-    mongo_username: str = Field(
-        ..., validation_alias="MONGO_USERNAME", description="MongoDB username"
+    mongo_username: str | None = Field(
+        None, validation_alias="MONGO_USERNAME", description="MongoDB username"
     )
-    mongo_password: str = Field(
-        ..., validation_alias="MONGO_PASSWORD", description="MongoDB password"
+    mongo_password: str | None = Field(
+        None, validation_alias="MONGO_PASSWORD", description="MongoDB password"
     )
-    mongo_host: str = Field(..., validation_alias="MONGO_HOST")
+    mongo_host: str | None = Field(None, validation_alias="MONGO_HOST")
     mongo_uri: str | None = Field(
         None,
         validation_alias="MONGO_URI",
@@ -41,6 +41,18 @@ class Settings(BaseSettings):
     cors_allow_headers: str = Field("*", validation_alias="CORS_ALLOW_HEADERS")
 
     model_config = SettingsConfigDict(env_file=".env")
+
+    @model_validator(mode="after")
+    def check_mongo_config(self) -> "Settings":
+        """Validate that either MONGO_URI or all individual Mongo fields are set."""
+        has_uri = bool(self.mongo_uri)
+        has_individual = all([self.mongo_username, self.mongo_password, self.mongo_host])
+        if not has_uri and not has_individual:
+            raise ValueError(
+                "Either MONGO_URI or all of MONGO_USERNAME, MONGO_PASSWORD, "
+                "and MONGO_HOST must be set."
+            )
+        return self
 
     def _parse_comma_separated_config(self, value: str) -> list[str]:
         """Parse comma-separated configuration string to list.

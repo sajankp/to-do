@@ -23,9 +23,10 @@ help:
 setup:
 	@echo "🚀 Setting up development environment..."
 	python3 -m venv venv
-	. venv/bin/activate && pip install --upgrade pip
-	. venv/bin/activate && pip install -r requirements.txt
-	. venv/bin/activate && pre-commit install
+	@. venv/bin/activate && \
+		pip install --upgrade pip && \
+		pip install -r requirements-dev.txt && \
+		pre-commit install
 	@if [ ! -f .env ]; then \
 		cp .env.example .env; \
 		echo "📝 Created .env from .env.example - edit with your credentials"; \

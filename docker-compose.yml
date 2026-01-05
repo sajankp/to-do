@@ -8,28 +8,14 @@ services:
     build: .
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     environment:
-      # Use MONGO_URI for direct connection to local MongoDB
+      # Docker-specific overrides (these take precedence over .env)
       - MONGO_URI=mongodb://mongo:27017/fasttodo_dev
-      # These are still required by config but not used when MONGO_URI is set
-      - MONGO_USERNAME=unused
-      - MONGO_PASSWORD=unused
-      - MONGO_HOST=unused
-      # Database settings
-      - MONGO_DATABASE=fasttodo_dev
-      - MONGO_TODO_COLLECTION=todos
-      - MONGO_USER_COLLECTION=users
-      - MONGO_TIMEOUT=5
-      # Auth settings
-      - SECRET_KEY=dev-secret-key-change-in-production
-      - PASSWORD_ALGORITHM=HS256
-      - ACCESS_TOKEN_EXPIRE_SECONDS=1800
-      - REFRESH_TOKEN_EXPIRE_SECONDS=3600
-      # Development settings
       - LOG_LEVEL=DEBUG
       - ENVIRONMENT=development
       - RATE_LIMIT_ENABLED=False
-      - CORS_ORIGINS=*
     volumes:
       # Mount app code for hot-reload (requires uvicorn --reload)
       - ./app:/code/app:ro

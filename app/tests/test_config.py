@@ -146,3 +146,66 @@ class TestSettingsIntegration:
         assert hasattr(settings, "get_cors_origins_list")
         assert hasattr(settings, "get_cors_methods_list")
         assert hasattr(settings, "get_cors_headers_list")
+
+
+class TestMongoConfiguration:
+    """Test suite for MongoDB configuration validation."""
+
+    def test_mongo_uri_only_is_valid(self):
+        """Test that providing only MONGO_URI (without individual fields) is valid."""
+        env_override = {
+            "MONGO_URI": "mongodb://localhost:27017/testdb",
+            "MONGO_USERNAME": "",
+            "MONGO_PASSWORD": "",
+            "MONGO_HOST": "",
+        }
+        with patch.dict(os.environ, env_override, clear=False):
+            settings = Settings()
+            assert settings.mongo_uri == "mongodb://localhost:27017/testdb"
+            assert settings.mongo_username is None or settings.mongo_username == ""
+
+    def test_individual_mongo_fields_is_valid(self):
+        """Test that providing all individual Mongo fields (without URI) is valid."""
+        env_override = {
+            "MONGO_URI": "",
+            "MONGO_USERNAME": "testuser",
+            "MONGO_PASSWORD": "testpass",
+            "MONGO_HOST": "localhost",
+        }
+        with patch.dict(os.environ, env_override, clear=False):
+            settings = Settings()
+            assert settings.mongo_username == "testuser"
+            assert settings.mongo_password == "testpass"
+            assert settings.mongo_host == "localhost"
+
+    def test_neither_uri_nor_fields_raises_error(self):
+        """Test that providing neither MONGO_URI nor individual fields raises ValueError."""
+        import pytest
+
+        env_override = {
+            "MONGO_URI": "",
+            "MONGO_USERNAME": "",
+            "MONGO_PASSWORD": "",
+            "MONGO_HOST": "",
+        }
+        with (
+            patch.dict(os.environ, env_override, clear=False),
+            pytest.raises(ValueError, match="MONGO_URI or all of MONGO_USERNAME"),
+        ):
+            Settings()
+
+    def test_partial_individual_fields_raises_error(self):
+        """Test that providing only some individual fields raises ValueError."""
+        import pytest
+
+        env_override = {
+            "MONGO_URI": "",
+            "MONGO_USERNAME": "testuser",
+            "MONGO_PASSWORD": "",
+            "MONGO_HOST": "",
+        }
+        with (
+            patch.dict(os.environ, env_override, clear=False),
+            pytest.raises(ValueError, match="MONGO_URI or all of MONGO_USERNAME"),
+        ):
+            Settings()
