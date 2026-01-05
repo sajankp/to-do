@@ -2,26 +2,16 @@ from app.config import Settings, get_settings
 
 
 def validate_env(settings: Settings | None = None):
+    """Validate required environment variables.
+
+    Note: MongoDB connection validation (MONGO_URI vs individual fields)
+    is handled by the Pydantic model_validator in config.py.
+    This function only validates other required fields.
+    """
     if settings is None:
-        settings = get_settings()
+        settings = get_settings()  # Pydantic validates mongo config here
 
-    # Check MongoDB configuration: either MONGO_URI or individual fields
-    has_mongo_uri = bool(settings.mongo_uri)
-    has_mongo_individual = all(
-        [
-            settings.mongo_username,
-            settings.mongo_password,
-            settings.mongo_host,
-        ]
-    )
-
-    if not has_mongo_uri and not has_mongo_individual:
-        raise RuntimeError(
-            "Missing MongoDB configuration: provide either MONGO_URI or "
-            "all of MONGO_USERNAME, MONGO_PASSWORD, and MONGO_HOST"
-        )
-
-    # Check other required variables
+    # Check other required variables (mongo config validated by Pydantic)
     required_vars = {
         "MONGO_DATABASE": settings.mongo_db,
         "MONGO_TODO_COLLECTION": settings.mongo_todo_collection,
