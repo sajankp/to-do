@@ -27,13 +27,30 @@ gh pr view <PR_NUMBER> --json comments,reviews
 
 ## Step 2.5: Request Re-Review (After Addressing Feedback)
 
-After fixing issues identified by `gemini-code-assist`:
+After fixing issues identified by `gemini-code-assist`, request a fresh review:
 
+**Option A: GitHub UI (Recommended)**
+- Go to PR page → "Reviewers" sidebar → Click ↻ next to `gemini-code-assist`
+- This is the native GitHub re-request review feature
+
+**Option B: Command Line with `/gemini review`**
 ```bash
 gh pr comment <PR_NUMBER> --body "/gemini review"
 ```
 
-This triggers a new review after your changes. Wait for the new review before proceeding to merge.
+**Option C: GitHub CLI re-request** (if gemini-code-assist is a formal reviewer)
+```bash
+gh pr edit <PR_NUMBER> --add-reviewer gemini-code-assist
+```
+
+> [!TIP]
+> Option A (UI) is cleanest. The `/gemini review` command also works and explicitly requests a new review.
+
+**Other useful commands:**
+- `/gemini summary` - Get updated PR summary
+- `@gemini-code-assist <question>` - Ask specific questions
+
+Wait for the new review before proceeding to merge.
 
 ## Step 3: Check Status
 
