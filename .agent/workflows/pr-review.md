@@ -84,7 +84,7 @@ gh issue create --title "Blocked: <package> <old> → <new>" \
   --label "dependencies,blocked"
 
 # Then close the PR
-gh pr comment <PR_NUMBER> --body "<explanation>"
+gh pr comment <PR_NUMBER> --body "Closing this PR as the issue is now tracked in #<ISSUE_NUMBER>."
 gh pr close <PR_NUMBER>
 ```
 

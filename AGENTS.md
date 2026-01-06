@@ -108,7 +108,7 @@ users_collection = request.app.user
 >
 > 1. **Analyze failures** and present findings to the user
 > 2. **Request approval** before closing
-> 3. **Create tracking issue** for blocked dependency upgrades (see `/pr-review` workflow)
+> 3. **Create tracking issue** for any blocking issues (see `/pr-review` workflow for the process)
 
 > [!IMPORTANT]
 > **ALWAYS wait for AI review**
