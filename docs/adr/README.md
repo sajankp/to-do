@@ -26,6 +26,7 @@ Each ADR follows this structure:
 7. [ADR-007: Rate Limiting Implementation](007-rate-limiting.md)
 8. [ADR-008: Gemini API Backend Proxy](008-gemini-api-backend-proxy.md)
 9. [ADR-009: Add Todo Completion Status](009-add-todo-completion-status.md)
+10. [ADR-010: Migrate from passlib to pwdlib for Password Hashing](010-password-hashing-library-migration.md)
 
 ## How to Use
 
