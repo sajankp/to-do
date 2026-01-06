@@ -103,6 +103,20 @@ users_collection = request.app.user
 > 2. **Request approval** before running `git commit`
 > 3. **Only commit** after receiving explicit "yes", "approved", "proceed", or similar confirmation
 
+> [!CAUTION]
+> **NEVER close a PR without explicit user approval**
+>
+> 1. **Analyze failures** and present findings to the user
+> 2. **Request approval** before closing
+> 3. **Create tracking issue** for blocked dependency upgrades (see `/pr-review` workflow)
+
+> [!IMPORTANT]
+> **ALWAYS wait for AI review**
+>
+> 1. After creating/updating a PR, wait for `gemini-code-assist` to comment
+> 2. Review its feedback and address any valid suggestions
+> 3. **Never merge or close** until you have checked for and addressed these comments
+
 ### 📝 Agent Documentation Rules
 
 - **Operational guidance** (e.g., "how to configure branch protection in GitHub UI") should be provided **in chat**, not as committed documentation files
