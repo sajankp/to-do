@@ -1,3 +1,7 @@
+---
+description: Spec-driven development workflow for new features and architectural changes
+---
+
 # Spec-Driven Development Workflow
 
 This workflow MUST be followed for any new feature or architectural change.
@@ -142,13 +146,29 @@ Only after spec (and ADR if applicable) are approved:
 5. Run tests, ensure passing
 6. Commit with conventional commit format
 
-### Step 8: Update ARCHITECTURE.md (If Needed)
+### Step 8: Update ARCHITECTURE.md (After Implementation)
 
-Update `docs/ARCHITECTURE.md` **only if** the overall system architecture changed:
+Update `docs/ARCHITECTURE.md` **only if** the system architecture actually changed:
 - New component added
 - New architectural pattern introduced
 - Security model changed
 - Data flow changed
+
+**When to update:**
+- ✅ **AFTER implementation** - in the same PR/commit as the code
+- ✅ When the change is system-level (affects architecture diagram)
+- ❌ NOT for implementation details (which library, which algorithm)
+
+**Examples:**
+- ✅ Add new middleware → Update ARCHITECTURE.md (new component in diagram)
+- ✅ Change auth flow → Update ARCHITECTURE.md (security model changed)
+- ❌ Migrate bcrypt → Argon2id → Don't update (same auth model, different implementation)
+- ❌ Upgrade pytest version → Don't update (dependency, not architecture)
+
+**What to update:**
+- System diagrams if component added
+- Security architecture table if security model changed
+- Component specifications if responsibilities changed
 
 **Do NOT** add detailed feature specs to ARCHITECTURE.md. That content stays in `docs/specs/`.
 

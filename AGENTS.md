@@ -35,9 +35,10 @@ This repository contains the **backend only**. Frontend is in [sajankp/to-do-fro
 > 2. **ALWAYS** verify a Feature Spec exists in `docs/specs/` and is marked `Status: Approved`.
 > 3. **IF** Spec is `Planned` or `Draft` → STOP. Ask user to review/approve it first.
 > 4. **IF** ADR is `Accepted` but Spec is `Planned` → STOP. The Spec governs validity.
+> 5. **UPDATE** ARCHITECTURE.md AFTER implementation, not before.
 >
 > ```
-> Workflow: Spec (Approve) → ADR (Approve) → Branch (Confirm) → Implement → Update ARCHITECTURE.md
+> Workflow: Spec (Approve) → ADR (Approve) → Implement → Update ARCHITECTURE.md
 > ```
 
 > 📋 **Project Context:**
@@ -89,10 +90,11 @@ users_collection = request.app.user
 - **DON'T** make changes directly on `main`—always create a branch first, even for docs
 - **DON'T** access `user_id` from request body—always use `request.state.user_id`
 - **DON'T** skip tests—pre-commit hooks won't catch logic bugs
-- **DON'T** modify `ARCHITECTURE.md` without discussion first
-- **DON'T** create ADRs before updating `ARCHITECTURE.md`
+- **DON'T** update ARCHITECTURE.md before implementation—it describes current state, not future plans
+- **DON'T** create ADRs before Specs—specs define WHAT, ADRs explain WHY
 - **DON'T** hardcode secrets—use environment variables via `app/config.py`
 - **DON'T** duplicate validation logic—Pydantic `model_validator` in `config.py` is the single source of truth for env validation. Don't re-check the same constraints elsewhere.
+- **DON'T** use version ranges in `requirements.txt`—always pin to specific versions (`pytest==8.4.2`, not `pytest>=8.2,<9.0`) for reproducible builds. This is a best practice for applications (not libraries).
 
 ### 🛑 Agent Commit Rules
 

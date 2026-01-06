@@ -29,6 +29,7 @@ See [development workflow](../../.agent/workflows/development-workflow.md) for t
 | 001 | [Todo Completion Status](001-todo-completion.md) | ✅ Implemented | [ADR-009](../adr/009-add-todo-completion-status.md) |
 | 002 | [Gemini API Backend Proxy](002-gemini-api-proxy.md) | 📋 Planned | [ADR-008](../adr/008-gemini-api-backend-proxy.md) |
 | 003 | Security Headers Middleware | 📋 Planned | - |
+| 010 | [Password Hashing Migration](010-password-hashing-migration.md) | 📋 Planned | [ADR-010](../adr/010-password-hashing-library-migration.md) |
 
 ---
 
