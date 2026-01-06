@@ -25,6 +25,16 @@ gh pr view <PR_NUMBER> --json comments,reviews
 - If no comments yet: **WAIT**. Do not proceed.
 - If comments exist: **REVIEW** them. Address valid feedback.
 
+## Step 2.5: Request Re-Review (After Addressing Feedback)
+
+After fixing issues identified by `gemini-code-assist`:
+
+```bash
+gh pr comment <PR_NUMBER> --body "/gemini review"
+```
+
+This triggers a new review after your changes. Wait for the new review before proceeding to merge.
+
 ## Step 3: Check Status
 
 // turbo
