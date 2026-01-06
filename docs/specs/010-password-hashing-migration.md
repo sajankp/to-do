@@ -55,8 +55,9 @@ Migrate from `passlib` to `pwdlib` with **Argon2id** as the primary hashing algo
 ```diff
 -passlib==1.7.4
 -bcrypt==4.0.1
-+pwdlib[argon2,bcrypt]>=0.2.0
++pwdlib[argon2,bcrypt]==0.2.0
 ```
+
 
 ### Step 2: Update Password Hashing Logic
 
