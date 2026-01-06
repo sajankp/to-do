@@ -23,27 +23,28 @@
 > ## 🚨 Development Workflow - READ THIS FIRST
 >
 > **For AI Agents and Developers:**
-> This ARCHITECTURE.md is the **single source of truth** for architectural decisions. You MUST follow this workflow:
+> This ARCHITECTURE.md is the **single source of truth** for the **current system state**. It describes what IS, not what WILL be.
 >
+> **Correct workflow for architectural changes:**
 > ```
-> 1. Architecture Discussion → Update ARCHITECTURE.md
-> 2. Create ADR (Architecture Decision Record)
-> 3. Implement code
+> 1. Create Spec (docs/specs/) - Document WHAT to build and HOW
+> 2. Create ADR (docs/adr/) - Document WHY this approach
+> 3. Get approval, implement code
+> 4. Update ARCHITECTURE.md - NOW it reflects reality
 > ```
 >
 > **❌ DO NOT:**
-> - Jump straight to coding without updating ARCHITECTURE.md
-> - Create code before ADR for architectural changes
-> - Make architectural decisions without discussion
+> - Update ARCHITECTURE.md before implementation (plans ≠ reality)
+> - Document future plans in ARCHITECTURE.md (use specs/roadmap instead)
+> - Create code before Spec + ADR for architectural changes
 >
 > **✅ DO:**
-> - Add new architectural concerns to "Known Architectural Pitfalls"
-> - Document decisions in "Architectural Decisions Summary"
-> - Update Technical Debt Registry with effort estimates
-> - Create ADR referencing ARCHITECTURE.md decisions
-> - Only then implement
+> - Keep ARCHITECTURE.md in sync with implemented code
+> - Document current architectural concerns in "Known Architectural Pitfalls"
+> - Add planned changes to ROADMAP.md, not here
+> - Update ARCHITECTURE.md in the same PR as the implementation
 >
-> **Why:** This prevents technical debt, ensures decisions are documented with context, and helps future maintainers understand the "why" behind choices.
+> **Why:** This prevents documentation drift. ARCHITECTURE.md always reflects the running system, making it trustworthy for new developers and future maintainers.
 
 ---
 
