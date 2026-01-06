@@ -23,7 +23,88 @@ gh pr view <PR_NUMBER> --json comments,reviews
 ```
 
 - If no comments yet: **WAIT**. Do not proceed.
-- If comments exist: **REVIEW** them. Address valid feedback.
+- If comments exist: Proceed to Step 2.1.
+
+## Step 2.1: Critically Evaluate Feedback
+
+> [!IMPORTANT]
+> **Do NOT blindly accept AI review comments.** Think critically about each suggestion.
+
+For each review comment, ask yourself:
+
+**1. Does this improve the code?**
+- ✅ Better design/architecture
+- ✅ Follows project conventions
+- ✅ Fixes actual bugs
+- ❌ Subjective style preference
+- ❌ Contradicts documented patterns
+
+**2. What's the trade-off?**
+- Does it introduce breaking changes?
+- Does it add complexity vs. value?
+- Is it aligned with project goals?
+
+**3. Is it correct for this codebase?**
+- Check if it follows patterns in `AGENTS.md`
+- Verify against existing code conventions
+- Consider project-specific requirements
+
+**Example evaluation:**
+```
+Comment: "Move DB write from utility to route handler"
+
+Analysis:
+✅ AGREE: Separation of concerns (utility does one thing)
+✅ AGREE: Consistent with project's request.app.user pattern
+⚠️  BREAKS: Changes function signature (acceptable in spec)
+✅ DECISION: Accept, it's architecturally superior
+```
+
+Document your reasoning and decision before making changes.
+
+## Step 2.2: Reply to Review Comments
+
+After addressing feedback, document what was done by replying to each comment thread:
+
+**Reply to a specific review comment:**
+```bash
+# Get comment ID from the PR discussion threads
+gh pr view <PR_NUMBER> --comments
+
+# Reply to specific comment
+gh api repos/OWNER/REPO/pulls/<PR_NUMBER>/comments/<COMMENT_ID>/replies \
+  -X POST \
+  -f body="✅ Fixed: Updated authenticate_user() to return (user, new_hash) tuple.
+  - Moved DB update to route handler
+  - Using request.app.user pattern per project conventions
+  - Added proper exception handling (PyMongoError)
+
+  See commit: [sha]"
+```
+
+**Mark conversation as resolved** (after fixing the issue):
+```bash
+# Via GitHub UI (recommended):
+# - Go to conversation thread → Click "Resolve conversation"
+
+# Via API:
+gh api graphql -f query='
+  mutation {
+    resolveReviewThread(input: {threadId: "THREAD_ID"}) {
+      thread {
+        isResolved
+      }
+    }
+  }'
+```
+
+> [!TIP]
+> **Best Practice**: For each addressed comment, leave a reply explaining:
+> - ✅ What was changed
+> - 📝 Why (if you deviated from suggestion)
+> - 🔗 Commit SHA reference
+>
+> This creates an audit trail and helps reviewers understand your decisions.
 
 ## Step 2.5: Request Re-Review (After Addressing Feedback)
 

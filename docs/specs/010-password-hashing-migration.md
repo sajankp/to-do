@@ -85,30 +85,65 @@ def verify_password(plain_password, hashed_password):
     return is_valid, new_hash  # Return both for transparent migration
 ```
 
-**Lines 54-60** - Add transparent hash upgrade in `authenticate_user()`:
+**Lines 54-60** - Update `authenticate_user()` signature:
 ```python
 def authenticate_user(username: str, password: str):
+    """Authenticates a user and returns the user object and optional new hash.
+
+    Returns:
+        (user, new_hash): User object and new hash if migration needed, or (None, None)
+    """
     user = get_user_by_username(username)
-    if user:
-        is_valid, new_hash = verify_password(password, user.hashed_password)
-        if is_valid:
-            # Transparent migration: upgrade old bcrypt hashes to Argon2id
-            if new_hash:
-                try:
-                    # Update to Argon2id in database
-                    from app.database.mongodb import get_database
-                    db = get_database()
-                    db.user.update_one(
-                        {"username": username},
-                        {"$set": {"hashed_password": new_hash}}
-                    )
-                except Exception as e:
-                    # Log warning but don't fail login
-                    import logging
-                    logging.warning(f"Failed to upgrade password hash for {username}: {e}")
-            return user
-    return None
+    if not user:
+        return None, None
+
+    is_valid, new_hash = verify_password(password, user.hashed_password)
+    if not is_valid:
+        return None, None
+
+    return user, new_hash  # Caller handles hash update
 ```
+
+> [!CAUTION]
+> **Breaking Change**: `authenticate_user()` signature changes from `-> Optional[UserInDB]` to `-> Tuple[Optional[UserInDB], Optional[str]]`. All callers must be updated.
+
+**In `/token` route handler** - Add at top of file:
+```python
+import logging
+import pymongo.errors
+```
+
+**In `/token` route handler** - Transparent hash upgrade:
+```python
+# Authenticate user
+user, new_hash = authenticate_user(form_data.username, form_data.password)
+if not user:
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Incorrect username or password",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+# Transparent migration: upgrade old bcrypt hashes to Argon2id
+if new_hash:
+    try:
+        request.app.user.update_one(
+            {"username": user.username},
+            {"$set": {"hashed_password": new_hash}}
+        )
+    except pymongo.errors.PyMongoError as e:
+        # Log warning but don't fail login
+        logging.warning(f"Failed to upgrade password hash for {user.username}: {e}")
+
+# Generate tokens...
+```
+
+> [!IMPORTANT]
+> **Design Rationale**: Following separation of concerns and project conventions:
+> - `authenticate_user()` only authenticates (single responsibility)
+> - Route handler orchestrates DB updates using `request.app.user` (established pattern)
+> - Top-level imports per PEP 8
+> - Specific exception handling (`PyMongoError` not broad `Exception`)
 
 > [!IMPORTANT]
 > **Transparent Migration**: When a user with an old bcrypt hash logs in, `verify_and_update()` returns the new Argon2id hash. We immediately update it in the database, migrating active users automatically without password resets.
