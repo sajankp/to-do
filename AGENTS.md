@@ -93,6 +93,7 @@ users_collection = request.app.user
 - **DON'T** create ADRs before updating `ARCHITECTURE.md`
 - **DON'T** hardcode secrets—use environment variables via `app/config.py`
 - **DON'T** duplicate validation logic—Pydantic `model_validator` in `config.py` is the single source of truth for env validation. Don't re-check the same constraints elsewhere.
+- **DON'T** use version ranges in `requirements.txt`—always pin to specific versions (`pytest==8.4.2`, not `pytest>=8.2,<9.0`) for reproducible builds. This is a best practice for applications (not libraries).
 
 ### 🛑 Agent Commit Rules
 
