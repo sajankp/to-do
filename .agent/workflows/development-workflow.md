@@ -1,3 +1,7 @@
+---
+description: Spec-driven development workflow for new features and architectural changes
+---
+
 # Spec-Driven Development Workflow
 
 This workflow MUST be followed for any new feature or architectural change.
