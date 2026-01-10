@@ -166,13 +166,15 @@ app/
 
 ## Testing
 
+> ⚠️ **Always activate the virtual environment first:** `source venv/bin/activate`
+
 ### Running Tests
 ```bash
 # All tests
 pytest app/tests/
 
-# With coverage
-pytest --cov=app --cov-report=term-missing
+# With coverage (recommended)
+pytest --cov=app --cov-report=term-missing app/tests/
 
 # Specific category
 pytest app/tests/routers/test_auth.py -v
