@@ -104,6 +104,16 @@ users_collection = request.app.user
 > 1. **Stage changes** and show the user what will be committed
 > 2. **Request approval** before running `git commit`
 > 3. **Only commit** after receiving explicit "yes", "approved", "proceed", or similar confirmation
+>
+> [!CAUTION]
+> **ALWAYS verify commits succeeded**
+>
+> Pre-commit hooks (ruff, conventional commits, etc.) can fail silently. After every commit:
+> ```bash
+> git log --oneline -3  # Verify commit appears in history
+> git status            # Check for uncommitted changes (indicates pre-commit failure)
+> ```
+> If `git status` shows staged or modified files after committing, the pre-commit hook failed and you must fix the issues and retry.
 
 > [!CAUTION]
 > **NEVER close a PR without explicit user approval**
