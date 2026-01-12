@@ -1,6 +1,7 @@
 """WebSocket endpoint for Gemini Live API streaming proxy."""
 
 import asyncio
+import base64
 import contextlib
 import logging
 from typing import Any
@@ -151,8 +152,11 @@ class GeminiLiveProxy:
                 system_instruction="You are a helpful voice assistant managing a todo list. You can add, delete, update, and list tasks. Identify tasks by fuzzy name matching. Be concise.",
             )
 
+            logger.info(
+                f"Connecting to Gemini Live API with model: gemini-2.5-flash-native-audio-latest for user {self.username}"
+            )
             async with client.aio.live.connect(
-                model="gemini-2.0-flash-live-001",
+                model="gemini-2.5-flash-native-audio-latest",
                 config=config,
             ) as session:
                 self.gemini_session = session
@@ -179,6 +183,7 @@ class GeminiLiveProxy:
 
     async def _forward_client_to_gemini(self) -> None:
         """Forward audio from client WebSocket to Gemini."""
+        chunks_count = 0
         try:
             while self._running:
                 try:
@@ -195,6 +200,10 @@ class GeminiLiveProxy:
                     # Forward audio data to Gemini
                     audio_data = message.get("data")
                     if audio_data and self.gemini_session:
+                        chunks_count += 1
+                        if chunks_count % 50 == 0:
+                            logger.info(f"Forwarded {chunks_count} audio chunks to Gemini")
+
                         await self.gemini_session.send(
                             input={"mime_type": "audio/pcm", "data": audio_data},
                             end_of_turn=False,
@@ -202,17 +211,21 @@ class GeminiLiveProxy:
 
                 elif msg_type == "end_turn":
                     # Signal end of user turn
+                    logger.info("Received end_turn signal from client -> sending to Gemini")
                     if self.gemini_session:
                         await self.gemini_session.send(input=None, end_of_turn=True)
 
                 elif msg_type == "todos_update":
                     # Update local todos cache
-                    self.todos = message.get("todos", [])
+                    new_todos = message.get("todos", [])
+                    logger.info(f"Received todos_update: {len(new_todos)} items")
+                    self.todos = new_todos
 
         except WebSocketDisconnect:
+            logger.info(f"WebSocket disconnected in client->gemini loop for {self.username}")
             self._running = False
-        except Exception:
-            logger.exception("Error forwarding client to Gemini")
+        except Exception as e:
+            logger.exception(f"Error forwarding client to Gemini: {e}")
             self._running = False
 
     async def _forward_gemini_to_client(self) -> None:
@@ -229,6 +242,7 @@ class GeminiLiveProxy:
 
                         # Handle interruption
                         if sc.interrupted:
+                            logger.info("Gemini signaled INTERRUPTION")
                             await self.websocket.send_json({"type": "interrupted"})
                             continue
 
@@ -236,22 +250,31 @@ class GeminiLiveProxy:
                         if sc.model_turn and sc.model_turn.parts:
                             for part in sc.model_turn.parts:
                                 if part.inline_data:
+                                    # logger.debug("Received audio chunk from Gemini") # optimized out to reduce noise
                                     await self.websocket.send_json(
                                         {
                                             "type": "audio",
-                                            "data": part.inline_data.data,
+                                            "data": base64.b64encode(part.inline_data.data).decode(
+                                                "utf-8"
+                                            ),
                                             "mime_type": part.inline_data.mime_type,
                                         }
                                     )
 
                         # Handle turn complete
                         if sc.turn_complete:
+                            logger.info("Gemini signaled Turn Complete")
                             await self.websocket.send_json({"type": "turn_complete"})
 
                     # Handle tool calls
                     if response.tool_call:
                         for fc in response.tool_call.function_calls:
+                            logger.info(
+                                f"Gemini requested tool call: {fc.name} with args: {fc.args}"
+                            )
                             result = await self._handle_tool_call(fc)
+                            logger.info(f"Executed tool {fc.name}, result: {result}")
+
                             # Send result back to Gemini
                             await self.gemini_session.send(
                                 input=types.LiveClientToolResponse(
@@ -276,8 +299,8 @@ class GeminiLiveProxy:
 
         except WebSocketDisconnect:
             self._running = False
-        except Exception:
-            logger.exception("Error forwarding Gemini to client")
+        except Exception as e:
+            logger.exception(f"Error forwarding Gemini to client: {e}")
             self._running = False
 
     async def _handle_tool_call(self, fc: Any) -> dict:
