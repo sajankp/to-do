@@ -183,7 +183,122 @@ The backend defines the following tools for the Gemini model:
 | Backend complexity | Centralized auth is worth it |
 | Stateful WebSocket | Required for streaming, manageable |
 
+## Future Improvements
+
+> [!NOTE]
+> These improvements were identified during PR #87 code review by gemini-code-assist.
+> They are valid suggestions deferred for future implementation to maintain focused scope.
+
+### High Priority
+
+#### 1. Async Database Operations (TD-001)
+**Issue:** `get_user_by_username` uses synchronous `pymongo`, blocking the event loop in async contexts.
+
+**Impact:** Performance degradation under concurrent load
+
+**Solution:** Migrate to `motor` (async MongoDB driver) project-wide
+
+**Tracking:** TD-001 in ROADMAP.md
+
+**Why Deferred:** Affects entire codebase, requires project-wide migration for consistency
+
+---
+
+### Medium Priority
+
+#### 2. Centralized Gemini Client Management
+**Issue:** New `genai.Client` created per WebSocket connection; global client in `ai.py` not thread-safe
+
+**Solution:** Use FastAPI `lifespan` context manager:
+```python
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.gemini_client = genai.Client(api_key=settings.gemini_api_key)
+    yield
+    # cleanup
+```
+
+**Benefits:**
+- Single client instance shared across connections
+- Proper resource lifecycle management
+- Thread-safe via app.state
+- Easier testing (no global state)
+
+**Why Deferred:** Affects both old (`ai.py`) and new (`ai_stream.py`) code; separate refactoring PR
+
+---
+
+#### 3. Refactor Authentication Logic
+**Issue:** `GeminiLiveProxy` handles JWT auth internally, coupling concerns
+
+**Solution:** Move auth to `voice_stream` endpoint, pass authenticated user to proxy:
+```python
+# In voice_stream:
+user = await authenticate_websocket(websocket)
+proxy = GeminiLiveProxy(websocket, user.id, user.username)
+```
+
+**Benefits:**
+- Better separation of concerns
+- Proxy more reusable
+- Easier to test independently
+
+**Why Deferred:** Works correctly as-is; matches WebSocket auth pattern (auth via first message)
+
+---
+
+#### 4. Improve Exception Handling Granularity
+**Issue:** Broad `except Exception:` in `voice_stream` catches all errors including `WebSocketDisconnect`
+
+**Solution:** Handle specific exceptions:
+```python
+except WebSocketDisconnect:
+    # Client disconnected gracefully
+except json.JSONDecodeError:
+    # Malformed message
+except Exception as e:
+    # Unexpected error - log and investigate
+```
+
+**Benefits:** Better error visibility and debugging
+
+**Why Deferred:** Current approach ensures cleanup in all scenarios; acceptable for V1
+
+---
+
+### Low Priority
+
+#### 5. Type Safety Improvements
+**Issue:** `_handle_tool_call` uses `Any` for function call parameter
+
+**Solution:** Use proper type from SDK:
+```python
+from google.genai import types
+
+async def _handle_tool_call(self, fc: types.FunctionCall) -> dict:
+```
+
+**Why Deferred:** Non-functional; tests verify correct behavior
+
+---
+
+#### 6. Factory Pattern for Proxy Initialization
+**Issue:** `GeminiLiveProxy` created with empty user details, populated by `authenticate_token` side effect
+
+**Solution:** Use class method factory:
+```python
+@classmethod
+async def create_authenticated(cls, websocket, token):
+    # Validate token
+    # Return initialized proxy or raise
+```
+
+**Why Deferred:** Current pattern matches WebSocket flow where proxy exists before auth
+
+---
+
 ## Related
+
 
 - [ADR-008: Gemini API Backend Proxy](../adr/008-gemini-api-backend-proxy.md)
 - [Technical Debt TD-006](../ROADMAP.md)
