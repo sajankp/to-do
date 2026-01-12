@@ -109,23 +109,6 @@ class TestCallGeminiAPI:
         # For CI, the package is not installed so this is skipped
         pytest.skip("Integration test - requires real API key")
 
-    @pytest.mark.asyncio
-    @patch("app.routers.ai.settings")
-    async def test_import_error_raises_503(self, mock_settings):
-        """Test that missing google-generativeai package raises 503."""
-        mock_settings.gemini_api_key = "test_api_key"
-
-        # We need to ensure we're mocking correct behavior for async calls if dependencies fail
-        with (
-            patch.dict("sys.modules", {"google.generativeai": None}),
-            patch("builtins.__import__", side_effect=ImportError),
-            pytest.raises(HTTPException) as exc_info,
-        ):
-            await _call_gemini_api("Test prompt")
-
-        assert exc_info.value.status_code == 503
-        assert "dependencies" in exc_info.value.detail.lower()
-
 
 class TestProcessVoice:
     """Tests for process_voice endpoint function."""

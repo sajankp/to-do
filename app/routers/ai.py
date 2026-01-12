@@ -31,6 +31,18 @@ class VoiceResponse(BaseModel):
     tokens_used: int = Field(..., description="Tokens used (placeholder for future telemetry)")
 
 
+_model = None
+
+
+async def _get_model():
+    """Get or initialize the Gemini model."""
+    global _model
+    if _model is None:
+        genai.configure(api_key=settings.gemini_api_key)
+        _model = genai.GenerativeModel("gemini-2.0-flash")
+    return _model
+
+
 async def _call_gemini_api(prompt: str, context: dict | None = None) -> tuple[str, int]:
     """Call the Gemini API with the given prompt.
 
@@ -52,8 +64,7 @@ async def _call_gemini_api(prompt: str, context: dict | None = None) -> tuple[st
         )
 
     try:
-        genai.configure(api_key=settings.gemini_api_key)
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        model = await _get_model()
 
         # Build prompt with context if provided
         full_prompt = prompt
@@ -63,9 +74,10 @@ async def _call_gemini_api(prompt: str, context: dict | None = None) -> tuple[st
 
         response = await model.generate_content_async(full_prompt)
 
-        # Token counting - placeholder for now, tracked for future telemetry
-        # Gemini API doesn't easily expose token counts in basic usage
+        # Token counting
         tokens_used = 0
+        if response.usage_metadata:
+            tokens_used = response.usage_metadata.total_token_count
 
         return response.text, tokens_used
 
