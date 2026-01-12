@@ -30,7 +30,7 @@ class VoiceResponse(BaseModel):
     tokens_used: int = Field(..., description="Tokens used (placeholder for future telemetry)")
 
 
-def _call_gemini_api(prompt: str, context: dict | None = None) -> tuple[str, int]:
+async def _call_gemini_api(prompt: str, context: dict | None = None) -> tuple[str, int]:
     """Call the Gemini API with the given prompt.
 
     Args:
@@ -63,7 +63,7 @@ def _call_gemini_api(prompt: str, context: dict | None = None) -> tuple[str, int
             context_str = f"Context: {context}\n\n"
             full_prompt = context_str + prompt
 
-        response = model.generate_content(full_prompt)
+        response = await model.generate_content_async(full_prompt)
 
         # Token counting - placeholder for now, tracked for future telemetry
         # Gemini API doesn't easily expose token counts in basic usage
@@ -106,6 +106,6 @@ async def process_voice(
     """
     logger.info(f"AI voice request from user {current_user.username}")
 
-    response_text, tokens_used = _call_gemini_api(voice_request.prompt, voice_request.context)
+    response_text, tokens_used = await _call_gemini_api(voice_request.prompt, voice_request.context)
 
     return VoiceResponse(response=response_text, tokens_used=tokens_used)
