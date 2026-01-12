@@ -230,6 +230,74 @@ class TestGeminiLiveProxy:
         )
         self.mock_ws.close.assert_called()
 
+    @pytest.mark.asyncio
+    @patch("app.routers.ai_stream.jwt.decode")
+    async def test_authenticate_token_no_username(self, mock_decode):
+        """Test authentication when token has no username."""
+        mock_decode.return_value = {}  #  No "sub" key - line 40
+        result = await self.proxy.authenticate_token("token")
+        assert result is False
+
+    @pytest.mark.asyncio
+    @patch("app.routers.ai_stream.jwt.decode")
+    @patch("app.routers.ai_stream.get_user_by_username")
+    async def test_authenticate_token_user_not_found(self, mock_get_user, mock_decode):
+        """Test authentication when user doesn't exist in database."""
+        mock_decode.return_value = {"sub": "nonexistent"}
+        mock_get_user.return_value = None  # Line 43
+        result = await self.proxy.authenticate_token("token")
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_forward_client_audio_messages(self):
+        """Test forwarding audio chunks from client to Gemini."""
+        self.proxy._running = True
+        self.proxy.gemini_session = AsyncMock()
+
+        # Simulate audio message followed by disconnect
+        self.mock_ws.receive_json.side_effect = [
+            {"type": "audio", "data": "base64data"},
+            WebSocketDisconnect(),
+        ]
+
+        await self.proxy._forward_client_to_gemini()
+
+        # Should have sent audio to Gemini
+        self.proxy.gemini_session.send.assert_called_once()
+        assert self.proxy._running is False
+
+    @pytest.mark.asyncio
+    async def test_forward_client_end_turn(self):
+        """Test forwarding end_turn signal from client to Gemini."""
+        self.proxy._running = True
+        self.proxy.gemini_session = AsyncMock()
+
+        self.mock_ws.receive_json.side_effect = [
+            {"type": "end_turn"},
+            WebSocketDisconnect(),
+        ]
+
+        await self.proxy._forward_client_to_gemini()
+
+        # Should send end_of_turn=True to Gemini
+        self.proxy.gemini_session.send.assert_called_with(input=None, end_of_turn=True)
+
+    @pytest.mark.asyncio
+    async def test_forward_client_todos_update(self):
+        """Test receiving todos update from client."""
+        self.proxy._running = True
+        self.proxy.gemini_session = AsyncMock()
+
+        todos = [{"id": "1", "title": "Test"}]
+        self.mock_ws.receive_json.side_effect = [
+            {"type": "todos_update", "todos": todos},
+            WebSocketDisconnect(),
+        ]
+
+        await self.proxy._forward_client_to_gemini()
+
+        assert self.proxy.todos == todos
+
 
 class TestVoiceStreamEndpointDirect:
     @pytest.mark.asyncio
