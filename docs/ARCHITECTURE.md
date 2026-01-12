@@ -92,10 +92,12 @@ graph TB
         AUTH[Auth Router]
         TODO[Todo Router]
         USER[User Router]
+        AI[AI Router]
     end
 
     subgraph "Data Layer"
         MONGO[(MongoDB Atlas)]
+        GEMINI[Gemini API]
     end
 
     WEB --> GW
@@ -107,9 +109,11 @@ graph TB
     AUTH_MW --> AUTH
     AUTH_MW --> TODO
     AUTH_MW --> USER
+    AUTH_MW --> AI
     AUTH --> MONGO
     TODO --> MONGO
     USER --> MONGO
+    AI --> GEMINI
 ```
 
 ### Current Architecture Pattern
@@ -148,6 +152,8 @@ This provides:
 | `auth.py` | `app/routers/auth.py` | JWT token creation, password hashing, user lookup |
 | `todo.py` | `app/routers/todo.py` | Todo CRUD operations |
 | `user.py` | `app/routers/user.py` | User profile endpoints |
+| `ai.py` | `app/routers/ai.py` | AI voice/text processing endpoints |
+| `ai_stream.py` | `app/routers/ai_stream.py` | WebSocket proxy for Gemini Live |
 | `mongodb.py` | `app/database/mongodb.py` | MongoDB client initialization |
 
 ### Frontend Components
