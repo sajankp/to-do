@@ -153,10 +153,10 @@ class GeminiLiveProxy:
             )
 
             logger.info(
-                f"Connecting to Gemini Live API with model: gemini-2.5-flash-native-audio-latest for user {self.username}"
+                f"Connecting to Gemini Live API with model: {settings.gemini_voice_model_id} for user {self.username}"
             )
             async with client.aio.live.connect(
-                model="gemini-2.5-flash-native-audio-latest",
+                model=settings.gemini_voice_model_id,
                 config=config,
             ) as session:
                 self.gemini_session = session
@@ -406,7 +406,7 @@ class GeminiLiveProxy:
                 await self.gemini_session.close()
 
 
-@router.websocket("/stream")
+@router.websocket("/voice/stream")
 async def voice_stream(websocket: WebSocket) -> None:
     """WebSocket endpoint for real-time voice streaming with Gemini Live API.
 

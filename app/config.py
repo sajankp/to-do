@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     gemini_model_id: str = Field(
         "gemini-2.0-flash", validation_alias="GEMINI_MODEL_ID", description="Gemini Model ID"
     )
+    gemini_voice_model_id: str = Field(
+        "gemini-2.5-flash-native-audio-latest",
+        validation_alias="GEMINI_VOICE_MODEL_ID",
+        description="Gemini Voice Model ID for streaming audio",
+    )
     ai_rate_limit: str = Field(
         "10/minute", validation_alias="AI_RATE_LIMIT", description="AI endpoint rate limit"
     )
