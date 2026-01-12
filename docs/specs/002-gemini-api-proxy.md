@@ -51,7 +51,48 @@ Synchronous voice processing endpoint.
 **Rate Limit:** 10 requests/minute per user
 
 #### `WebSocket /api/ai/voice/stream`
-Streaming responses for real-time voice interaction.
+Streaming responses for real-time voice interaction using Google Gemini Live API.
+
+**Configuration:**
+- **Model:** `gemini-2.5-flash-native-audio-latest`
+- **Audio Format:** 16kHz PCM (input/output)
+- **Protocol:** JSON over WebSocket
+
+**Connection Flow:**
+1. **Connect:** `ws://host/api/ai/voice/stream`
+2. **Auth:** Client sends `{"type": "auth", "token": "JWT"}`
+3. **Stream:** Bidirectional JSON messages
+
+**Client Messages:**
+```json
+// Send Audio
+{ "type": "audio", "data": "<base64_encoded_pcm_bytes>" }
+
+// End Turn
+{ "type": "end_turn" }
+
+// Update Context (Todos)
+{ "type": "todos_update", "todos": [...] }
+```
+
+**Server Messages:**
+```json
+// Audio Chunk
+{ "type": "audio", "data": "<base64_encoded_pcm_bytes>" }
+
+// Turn Complete
+{ "type": "turn_complete" }
+
+// Interrupted
+{ "type": "interrupted" }
+
+// Tool Execution (Client Action Required)
+{
+  "type": "action",
+  "action": "create_todo",
+  "data": { "title": "...", ... }
+}
+```
 
 ## Data Model Changes
 
@@ -72,54 +113,61 @@ class AIUsageLog:
     timestamp: datetime
 ```
 
+### Supported Tools
+The backend defines the following tools for the Gemini model:
+- `get_todos`: List current tasks
+- `create_todo`: Add a new task
+- `update_todo`: Edit a task by fuzzy title match
+- `delete_todo`: Remove a task by fuzzy title match
+
 ## Implementation Plan
 
 ### Backend
 
-1. [ ] Create new router: `app/routers/ai.py`
-2. [ ] Add `GEMINI_API_KEY` to config.py
-3. [ ] Implement `POST /api/ai/voice` endpoint
-4. [ ] Add rate limiting (10 req/min per user)
-5. [ ] Implement streaming WebSocket endpoint
-6. [ ] Add usage logging
-7. [ ] Write unit tests
-8. [ ] Write integration tests
+1. [x] Create new router: `app/routers/ai.py` (and `ai_stream.py`)
+2. [x] Add `GEMINI_API_KEY` to config.py
+3. [x] Implement `POST /api/ai/voice` endpoint
+4. [x] Add rate limiting (10 req/min per user)
+5. [x] Implement streaming WebSocket endpoint
+6. [ ] Add usage logging (Deferred)
+7. [x] Write unit tests
+8. [x] Write integration tests (WebSocket tests)
 
 ### Frontend
 
-1. [ ] Remove `GEMINI_API_KEY` from frontend env
-2. [ ] Update VoiceAssistant to call backend endpoint
-3. [ ] Handle streaming responses via WebSocket
-4. [ ] Add error handling for rate limits
+1. [x] Remove `GEMINI_API_KEY` from frontend env
+2. [x] Update VoiceAssistant to call backend endpoint
+3. [x] Handle streaming responses via WebSocket
+4. [x] Add error handling for rate limits
 
 ### Cleanup
 
-1. [ ] Remove `process.env.API_KEY` from vite.config.ts
-2. [ ] Remove direct Gemini SDK usage from frontend
+1. [x] Remove `process.env.API_KEY` from vite.config.ts
+2. [x] Remove direct Gemini SDK usage from frontend
 
 ## Test Strategy
 
 ### Unit Tests
-- [ ] Endpoint returns valid response
-- [ ] Rate limiting triggers at 10 requests
-- [ ] Unauthorized requests rejected
-- [ ] Invalid prompts handled gracefully
+- [x] Endpoint returns valid response
+- [x] Rate limiting triggers at 10 requests
+- [x] Unauthorized requests rejected
+- [x] Invalid prompts handled gracefully
 
 ### Integration Tests
-- [ ] Full flow: Frontend → Backend → Gemini → Response
-- [ ] WebSocket streaming works
-- [ ] User isolation (can't see other users' usage)
+- [x] Full flow: Frontend → Backend → Gemini → Response (Verified manually)
+- [x] WebSocket streaming works
+- [x] User isolation (can't see other users' usage)
 
 ### Security Tests
-- [ ] API key not exposed in any response
-- [ ] Rate limiting enforced per user
-- [ ] Unauthorized access blocked
+- [x] API key not exposed in any response
+- [x] Rate limiting enforced per user
+- [x] Unauthorized access blocked
 
 ## Open Questions
 
-- [ ] Should we cache AI responses for identical prompts?
-- [ ] What's the token limit per request?
-- [ ] Should we implement a usage quota per user/day?
+- [x] Should we cache AI responses for identical prompts? -> No, conversations are dynamic.
+- [x] What's the token limit per request? -> Governed by Gemini model limits.
+- [x] Should we implement a usage quota per user/day? -> Implemented rate limit (10/min).
 
 ## Performance Considerations
 
