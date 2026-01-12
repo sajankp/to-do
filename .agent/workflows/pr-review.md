@@ -62,6 +62,17 @@ Analysis:
 
 Document your reasoning and decision before making changes.
 
+### Step 2.1.5: Get Review Comments (If Needed)
+
+To retrieve specific review comments programmatically:
+
+```bash
+# Get all review comments with IDs for replies
+gh api repos/OWNER/REPO/pulls/<PR_NUMBER>/comments --jq '.[] | {id: .id, path: .path, line: .line, body: .body}'
+```
+
+This is useful when you need comment IDs to reply to specific feedback.
+
 ## Step 2.2: Reply to Review Comments
 
 After addressing feedback, document what was done by replying to each comment thread:
@@ -80,6 +91,10 @@ gh api repos/OWNER/REPO/pulls/<PR_NUMBER>/comments/<COMMENT_ID>/replies \
   - Added proper exception handling (PyMongoError)
 
   See commit: [sha]"
+
+# CRITICAL: Verify commit succeeded
+git log --oneline -3  # Confirm commit appears
+git status            # Check for uncommitted changes (pre-commit can fail silently)
 ```
 
 **Mark conversation as resolved** (after fixing the issue):

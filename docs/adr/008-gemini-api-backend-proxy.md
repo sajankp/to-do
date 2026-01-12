@@ -26,11 +26,14 @@ Frontend → Backend /api/ai/voice → Gemini API
 
 ### Implementation Details
 
-- **New router:** `app/routers/ai.py`
-- **Rate limit:** 10 requests/minute per user
-- **Endpoints:**
-  - `POST /api/ai/voice` - Synchronous voice processing
+- **Router:** `app/routers/ai_stream.py`
+- **Rate limit:** 10 requests/minute per user (via auth message)
+- **Endpoint:**
   - `WebSocket /api/ai/voice/stream` - Streaming responses
+
+> [!NOTE]
+> **2026-01-12 Update:** The synchronous `POST /api/ai/voice` endpoint was initially implemented
+> but removed as unused code. The frontend only uses WebSocket streaming.
 
 ## Options Considered
 

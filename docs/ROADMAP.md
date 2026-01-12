@@ -43,7 +43,7 @@
 | TD-002 | Database indexes | 1 hour | 🔲 |
 | TD-012 | Move password to request body | 2 hours | ✅ |
 | TD-013 | Email uniqueness check | 1 hour | 🔲 |
-| TD-006 | Gemini API backend proxy | 2 days | 🔲 |
+| TD-006 | Gemini API backend proxy | 2 days | ✅ |
 | TD-011 | Frontend token refresh | 1 day | 🔲 |
 
 ---
@@ -112,7 +112,7 @@
 | TD-003 | Security headers middleware | High | 4 hours |
 | TD-004 | Structured logging (structlog) | High | 1 day |
 | TD-005 | Monitoring/Observability | Critical | 3 days |
-| TD-006 | Gemini API backend proxy | Critical | 2 days |
+| TD-006 | Gemini API backend proxy | High | ✅ Complete |
 | TD-007 | Frontend linting - Phase 1 | High | 2 hours |
 | TD-007a | Frontend linting - Phase 2 | Medium | 4 hours |
 | TD-007b | Frontend linting - Phase 3 | Low | 8 hours |
