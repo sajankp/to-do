@@ -118,6 +118,13 @@ users_collection = request.app.user
 > 1. After creating/updating a PR, wait for `gemini-code-assist` to comment
 > 2. Review its feedback and address any valid suggestions
 > 3. **Never merge or close** until you have checked for and addressed these comments
+>
+> [!CAUTION]
+> **CI & Code Quality Strictness**
+>
+> 1. **NEVER** lower CI success criteria (e.g., test coverage thresholds) without explicit user approval.
+> 2. **ALWAYS** check CI status via `gh pr checks` and **analyze logs** (`gh run view ... --log-failed`) before making changes.
+> 3. **NEVER** assume tests pass; always verify.
 
 ### 📝 Agent Documentation Rules
 
