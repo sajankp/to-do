@@ -81,23 +81,25 @@ class TestVoiceResponse:
 class TestCallGeminiAPI:
     """Tests for _call_gemini_api function."""
 
+    @pytest.mark.asyncio
     @patch("app.routers.ai.settings")
-    def test_missing_api_key_raises_503(self, mock_settings):
+    async def test_missing_api_key_raises_503(self, mock_settings):
         """Test that missing API key raises 503."""
         mock_settings.gemini_api_key = None
 
         with pytest.raises(HTTPException) as exc_info:
-            _call_gemini_api("Test prompt")
+            await _call_gemini_api("Test prompt")
 
         assert exc_info.value.status_code == 503
         assert "not configured" in exc_info.value.detail.lower()
 
+    @pytest.mark.asyncio
     @pytest.mark.skipif(
         not _has_google_genai(),
         reason="google-generativeai package not installed",
     )
     @patch("app.routers.ai.settings")
-    def test_successful_api_call(self, mock_settings):
+    async def test_successful_api_call(self, mock_settings):
         """Test successful Gemini API call - requires actual google-generativeai."""
         # This test requires the actual package; skip in CI where not installed
         # The core logic is tested via TestProcessVoice which mocks _call_gemini_api
@@ -107,17 +109,19 @@ class TestCallGeminiAPI:
         # For CI, the package is not installed so this is skipped
         pytest.skip("Integration test - requires real API key")
 
+    @pytest.mark.asyncio
     @patch("app.routers.ai.settings")
-    def test_import_error_raises_503(self, mock_settings):
+    async def test_import_error_raises_503(self, mock_settings):
         """Test that missing google-generativeai package raises 503."""
         mock_settings.gemini_api_key = "test_api_key"
 
+        # We need to ensure we're mocking correct behavior for async calls if dependencies fail
         with (
             patch.dict("sys.modules", {"google.generativeai": None}),
             patch("builtins.__import__", side_effect=ImportError),
             pytest.raises(HTTPException) as exc_info,
         ):
-            _call_gemini_api("Test prompt")
+            await _call_gemini_api("Test prompt")
 
         assert exc_info.value.status_code == 503
         assert "dependencies" in exc_info.value.detail.lower()
