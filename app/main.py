@@ -89,6 +89,7 @@ async def add_user_info_to_request(request: Request, call_next):
         "/token/refresh",
         "/health",
         "/user",
+        "/api/ai/voice/stream",  # WebSocket authenticates via first message
     ):
         response = await call_next(request)
         return response
