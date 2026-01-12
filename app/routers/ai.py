@@ -3,6 +3,7 @@
 import logging
 from typing import Annotated
 
+import google.generativeai as genai
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
@@ -51,9 +52,6 @@ async def _call_gemini_api(prompt: str, context: dict | None = None) -> tuple[st
         )
 
     try:
-        # Import here to avoid import errors if google-generativeai not installed
-        import google.generativeai as genai
-
         genai.configure(api_key=settings.gemini_api_key)
         model = genai.GenerativeModel("gemini-2.0-flash")
 
@@ -71,12 +69,6 @@ async def _call_gemini_api(prompt: str, context: dict | None = None) -> tuple[st
 
         return response.text, tokens_used
 
-    except ImportError:
-        logger.error("google-generativeai package not installed")
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="AI service dependencies not installed",
-        ) from None
     except Exception as e:
         logger.exception("Gemini API call failed")
         raise HTTPException(
