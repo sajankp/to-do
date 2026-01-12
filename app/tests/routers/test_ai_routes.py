@@ -1,6 +1,6 @@
 """Tests for AI router endpoints."""
 
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from fastapi import HTTPException, Request
@@ -92,6 +92,35 @@ class TestCallGeminiAPI:
 
         assert exc_info.value.status_code == 503
         assert "not configured" in exc_info.value.detail.lower()
+
+    @pytest.mark.asyncio
+    @patch("app.routers.ai.settings")
+    async def test_call_gemini_api_success_mocked(self, mock_settings):
+        """Test successful Gemini API call with mocked genai."""
+        mock_settings.gemini_api_key = "test_api_key"
+
+        # Mock the entire genai module and the global _model
+        mock_response = Mock()
+        mock_response.text = "Mocked AI response"
+        mock_response.usage_metadata.total_token_count = 123
+
+        mock_model = Mock()
+        mock_model.generate_content_async = AsyncMock(return_value=mock_response)
+
+        # We need to reset the global _model variable to ensure _get_model is called
+        import app.routers.ai
+
+        app.routers.ai._model = None
+
+        with patch("app.routers.ai.genai") as mock_genai:
+            mock_genai.GenerativeModel.return_value = mock_model
+
+            response_text, tokens = await _call_gemini_api("Test prompt")
+
+            assert response_text == "Mocked AI response"
+            assert tokens == 123
+            mock_genai.configure.assert_called_once_with(api_key="test_api_key")
+            mock_model.generate_content_async.assert_called_once()
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(
