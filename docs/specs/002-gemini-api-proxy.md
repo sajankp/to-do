@@ -27,7 +27,15 @@ The API key stays on the server, never exposed to clients.
 
 ### New Endpoints
 
-#### `POST /api/ai/voice`
+#### ~~`POST /api/ai/voice`~~ (Removed - Unused)
+> [!NOTE]
+> This synchronous endpoint was implemented in `app/routers/ai.py` but never used by the frontend.
+> The frontend only uses the WebSocket streaming endpoint below.
+> Removed on 2026-01-12 to eliminate dead code.
+
+<details>
+<summary>Original Specification (for reference)</summary>
+
 Synchronous voice processing endpoint.
 
 **Request:**
@@ -49,6 +57,7 @@ Synchronous voice processing endpoint.
 ```
 
 **Rate Limit:** 10 requests/minute per user
+</details>
 
 #### `WebSocket /api/ai/voice/stream`
 Streaming responses for real-time voice interaction using Google Gemini Live API.
@@ -124,9 +133,9 @@ The backend defines the following tools for the Gemini model:
 
 ### Backend
 
-1. [x] Create new router: `app/routers/ai.py` (and `ai_stream.py`)
+1. [x] Create new router: `app/routers/ai_stream.py`
 2. [x] Add `GEMINI_API_KEY` to config.py
-3. [x] Implement `POST /api/ai/voice` endpoint
+3. [~] ~~Implement `POST /api/ai/voice` endpoint~~ (Implemented then removed - unused)
 4. [x] Add rate limiting (10 req/min per user)
 5. [x] Implement streaming WebSocket endpoint
 6. [ ] Add usage logging (Deferred)
