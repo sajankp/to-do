@@ -3,8 +3,8 @@
 import logging
 from typing import Annotated
 
-import google.generativeai as genai
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from google import genai
 from pydantic import BaseModel, Field
 
 from app.config import get_settings
@@ -31,16 +31,15 @@ class VoiceResponse(BaseModel):
     tokens_used: int = Field(..., description="Tokens used (placeholder for future telemetry)")
 
 
-_model = None
+_client = None
 
 
-async def _get_model():
-    """Get or initialize the Gemini model."""
-    global _model
-    if _model is None:
-        genai.configure(api_key=settings.gemini_api_key)
-        _model = genai.GenerativeModel("gemini-2.0-flash")
-    return _model
+def _get_client():
+    """Get or initialize the Gemini (GenAI) client."""
+    global _client
+    if _client is None:
+        _client = genai.Client(api_key=settings.gemini_api_key)
+    return _client
 
 
 async def _call_gemini_api(prompt: str, context: dict | None = None) -> tuple[str, int]:
@@ -64,7 +63,7 @@ async def _call_gemini_api(prompt: str, context: dict | None = None) -> tuple[st
         )
 
     try:
-        model = await _get_model()
+        client = _get_client()
 
         # Build prompt with context if provided
         full_prompt = prompt
@@ -72,7 +71,9 @@ async def _call_gemini_api(prompt: str, context: dict | None = None) -> tuple[st
             context_str = f"Context: {context}\n\n"
             full_prompt = context_str + prompt
 
-        response = await model.generate_content_async(full_prompt)
+        response = await client.aio.models.generate_content(
+            model=settings.gemini_model_id, contents=full_prompt
+        )
 
         # Token counting
         tokens_used = 0

@@ -11,9 +11,9 @@ from app.routers.ai import VoiceRequest, VoiceResponse, _call_gemini_api, proces
 
 
 def _has_google_genai() -> bool:
-    """Check if google-generativeai package is installed."""
+    """Check if google-genai package is installed."""
     try:
-        import google.generativeai  # noqa: F401
+        import google.genai  # noqa: F401
 
         return True
     except ImportError:
@@ -79,7 +79,7 @@ class TestVoiceResponse:
 
 
 class TestCallGeminiAPI:
-    """Tests for _call_gemini_api function."""
+    """Tests for _call_gemini_api helper function."""
 
     @pytest.mark.asyncio
     @patch("app.routers.ai.settings")
@@ -98,38 +98,42 @@ class TestCallGeminiAPI:
     async def test_call_gemini_api_success_mocked(self, mock_settings):
         """Test successful Gemini API call with mocked genai."""
         mock_settings.gemini_api_key = "test_api_key"
+        mock_settings.gemini_model_id = "test-model"
 
-        # Mock the entire genai module and the global _model
+        # Mock the entire genai module and the global _client
         mock_response = Mock()
         mock_response.text = "Mocked AI response"
         mock_response.usage_metadata.total_token_count = 123
 
-        mock_model = Mock()
-        mock_model.generate_content_async = AsyncMock(return_value=mock_response)
+        mock_client = Mock()
+        mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
 
-        # We need to reset the global _model variable to ensure _get_model is called
+        # We need to reset the global _client variable to ensure _get_client is called
         import app.routers.ai
 
-        app.routers.ai._model = None
+        app.routers.ai._client = None
 
         with patch("app.routers.ai.genai") as mock_genai:
-            mock_genai.GenerativeModel.return_value = mock_model
+            mock_genai.Client.return_value = mock_client
 
             response_text, tokens = await _call_gemini_api("Test prompt")
 
             assert response_text == "Mocked AI response"
             assert tokens == 123
-            mock_genai.configure.assert_called_once_with(api_key="test_api_key")
-            mock_model.generate_content_async.assert_called_once()
+            mock_genai.Client.assert_called_once_with(api_key="test_api_key")
+            mock_client.aio.models.generate_content.assert_called_once()
+            call_args = mock_client.aio.models.generate_content.call_args
+            assert call_args.kwargs["model"] == "test-model"
+            assert call_args.kwargs["contents"] == "Test prompt"
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(
         not _has_google_genai(),
-        reason="google-generativeai package not installed",
+        reason="google-genai package not installed",
     )
     @patch("app.routers.ai.settings")
     async def test_successful_api_call(self, mock_settings):
-        """Test successful Gemini API call - requires actual google-generativeai."""
+        """Test successful Gemini API call - requires actual google-genai."""
         # This test requires the actual package; skip in CI where not installed
         # The core logic is tested via TestProcessVoice which mocks _call_gemini_api
         mock_settings.gemini_api_key = "test_api_key"
