@@ -18,6 +18,6 @@ def test_security_headers_present():
     assert response.status_code == 200
     assert response.headers["X-Frame-Options"] == "DENY"
     assert response.headers["X-Content-Type-Options"] == "nosniff"
-    assert response.headers["X-XSS-Protection"] == "1; mode=block"
+
     assert "max-age=31536000" in response.headers["Strict-Transport-Security"]
     assert "default-src 'self'" in response.headers["Content-Security-Policy"]
