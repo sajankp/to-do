@@ -1,6 +1,6 @@
 # FastTodo System Specification
 
-> **Living Document** | Last Updated: 2025-12-21
+> **Living Document** | Last Updated: 2026-01-12
 > This is the canonical reference for the FastTodo system architecture, design decisions, and known challenges.
 
 ---
@@ -92,7 +92,8 @@ graph TB
         AUTH[Auth Router]
         TODO[Todo Router]
         USER[User Router]
-        AI[AI Router]
+        AI[AI Stream Proxy]
+
     end
 
     subgraph "Data Layer"
@@ -110,10 +111,12 @@ graph TB
     AUTH_MW --> TODO
     AUTH_MW --> USER
     AUTH_MW --> AI
+
     AUTH --> MONGO
     TODO --> MONGO
     USER --> MONGO
     AI --> GEMINI
+
 ```
 
 ### Current Architecture Pattern
@@ -149,10 +152,10 @@ This provides:
 |-----------|----------|----------------|
 | `main.py` | `app/main.py` | Application entry, middleware stack, root endpoints |
 | `config.py` | `app/config.py` | Environment configuration via Pydantic Settings |
+| `security.py` | `app/middleware/security.py` | Security headers middleware (OWASP) |
 | `auth.py` | `app/routers/auth.py` | JWT token creation, password hashing, user lookup |
 | `todo.py` | `app/routers/todo.py` | Todo CRUD operations |
 | `user.py` | `app/routers/user.py` | User profile endpoints |
-| `ai.py` | `app/routers/ai.py` | AI voice/text processing endpoints |
 | `ai_stream.py` | `app/routers/ai_stream.py` | WebSocket proxy for Gemini Live |
 | `mongodb.py` | `app/database/mongodb.py` | MongoDB client initialization |
 
@@ -268,7 +271,6 @@ erDiagram
         string description
         datetime due_date
         enum priority
-        boolean completed
     }
 ```
 
@@ -455,81 +457,15 @@ GET /v2/todo/  # New format
 
 ---
 
-### 8. Hardcoded Configuration in Frontend
 
-**Current State:**
-```typescript
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-```
 
-**Status:** ✅ Fixed (was hardcoded to production URL)
+
+
+
 
 ---
 
-### 9. Password Visible in Query String
-
-**Current State:**
-```python
-# Registration endpoint
-POST /user?username=X&email=Y&password=Z
-```
-
-**Risk:**
-- Passwords logged in server access logs
-- Visible in browser history
-- Cached by proxies
-
-**Mitigation:**
-- Change to request body: `POST /user` with JSON body
-- Backend change required
-
----
-
-### 10. (TD-003) Missing Security Headers Middleware
-
-**Current State:**
-- No security headers middleware configured
-- Default headers expose server information
-- Missing OWASP recommended headers
-
-**Risk:**
-- Vulnerable to clickjacking (no `X-Frame-Options`)
-- XSS attacks easier without CSP
-- MIME sniffing vulnerabilities
-- Missing HSTS for HTTPS enforcement
-
-**Required Headers:**
-```python
-# Example headers to implement
-X-Frame-Options: DENY
-X-Content-Type-Options: nosniff
-X-XSS-Protection: 1; mode=block
-Strict-Transport-Security: max-age=31536000; includeSubDomains
-Content-Security-Policy: default-src 'self'
-Referrer-Policy: strict-origin-when-cross-origin
-```
-
-**Mitigation:**
-```python
-# Add middleware in main.py
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
-
-@app.middleware("http")
-async def add_security_headers(request: Request, call_next):
-    response = await call_next(request)
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
-    # Add remaining headers
-    return response
-```
-
-**Priority:** High (production blocker)
-
----
-
-### 11. (TD-004) No Structured Logging
+### 10. (TD-004) No Structured Logging
 
 **Current State:**
 ```python
@@ -579,7 +515,7 @@ logger.info("todo_created", user_id=user_id, todo_id=todo_id)
 
 ---
 
-### 12. (TD-005) Missing Monitoring & Observability
+### 11. (TD-005) Missing Monitoring & Observability
 
 **Current State:**
 - No metrics collection
@@ -638,99 +574,11 @@ def metrics():
 
 ---
 
-### 13. (TD-006) Gemini API Key Exposed in Frontend Bundle
 
-**Current State:**
-```typescript
-// VoiceAssistant.tsx
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-// vite.config.ts - This bundles the key into client JS
-'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-```
-
-**Risk:**
-- API key visible in browser DevTools → Sources → bundled JavaScript
-- Anyone can extract and abuse the key
-- No usage tracking or rate limiting per user
-- Potential for significant API cost abuse
-
-**Architectural Solutions for Discussion:**
-
-#### Option A: Backend Proxy (Recommended)
-```
-Frontend → Backend /api/ai/voice → Gemini API
-```
-
-**Pros:**
-- API key never leaves server
-- Can add per-user rate limiting
-- Can log AI usage per user
-- Can inject user context into prompts
-- Can add cost controls
-
-**Cons:**
-- Adds latency (extra hop)
-- Backend becomes stateful for WebSocket/streaming
-- More backend complexity
-
-**Implementation:**
-```python
-# New endpoint in backend
-@router.post("/ai/voice")
-async def proxy_gemini_voice(
-    request: Request,
-    prompt: str,
-    user_id: str = Depends(get_current_user)
-):
-    # Rate limit per user
-    # Log usage
-    # Forward to Gemini
-    # Return response
-```
-
-#### Option B: Serverless Edge Function
-```
-Frontend → Vercel/Netlify Edge Function → Gemini API
-```
-
-**Pros:**
-- Low latency (edge deployment)
-- Separate from main backend
-- Easy to deploy
-
-**Cons:**
-- Another service to manage
-- Harder to integrate with user auth
-- Separate rate limiting logic
-
-#### Option C: Google AI Studio Integration Only
-```
-Frontend → window.aistudio API (when available)
-```
-
-**Pros:**
-- No key management needed
-- Works in AI Studio environment
-
-**Cons:**
-- Only works in AI Studio
-- Doesn't work for deployed app
-- Not a production solution
-
-**Decision: ✅ Option A (Backend Proxy)**
-
-We will implement a backend proxy endpoint for Gemini API calls. This:
-- Prevents API key exposure in frontend bundle
-- Enables per-user rate limiting and usage tracking
-- Allows cost controls and monitoring
-- Keeps all authentication logic centralized
-
-**Implementation Priority:** Critical (TD-003)
 
 ---
 
-### 14. (TD-007) Frontend Linting & Code Quality Enforcement
+### 12. (TD-007) Frontend Linting & Code Quality Enforcement
 
 **Current State:**
 - Backend has `.pre-commit-config.yaml` with Ruff linting

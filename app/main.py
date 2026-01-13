@@ -14,6 +14,7 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import get_settings
 from app.database.mongodb import mongodb_client
+from app.middleware.security import SecurityHeadersMiddleware
 from app.models.base import PyObjectId
 from app.models.user import CreateUser, Token, UserRegistration
 from app.routers.ai_stream import router as ai_stream_router
@@ -64,7 +65,9 @@ app.add_middleware(
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(ai_stream_router, prefix="/api/ai", tags=["ai-stream"])
 app.include_router(todo_router, prefix="/todo", tags=["todo"])
