@@ -13,7 +13,7 @@ def test_security_headers_present():
         return {"message": "Hello World"}
 
     client = TestClient(app)
-    response = client.get("/")
+    response = client.get("/", headers={"x-forwarded-proto": "https"})
 
     assert response.status_code == 200
     assert response.headers["X-Frame-Options"] == "DENY"
