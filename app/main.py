@@ -54,7 +54,12 @@ async def lifespan(application: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# Configure CORS
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Configure CORS (Must be last to ensure headers on all responses, including 429s)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.get_cors_origins_list(),
@@ -62,12 +67,6 @@ app.add_middleware(
     allow_methods=settings.get_cors_methods_list(),
     allow_headers=settings.get_cors_headers_list(),
 )
-
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-app.add_middleware(SlowAPIMiddleware)
-app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(ai_stream_router, prefix="/api/ai", tags=["ai-stream"])
 app.include_router(todo_router, prefix="/todo", tags=["todo"])
