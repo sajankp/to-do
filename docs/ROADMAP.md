@@ -37,7 +37,7 @@
 
 | Item | Description | Effort | Status |
 |------|-------------|--------|--------|
-| TD-003 | Security headers middleware (OWASP) | 4 hours | 🔲 |
+| TD-003 | Security headers middleware (OWASP) | 4 hours | ✅ |
 | TD-004 | Structured logging (structlog) | 1 day | 🔲 |
 | TD-005 | Monitoring/Observability (Prometheus + Grafana) | 3 days | 🔲 |
 | TD-002 | Database indexes | 1 hour | 🔲 |
@@ -109,7 +109,7 @@
 |----|-------------|----------|--------|
 | TD-001 | Migrate to async Motor | High | 3 days |
 | TD-002 | Add database indexes | High | 1 hour |
-| TD-003 | Security headers middleware | High | 4 hours |
+| TD-003 | Security headers middleware | High | ✅ Complete |
 | TD-004 | Structured logging (structlog) | High | 1 day |
 | TD-005 | Monitoring/Observability | Critical | 3 days |
 | TD-006 | Gemini API backend proxy | High | ✅ Complete |

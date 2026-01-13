@@ -19,11 +19,29 @@ gh pr list --state open
 
 // turbo
 ```bash
-gh pr view <PR_NUMBER> --json comments,reviews
+# Robustly check for ANY feedback (general comments, reviews, or inline code comments)
+gh api repos/:owner/:repo/pulls/<PR_NUMBER>/reviews --jq 'map(select(.state != "PENDING")) | length'
+gh api repos/:owner/:repo/pulls/<PR_NUMBER>/comments --jq 'length'
+gh api repos/:owner/:repo/issues/<PR_NUMBER>/comments --jq 'length'
 ```
 
-- If no comments yet: **WAIT**. Do not proceed.
-- If comments exist: Proceed to Step 2.1.
+- If all counts are 0: **WAIT**.
+- If any count > 0: Proceed to Step 2.1.
+
+### Step 2.1: Fetch Feedback Details
+
+If feedback exists, fetch the details to analyze:
+
+```bash
+# 1. Fetch Formal Reviews (Approve/Request Changes)
+gh api repos/:owner/:repo/pulls/<PR_NUMBER>/reviews --jq '.[] | {state: .state, author: .user.login, body: .body}'
+
+# 2. Fetch Inline Code Comments
+gh api repos/:owner/:repo/pulls/<PR_NUMBER>/comments --jq '.[] | {path: .path, line: .line, author: .user.login, body: .body}'
+
+# 3. Fetch General Conversation Comments
+gh api repos/:owner/:repo/issues/<PR_NUMBER>/comments --jq '.[] | {author: .user.login, body: .body}'
+```
 
 ## Step 2.1: Critically Evaluate Feedback
 

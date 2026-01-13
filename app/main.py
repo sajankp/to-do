@@ -14,6 +14,7 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import get_settings
 from app.database.mongodb import mongodb_client
+from app.middleware.security import SecurityHeadersMiddleware
 from app.models.base import PyObjectId
 from app.models.user import CreateUser, Token, UserRegistration
 from app.routers.ai_stream import router as ai_stream_router
@@ -53,7 +54,12 @@ async def lifespan(application: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# Configure CORS
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Configure CORS (Must be last to ensure headers on all responses, including 429s)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.get_cors_origins_list(),
@@ -61,10 +67,6 @@ app.add_middleware(
     allow_methods=settings.get_cors_methods_list(),
     allow_headers=settings.get_cors_headers_list(),
 )
-
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-app.add_middleware(SlowAPIMiddleware)
 
 app.include_router(ai_stream_router, prefix="/api/ai", tags=["ai-stream"])
 app.include_router(todo_router, prefix="/todo", tags=["todo"])
