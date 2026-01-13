@@ -104,6 +104,16 @@ users_collection = request.app.user
 > 1. **Stage changes** and show the user what will be committed
 > 2. **Request approval** before running `git commit`
 > 3. **Only commit** after receiving explicit "yes", "approved", "proceed", or similar confirmation
+>
+> [!CAUTION]
+> **ALWAYS verify commits succeeded**
+>
+> Pre-commit hooks (ruff, conventional commits, etc.) can fail silently. After every commit:
+> ```bash
+> git log --oneline -3  # Verify commit appears in history
+> git status            # Check for uncommitted changes (indicates pre-commit failure)
+> ```
+> If `git status` shows staged or modified files after committing, the pre-commit hook failed and you must fix the issues and retry.
 
 > [!CAUTION]
 > **NEVER close a PR without explicit user approval**
@@ -118,6 +128,13 @@ users_collection = request.app.user
 > 1. After creating/updating a PR, wait for `gemini-code-assist` to comment
 > 2. Review its feedback and address any valid suggestions
 > 3. **Never merge or close** until you have checked for and addressed these comments
+>
+> [!CAUTION]
+> **CI & Code Quality Strictness**
+>
+> 1. **NEVER** lower CI success criteria (e.g., test coverage thresholds) without explicit user approval.
+> 2. **ALWAYS** check CI status via `gh pr checks` and **analyze logs** (`gh run view ... --log-failed`) before making changes.
+> 3. **NEVER** assume tests pass; always verify.
 
 ### 📝 Agent Documentation Rules
 
@@ -166,13 +183,15 @@ app/
 
 ## Testing
 
+> ⚠️ **Always activate the virtual environment first:** `source venv/bin/activate`
+
 ### Running Tests
 ```bash
 # All tests
 pytest app/tests/
 
-# With coverage
-pytest --cov=app --cov-report=term-missing
+# With coverage (recommended)
+pytest --cov=app --cov-report=term-missing app/tests/
 
 # Specific category
 pytest app/tests/routers/test_auth.py -v

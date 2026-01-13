@@ -6,6 +6,17 @@ description: Review and process open GitHub PRs
 
 Use this workflow to systematically review and process open PRs.
 
+## 🧭 When to Use This Workflow
+
+```
+Do I have open PRs to process?
+├── YES → Use this workflow
+└── NO → Is there a new PR from Dependabot/other?
+         └── Run `gh pr list --state open` to check
+```
+
+---
+
 ## Step 1: List Open PRs
 
 ```bash
@@ -19,13 +30,34 @@ gh pr list --state open
 
 // turbo
 ```bash
-gh pr view <PR_NUMBER> --json comments,reviews
+# Check specifically for gemini-code-assist review
+gh api repos/:owner/:repo/pulls/<PR_NUMBER>/reviews \
+  --jq '[.[] | select(.user.login == "gemini-code-assist" and .state != "PENDING")] | length'
+
+# Also check for any inline or general comments
+gh api repos/:owner/:repo/pulls/<PR_NUMBER>/comments --jq 'length'
+gh api repos/:owner/:repo/issues/<PR_NUMBER>/comments --jq 'length'
 ```
 
-- If no comments yet: **WAIT**. Do not proceed.
-- If comments exist: Proceed to Step 2.1.
+- If all counts are 0: **WAIT**.
+- If any count > 0: Proceed to Step 2.1.
 
-## Step 2.1: Critically Evaluate Feedback
+### Step 2.1: Fetch Feedback Details
+
+If feedback exists, fetch the details to analyze:
+
+```bash
+# 1. Fetch Formal Reviews (Approve/Request Changes)
+gh api repos/:owner/:repo/pulls/<PR_NUMBER>/reviews --jq '.[] | {state: .state, author: .user.login, body: .body}'
+
+# 2. Fetch Inline Code Comments
+gh api repos/:owner/:repo/pulls/<PR_NUMBER>/comments --jq '.[] | {path: .path, line: .line, author: .user.login, body: .body}'
+
+# 3. Fetch General Conversation Comments
+gh api repos/:owner/:repo/issues/<PR_NUMBER>/comments --jq '.[] | {author: .user.login, body: .body}'
+```
+
+### Step 2.2: Critically Evaluate Feedback
 
 > [!IMPORTANT]
 > **Do NOT blindly accept AI review comments.** Think critically about each suggestion.
@@ -62,7 +94,18 @@ Analysis:
 
 Document your reasoning and decision before making changes.
 
-## Step 2.2: Reply to Review Comments
+### Step 2.3: Get Review Comments (If Needed)
+
+To retrieve specific review comments programmatically:
+
+```bash
+# Get all review comments with IDs for replies
+gh api repos/OWNER/REPO/pulls/<PR_NUMBER>/comments --jq '.[] | {id: .id, path: .path, line: .line, body: .body}'
+```
+
+This is useful when you need comment IDs to reply to specific feedback.
+
+### Step 2.4: Reply to Review Comments
 
 After addressing feedback, document what was done by replying to each comment thread:
 
@@ -80,6 +123,10 @@ gh api repos/OWNER/REPO/pulls/<PR_NUMBER>/comments/<COMMENT_ID>/replies \
   - Added proper exception handling (PyMongoError)
 
   See commit: [sha]"
+
+# CRITICAL: Verify commit succeeded
+git log --oneline -3  # Confirm commit appears
+git status            # Check for uncommitted changes (pre-commit can fail silently)
 ```
 
 **Mark conversation as resolved** (after fixing the issue):
@@ -106,7 +153,7 @@ gh api graphql -f query='
 >
 > This creates an audit trail and helps reviewers understand your decisions.
 
-## Step 2.5: Request Re-Review (After Addressing Feedback)
+### Step 2.5: Request Re-Review (After Addressing Feedback)
 
 After fixing issues identified by `gemini-code-assist`, request a fresh review:
 
@@ -173,6 +220,9 @@ gh pr comment <PR_NUMBER> --body "@dependabot rebase"
 
 > [!CAUTION]
 > **NEVER close a PR without explicit user approval.**
+
+> [!TIP]
+> If CI fails due to missing functionality (not just bugs), consider whether a spec update is needed via `/development-workflow`.
 
 1. Notify user & request approval
 2. Create tracking issue

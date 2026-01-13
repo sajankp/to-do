@@ -40,6 +40,19 @@ class Settings(BaseSettings):
     cors_allow_methods: str = Field("*", validation_alias="CORS_ALLOW_METHODS")
     cors_allow_headers: str = Field("*", validation_alias="CORS_ALLOW_HEADERS")
 
+    # AI Configuration (Gemini API Proxy)
+    gemini_api_key: str | None = Field(
+        None, validation_alias="GEMINI_API_KEY", description="Google Gemini API key"
+    )
+    gemini_voice_model_id: str = Field(
+        "gemini-2.5-flash-native-audio-latest",
+        validation_alias="GEMINI_VOICE_MODEL_ID",
+        description="Gemini Voice Model ID for streaming audio",
+    )
+    ai_rate_limit: str = Field(
+        "10/minute", validation_alias="AI_RATE_LIMIT", description="AI endpoint rate limit"
+    )
+
     model_config = SettingsConfigDict(env_file=".env")
 
     @model_validator(mode="after")

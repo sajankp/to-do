@@ -90,7 +90,12 @@ Message: "I've created a feature spec. Please review.
 Once user approves the spec:
 1. Stage: `git add docs/specs/NNN-feature.md`
 2. Commit: `docs: add spec for [feature description]`
-3. Consider: Does this feature involve an architectural decision?
+3. Verify commit succeeded:
+   ```bash
+   git log --oneline -1  # Confirm commit appears
+   git status            # Check for uncommitted changes
+   ```
+4. Consider: Does this feature involve an architectural decision?
 
 ### Step 4: Create ADR (If Needed)
 
@@ -171,6 +176,18 @@ Update `docs/ARCHITECTURE.md` **only if** the system architecture actually chang
 - Component specifications if responsibilities changed
 
 **Do NOT** add detailed feature specs to ARCHITECTURE.md. That content stays in `docs/specs/`.
+
+### Step 9: Create PR and Run Tests
+
+After implementation is complete:
+
+1. Push the feature branch: `git push -u origin feat/my-feature`
+2. Create PR: `gh pr create --title "feat: [description]" --body "Closes #issue"`
+3. Run full test suite locally and confirm all tests pass
+4. **STOP** - Follow `/pr-review` workflow to process the PR
+
+> [!TIP]
+> After implementation, use `/pr-review` to process the PR through AI review and merge.
 
 ---
 
