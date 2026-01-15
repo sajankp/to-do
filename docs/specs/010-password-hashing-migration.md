@@ -1,6 +1,6 @@
 # Spec-010: Password Hashing Library Migration
 
-**Status:** Planned
+**Status:** Approved
 **Related ADR:** [ADR-010](../adr/010-password-hashing-library-migration.md)
 **Related Issue:** #82
 
