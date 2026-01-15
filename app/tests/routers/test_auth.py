@@ -152,7 +152,7 @@ def test_create_token_without_expiry():
 ### Tests for `password`-related functions
 
 
-@patch("app.routers.auth.pwd_context.hash")
+@patch("app.routers.auth.pwd_hash.hash")
 def test_hash_password(mock_hash):
     mock_hash.return_value = "hashed_password"
     password = "plain_password"
@@ -163,16 +163,17 @@ def test_hash_password(mock_hash):
     assert hashed_password == "hashed_password"
 
 
-@patch("app.routers.auth.pwd_context.verify")
-def test_verify_password(mock_verify):
-    mock_verify.return_value = True
+@patch("app.routers.auth.pwd_hash.verify_and_update")
+def test_verify_password(mock_verify_and_update):
+    mock_verify_and_update.return_value = (True, None)
     plain_password = "plain_password"
     hashed_password = "hashed_password"
 
-    is_valid = verify_password(plain_password, hashed_password)
+    is_valid, new_hash = verify_password(plain_password, hashed_password)
 
-    mock_verify.assert_called_once_with(plain_password, hashed_password)
+    mock_verify_and_update.assert_called_once_with(plain_password, hashed_password)
     assert is_valid is True
+    assert new_hash is None
 
 
 ### Tests for user-related functions
@@ -187,24 +188,26 @@ def test_authenticate_user(mock_verify_password, mock_get_user):
         email="email@example.com",
     )
     mock_get_user.return_value = mock_user
-    mock_verify_password.return_value = True
+    mock_verify_password.return_value = (True, None)
 
-    user = authenticate_user("test_user", "plain_password")
+    user, new_hash = authenticate_user("test_user", "plain_password")
 
     mock_get_user.assert_called_once_with("test_user")
     mock_verify_password.assert_called_once_with("plain_password", "hashed_password")
     assert isinstance(user, UserInDB)
     assert user.username == "test_user", "Expected username to match 'test_user'."
+    assert new_hash is None
 
 
 @patch("app.routers.auth.get_user_by_username")
 def test_authenticate_user_invalid(mock_get_user):
     mock_get_user.return_value = None
 
-    user = authenticate_user("invalid_user", "plain_password")
+    user, new_hash = authenticate_user("invalid_user", "plain_password")
 
     mock_get_user.assert_called_once_with("invalid_user")
     assert user is None
+    assert new_hash is None
 
 
 class TestGetCurrentActiveUser:
@@ -295,10 +298,11 @@ def test_authenticate_user_wrong_password(mock_verify_password, mock_get_user):
         email="email@example.com",
     )
     mock_get_user.return_value = mock_user
-    mock_verify_password.return_value = False  # Simulate wrong password
+    mock_verify_password.return_value = (False, None)  # Simulate wrong password
 
-    user = authenticate_user("test_user", "wrong_password")
+    user, new_hash = authenticate_user("test_user", "wrong_password")
 
     mock_get_user.assert_called_once_with("test_user")
     mock_verify_password.assert_called_once_with("wrong_password", "hashed_password")
     assert user is None, "authenticate_user should return None on wrong password"
+    assert new_hash is None

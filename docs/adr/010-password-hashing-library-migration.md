@@ -1,7 +1,7 @@
 # ADR-010: Migrate from passlib to pwdlib for Password Hashing
 
 ## Status
-Proposed
+Accepted
 
 ## Context
 

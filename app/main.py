@@ -3,6 +3,7 @@ import sys
 from datetime import timedelta
 from typing import Annotated
 
+import pymongo.errors
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
@@ -130,13 +131,25 @@ def check_health(token: str = Depends(oauth2_scheme)):
 def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()], request: Request
 ):
-    user = authenticate_user(form_data.username, form_data.password)
+    # Authenticate user
+    user, new_hash = authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    # Transparent migration: upgrade old bcrypt hashes to Argon2id
+    if new_hash:
+        try:
+            request.app.user.update_one(
+                {"username": user.username}, {"$set": {"hashed_password": new_hash}}
+            )
+        except pymongo.errors.PyMongoError as e:
+            # Log warning but don't fail login
+            logging.warning(f"Failed to upgrade password hash for {user.username}: {e}")
+
     access_token_expires = timedelta(seconds=settings.access_token_expire_seconds)
     access_token = create_token(
         data={"sub": user.username, "sub_id": str(user.id)},
