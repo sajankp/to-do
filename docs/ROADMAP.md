@@ -109,11 +109,11 @@
 |------|-------------|--------|--------|
 | TD-022 | Integration tests with testcontainers (MongoDB) | 2 days | 🔲 |
 | TD-016 | E2E testing with Playwright (full stack) | 2 days | 🔲 |
+| TD-017 | Performance benchmarks (Locust/k6) | 1 day | 🔲 |
+| TD-018 | OpenAPI contract testing | 1 day | 🔲 |
 | TD-023 | CI gate: Integration tests on PR | 4 hours | 🔲 |
 | TD-024 | CI gate: E2E tests on main merge | 4 hours | 🔲 |
 | TD-025 | Nightly full test suite (scheduled) | 2 hours | 🔲 |
-| TD-017 | Performance benchmarks (Locust/k6) | 1 day | 🔲 |
-| TD-018 | OpenAPI contract testing | 1 day | 🔲 |
 
 #### CI Gate Strategy
 
