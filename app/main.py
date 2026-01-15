@@ -1,5 +1,6 @@
 import logging
 import sys
+import uuid
 from datetime import timedelta
 from typing import Annotated
 
@@ -15,6 +16,9 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import get_settings
 from app.database.mongodb import mongodb_client
+
+# specific imports for logging
+from app.middleware.logging import StructlogMiddleware
 from app.middleware.security import SecurityHeadersMiddleware
 from app.models.base import PyObjectId
 from app.models.user import CreateUser, Token, UserRegistration
@@ -31,8 +35,12 @@ from app.routers.todo import router as todo_router
 from app.routers.user import router as user_router
 from app.utils.constants import FAILED_TO_CREATE_USER, MISSING_TOKEN
 from app.utils.health import app_check_health, check_app_readiness
+from app.utils.logging import setup_logging
 from app.utils.rate_limiter import limiter
 from app.utils.validate_env import validate_env
+
+# Initialize logging before creating the app
+setup_logging()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 settings = get_settings()
@@ -57,6 +65,8 @@ app = FastAPI(lifespan=lifespan)
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+# Logging middleware should be one of the first to capture everything
+app.add_middleware(StructlogMiddleware)
 app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 
@@ -150,15 +160,20 @@ def login_for_access_token(
             # Log warning but don't fail login
             logging.warning(f"Failed to upgrade password hash for {user.username}: {e}")
 
+    # Generate a new Session ID (sid) for this login session
+    sid = str(uuid.uuid4())
+
     access_token_expires = timedelta(seconds=settings.access_token_expire_seconds)
     access_token = create_token(
         data={"sub": user.username, "sub_id": str(user.id)},
         expires_delta=access_token_expires,
+        sid=sid,
     )
     refresh_token_expires = timedelta(seconds=settings.refresh_token_expire_seconds)
     refresh_token = create_token(
         data={"sub": user.username, "sub_id": str(user.id)},
         expires_delta=refresh_token_expires,
+        sid=sid,
     )
     return {
         "access_token": access_token,

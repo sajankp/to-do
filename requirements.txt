@@ -18,3 +18,4 @@ redis==7.1.0
 pre-commit>=3.6.0
 ruff>=0.1.9
 google-genai==1.57.0
+structlog==24.1.0

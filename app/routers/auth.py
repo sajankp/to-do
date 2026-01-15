@@ -50,12 +50,17 @@ def verify_password(plain_password, hashed_password):
     return pwd_hash.verify_and_update(plain_password, hashed_password)
 
 
-def create_token(data: dict, expires_delta: timedelta | None = None):
+def create_token(data: dict, expires_delta: timedelta | None = None, sid: str | None = None):
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(UTC) + expires_delta
     else:
         expire = datetime.now(UTC) + timedelta(minutes=15)
+
+    # Add Session ID (sid) to the token claims
+    if sid:
+        to_encode.update({"sid": sid})
+
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=PASSWORD_ALGORITHM)
     return encoded_jwt

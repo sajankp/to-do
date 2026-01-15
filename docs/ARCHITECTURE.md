@@ -153,6 +153,7 @@ This provides:
 | `main.py` | `app/main.py` | Application entry, middleware stack, root endpoints |
 | `config.py` | `app/config.py` | Environment configuration via Pydantic Settings |
 | `security.py` | `app/middleware/security.py` | Security headers middleware (OWASP) |
+| `logging.py` | `app/middleware/logging.py` | Structured logging middleware (Trace ID, Session ID) |
 | `auth.py` | `app/routers/auth.py` | JWT token creation, password hashing, user lookup |
 | `todo.py` | `app/routers/todo.py` | Todo CRUD operations |
 | `user.py` | `app/routers/user.py` | User profile endpoints |
@@ -465,55 +466,7 @@ GET /v2/todo/  # New format
 
 ---
 
-### 10. (TD-004) No Structured Logging
 
-**Current State:**
-```python
-# Current: Basic print/logging
-logging.info("User logged in")  # No context, no correlation
-```
-
-**Risk:**
-- Can't trace requests across services
-- No user/session context in logs
-- Hard to debug production issues
-- Can't correlate errors with specific requests
-
-**Mitigation:**
-```python
-# Structured logging with context
-import structlog
-
-logger = structlog.get_logger()
-
-@app.middleware("http")
-async def logging_middleware(request: Request, call_next):
-    correlation_id = str(uuid.uuid4())
-    structlog.contextvars.bind_contextvars(
-        correlation_id=correlation_id,
-        path=request.url.path,
-        method=request.method,
-    )
-
-    logger.info("request_started")
-    response = await call_next(request)
-    logger.info("request_completed", status_code=response.status_code)
-
-    return response
-
-# Usage in routes
-logger.info("todo_created", user_id=user_id, todo_id=todo_id)
-```
-
-**Benefits:**
-- JSON formatted logs (machine readable)
-- Correlation IDs for request tracing
-- Automatic context injection
-- Easy to search/filter in log aggregators
-
-**Priority:** High (required for production debugging)
-
----
 
 ### 11. (TD-005) Missing Monitoring & Observability
 
