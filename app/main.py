@@ -3,6 +3,7 @@ import sys
 from datetime import timedelta
 from typing import Annotated
 
+import pymongo.errors
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
@@ -145,7 +146,7 @@ def login_for_access_token(
             request.app.user.update_one(
                 {"username": user.username}, {"$set": {"hashed_password": new_hash}}
             )
-        except Exception as e:
+        except pymongo.errors.PyMongoError as e:
             # Log warning but don't fail login
             logging.warning(f"Failed to upgrade password hash for {user.username}: {e}")
 
