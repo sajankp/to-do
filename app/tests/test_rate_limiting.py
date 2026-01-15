@@ -31,7 +31,7 @@ def test_auth_rate_limiting():
         mock_user = Mock()
         mock_user.username = "testuser"
         mock_user.id = "507f1f77bcf86cd799439011"
-        mock_auth.return_value = mock_user
+        mock_auth.return_value = (mock_user, None)  # New signature returns tuple
 
         with patch("app.main.create_token") as mock_token:
             mock_token.return_value = "fake_token"

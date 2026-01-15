@@ -3,7 +3,9 @@ from datetime import UTC, datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+from pwdlib import PasswordHash
+from pwdlib.hashers.argon2 import Argon2Hasher
+from pwdlib.hashers.bcrypt import BcryptHasher
 
 from app.config import get_settings
 from app.models.user import UserInDB
@@ -17,7 +19,8 @@ SECRET_KEY = settings.secret_key
 PASSWORD_ALGORITHM = settings.password_algorithm
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Argon2id primary (first in list), bcrypt for legacy verification
+pwd_hash = PasswordHash([Argon2Hasher(), BcryptHasher()])
 
 
 def create_jwt_token(data: dict):
@@ -33,11 +36,18 @@ def decode_jwt_token(token: str):
 
 
 def hash_password(password: str):
-    return pwd_context.hash(password)
+    """Hash a password using Argon2id."""
+    return pwd_hash.hash(password)
 
 
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    """Verify password and return (is_valid, new_hash) for transparent migration.
+
+    Returns:
+        Tuple[bool, Optional[str]]: (is_valid, new_hash) where new_hash is set
+        if the password used an old algorithm and needs upgrading.
+    """
+    return pwd_hash.verify_and_update(plain_password, hashed_password)
 
 
 def create_token(data: dict, expires_delta: timedelta | None = None):
@@ -52,11 +62,21 @@ def create_token(data: dict, expires_delta: timedelta | None = None):
 
 
 def authenticate_user(username: str, password: str):
+    """Authenticate a user and return the user object and optional new hash.
+
+    Returns:
+        Tuple[Optional[UserInDB], Optional[str]]: (user, new_hash) where new_hash
+        is set if password migration is needed, or (None, None) if auth fails.
+    """
     user = get_user_by_username(username)
-    if user and verify_password(password, user.hashed_password):
-        return user
-    else:
-        return None
+    if not user:
+        return None, None
+
+    is_valid, new_hash = verify_password(password, user.hashed_password)
+    if not is_valid:
+        return None, None
+
+    return user, new_hash
 
 
 def get_current_active_user(token: str = Depends(oauth2_scheme)) -> UserInDB:
