@@ -83,15 +83,56 @@
 
 ---
 
-### Phase 5: Portfolio Polish & Quality
+### Phase 5: Testing & Quality Assurance
+
+> **Goal:** Comprehensive testing strategy following the industry-standard Testing Pyramid.
+> Maximum reliability through layered testing and CI gates.
+
+#### Testing Pyramid Overview
+
+```
+        ┌─────────────────┐
+        │   E2E Tests     │  ← Slowest, run on main merge
+        │  (Playwright)   │
+        ├─────────────────┤
+        │  Integration    │  ← Medium, run on PRs
+        │  Tests (Real DB)│
+        ├─────────────────┤
+        │   Unit Tests    │  ← Fastest, run on every push
+        │ (Mocked deps)   │
+        └─────────────────┘
+```
+
+#### Testing Items
+
+| Item | Description | Effort | Status |
+|------|-------------|--------|--------|
+| TD-022 | Integration tests with testcontainers (MongoDB) | 2 days | 🔲 |
+| TD-016 | E2E testing with Playwright (full stack) | 2 days | 🔲 |
+| TD-023 | CI gate: Integration tests on PR | 4 hours | 🔲 |
+| TD-024 | CI gate: E2E tests on main merge | 4 hours | 🔲 |
+| TD-025 | Nightly full test suite (scheduled) | 2 hours | 🔲 |
+| TD-017 | Performance benchmarks (Locust/k6) | 1 day | 🔲 |
+| TD-018 | OpenAPI contract testing | 1 day | 🔲 |
+
+#### CI Gate Strategy
+
+| Trigger | Unit Tests | Integration Tests | E2E Tests |
+|---------|------------|-------------------|------------|
+| Every push | ✅ Required | ❌ Skip | ❌ Skip |
+| Pull Request | ✅ Required | ✅ Required | ❌ Skip |
+| Merge to main | ✅ Required | ✅ Required | ✅ Required |
+| Nightly scheduled | ✅ Required | ✅ Required | ✅ Required |
+| Pre-release tag | ✅ Required | ✅ Required | ✅ Required |
+
+---
+
+### Phase 6: Portfolio Polish
 
 > **Goal:** Demonstrate senior-level engineering practices for portfolio presentation.
 
 | Item | Description | Effort | Status |
 |------|-------------|--------|--------|
-| TD-016 | E2E testing with Playwright | 2 days | 🔲 |
-| TD-017 | Performance benchmarks (Locust/k6) | 1 day | 🔲 |
-| TD-018 | OpenAPI contract testing | 1 day | 🔲 |
 | TD-019 | Standardized error responses (RFC 7807) | 4 hours | 🔲 |
 | TD-020 | Database migration strategy | 2 days | 🔲 |
 | TD-021 | Security audit logging | 4 hours | 🔲 |
@@ -120,16 +161,20 @@
 | TD-009 | Service layer | Medium | 3 days |
 | TD-010 | Frontend testing setup | Medium | 2 days |
 | TD-011 | Token refresh | Medium | 1 day |
-| TD-012 | Move password to request body | Done | ✅ 2 hours |
+| TD-012 | Move password to request body | Done | ✅ Complete |
 | TD-013 | Email uniqueness check | Low | 1 hour |
 | TD-014 | API versioning | Low | 2 days |
 | TD-015 | HttpOnly cookie tokens | Low | 2 days |
-| TD-016 | E2E testing (Playwright) | Medium | 2 days |
+| TD-016 | E2E testing (Playwright) | High | 2 days |
 | TD-017 | Performance benchmarks | Medium | 1 day |
 | TD-018 | OpenAPI contract testing | Medium | 1 day |
 | TD-019 | Standardized errors (RFC 7807) | Medium | 4 hours |
 | TD-020 | Database migration strategy | Medium | 2 days |
 | TD-021 | Security audit logging | Medium | 4 hours |
+| TD-022 | Integration tests (testcontainers) | High | 2 days |
+| TD-023 | CI gate: Integration on PR | High | 4 hours |
+| TD-024 | CI gate: E2E on main merge | High | 4 hours |
+| TD-025 | Nightly full test suite | Medium | 2 hours |
 
 ---
 
@@ -147,4 +192,4 @@
 
 ---
 
-*Last updated: 2025-12-28*
+*Last updated: 2026-01-15*
