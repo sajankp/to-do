@@ -145,6 +145,9 @@ query {
           comments(first: 1) {
             nodes {
               body
+              pullRequest {
+                id
+              }
             }
           }
         }
@@ -153,7 +156,26 @@ query {
   }
 }'
 
-# Step 2: Resolve each thread by ID
+# Step 2: Add a reply comment documenting your fix (RECOMMENDED)
+gh api graphql -f query='
+mutation {
+  addPullRequestReviewThreadReply(input: {
+    pullRequestId: "PR_ID_from_step_1"
+    threadId: "PRRT_xxxxx"
+    body: "✅ Fixed: [Brief description of fix]
+
+- Change 1
+- Change 2
+
+See commit: [sha]"
+  }) {
+    comment {
+      id
+    }
+  }
+}'
+
+# Step 3: Resolve each thread by ID
 gh api graphql -f query='
 mutation {
   resolveReviewThread(input: {threadId: "PRRT_xxxxx"}) {
@@ -166,11 +188,12 @@ mutation {
 ```
 
 > [!TIP]
-> **How to use:**
-> 1. Run the query to get thread IDs (look for `"id": "PRRT_xxxxx"`)
-> 2. For each unresolved thread, run the mutation with that thread ID
-> 3. The `isOutdated: true` flag indicates the code has changed since the comment
-> 4. After resolving all threads, the PR should be mergeable
+> **Best Practice:**
+> 1. Run the query to get thread IDs and PR ID (look for `"id": "PRRT_xxxxx"` and `pullRequest.id`)
+> 2. **Add a reply comment** to each thread explaining what you fixed and referencing the commit SHA
+> 3. Then resolve the thread
+> 4. The `isOutdated: true` flag indicates the code has changed since the comment
+> 5. After resolving all threads, the PR should be mergeable
 
 > [!TIP]
 > **Best Practice**: For each addressed comment, leave a reply explaining:
