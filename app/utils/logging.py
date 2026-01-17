@@ -8,6 +8,8 @@ from app.config import get_settings
 
 settings = get_settings()
 
+UVICORN_LOGGERS = ["uvicorn.error", "uvicorn.access"]
+
 
 def _drop_color_message_key(_, __, event_dict: EventDict) -> EventDict:
     """
@@ -83,7 +85,7 @@ def setup_logging():
 
     # Configure uvicorn loggers to prevent duplicate output
     # By setting propagate=False, uvicorn won't print to its own handlers
-    for logger_name in ["uvicorn.error", "uvicorn.access"]:
+    for logger_name in UVICORN_LOGGERS:
         logger = logging.getLogger(logger_name)
         logger.handlers = [handler]
         logger.propagate = False
