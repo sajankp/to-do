@@ -68,40 +68,20 @@ Implement `StructlogMiddleware` that:
 
 ---
 
-## Known Limitations
+## Production Improvements (Resolved)
 
-> **Note:** These limitations were discovered in production (2026-01-17) and do not affect core functionality.
+> **Note:** The following issues were identified in production and **resolved** in PR #95 and PR #96.
 
 ### 1. Log Noise from Standard Library Interception
-**Symptom:** Production logs contain extra metadata fields:
-```json
-{
-  "_record": "<LogRecord: ...>",
-  "_from_structlog": false,
-  ...
-}
-```
-
-**Impact:** Minor - logs are still parseable, but contain unnecessary metadata.
-
-**Cause:** `ProcessorFormatter` adds internal fields when intercepting standard library logs (uvicorn, etc.).
-
-**Workaround:** Filter these fields in log aggregation pipeline (e.g., Datadog, ELK).
-
-**Future Fix:** Implement custom processor to strip these fields before output.
+**Issue:** Production logs contained internal metadata fields (`_record`, `_from_structlog`).
+**Fix:** Implemented filtered processor `_drop_internal_structlog_keys`.
+**Status:** ✅ Resolved
 
 ### 2. Duplicate Plain-Text Logs from Uvicorn
-**Symptom:** Some uvicorn logs appear as both JSON and plain text:
-```
-INFO:     Started server process [56]
-{"event": "Started server process [56]", ...}
-```
+**Issue:** Uvicorn logs appeared as both JSON and plain text.
+**Fix:** Configured uvicorn loggers with `propagate=False` to prevent double-logging.
+**Status:** ✅ Resolved
 
-**Impact:** Minimal - duplicate entries can be filtered.
-
-**Cause:** Uvicorn's logging is not fully intercepted by `ProcessorFormatter`.
-
-**Future Fix:** Configure uvicorn to use structlog directly or suppress its default handlers.
 
 ### 3. Session Tracking Works as Designed ✅
 **Verified:** Session IDs (`sid`) are correctly:
