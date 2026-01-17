@@ -188,14 +188,22 @@ Update `docs/ARCHITECTURE.md` **only if** the system architecture actually chang
 
 **Do NOT** add detailed feature specs to ARCHITECTURE.md. That content stays in `docs/specs/`.
 
-### Step 8: Create PR and Run Tests
+### Step 8: Create PR and Document Deployment Tasks
 
 After implementation is complete:
 
-1. Push the feature branch: `git push -u origin feat/my-feature`
-2. Create PR: `gh pr create --title "feat: [description]" --body "Closes #issue"`
-3. Run full test suite locally and confirm all tests pass
-4. **STOP** - Follow `/pr-review` workflow to process the PR
+1. **Push the feature branch:** `git push -u origin feat/my-feature`
+
+2. **Create PR:** `gh pr create --title "feat: [description]" --body "Closes #issue"`
+
+3. **Run full test suite locally** and confirm all tests pass
+
+4. **Fill out the PR template's "Post-Deployment Checklist" section:**
+   - If your changes require deployment tasks (new env vars, migrations, etc.), complete the checklist
+   - If no deployment tasks needed, mark it as "N/A"
+   - The PR template will automatically prompt for this
+
+5. **STOP** - Follow `/pr-review` workflow to process the PR
 
 > [!TIP]
 > After implementation, use `/pr-review` to process the PR through AI review and merge.

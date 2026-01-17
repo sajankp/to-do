@@ -129,29 +129,72 @@ git log --oneline -3  # Confirm commit appears
 git status            # Check for uncommitted changes (pre-commit can fail silently)
 ```
 
-**Mark conversation as resolved** (after fixing the issue):
-```bash
-# Via GitHub UI (recommended):
-# - Go to conversation thread → Click "Resolve conversation"
+**Mark conversations as resolved** (after fixing the issues):
 
-# Via API:
+```bash
+# Step 1: Get review thread IDs
 gh api graphql -f query='
-  mutation {
-    resolveReviewThread(input: {threadId: "THREAD_ID"}) {
-      thread {
-        isResolved
+query {
+  repository(owner: "OWNER", name: "REPO") {
+    pullRequest(number: PR_NUMBER) {
+      reviewThreads(first: 100) {
+        nodes {
+          id
+          isResolved
+          isOutdated
+          comments(first: 1) {
+            nodes {
+              body
+              pullRequest {
+                id
+              }
+            }
+          }
+        }
       }
     }
-  }'
+  }
+}'
+
+# Step 2: Add a reply comment documenting your fix (RECOMMENDED)
+gh api graphql -f query='
+mutation {
+  addPullRequestReviewThreadReply(input: {
+    pullRequestId: "PR_ID_from_step_1"
+    threadId: "PRRT_xxxxx"
+    body: "✅ Fixed: [Brief description of fix]
+
+- Change 1
+- Change 2
+
+See commit: [sha]"
+  }) {
+    comment {
+      id
+    }
+  }
+}'
+
+# Step 3: Resolve each thread by ID
+gh api graphql -f query='
+mutation {
+  resolveReviewThread(input: {threadId: "PRRT_xxxxx"}) {
+    thread {
+      id
+      isResolved
+    }
+  }
+}'
 ```
 
 > [!TIP]
-> **Best Practice**: For each addressed comment, leave a reply explaining:
-> - ✅ What was changed
-> - 📝 Why (if you deviated from suggestion)
-> - 🔗 Commit SHA reference
->
-> This creates an audit trail and helps reviewers understand your decisions.
+> **Best Practice:**
+> 1. Run the query to get thread IDs and PR ID (look for `"id": "PRRT_xxxxx"` and `pullRequest.id`)
+> 2. **Add a reply comment** to each thread explaining what you fixed and referencing the commit SHA
+> 3. Then resolve the thread
+> 4. The `isOutdated: true` flag indicates the code has changed since the comment
+> 5. After resolving all threads, the PR should be mergeable
+
 
 ### Step 2.5: Request Re-Review (After Addressing Feedback)
 
