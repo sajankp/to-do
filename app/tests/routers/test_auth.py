@@ -12,13 +12,13 @@ from app.routers.auth import (
     authenticate_user,
     create_jwt_token,
     create_token,
-    decode_jwt_token,
     get_current_active_user,
     get_user_info_from_token,
     hash_password,
     verify_password,
 )
 from app.utils.constants import INVALID_TOKEN
+from app.utils.jwt import decode_jwt_token
 
 
 class TestDecodeJWTToken:

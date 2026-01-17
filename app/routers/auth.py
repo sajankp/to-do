@@ -27,14 +27,6 @@ def create_jwt_token(data: dict):
     return jwt.encode(data, SECRET_KEY, algorithm=PASSWORD_ALGORITHM)
 
 
-def decode_jwt_token(token: str):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
-        return payload
-    except JWTError:
-        return None
-
-
 def hash_password(password: str):
     """Hash a password using Argon2id."""
     return pwd_hash.hash(password)

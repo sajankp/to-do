@@ -5,7 +5,7 @@ import structlog
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.routers.auth import decode_jwt_token
+from app.utils.jwt import decode_jwt_token
 
 
 class StructlogMiddleware(BaseHTTPMiddleware):
@@ -28,10 +28,10 @@ class StructlogMiddleware(BaseHTTPMiddleware):
         if auth_header and auth_header.startswith("Bearer "):
             token = auth_header.split(" ")[1]
             payload = decode_jwt_token(token)
-            if payload:
-                sid = payload.get("sid")
-                if sid:
-                    structlog.contextvars.bind_contextvars(sid=sid)
+            # Cache the payload on request.state for other middleware to use
+            request.state.jwt_payload = payload
+            if payload and (sid := payload.get("sid")):
+                structlog.contextvars.bind_contextvars(sid=sid)
 
         logger = structlog.get_logger()
 
