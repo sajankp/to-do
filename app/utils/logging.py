@@ -46,7 +46,6 @@ def setup_logging():
     if settings.is_production:
         processors = shared_processors + [
             _drop_color_message_key,
-            _drop_internal_structlog_keys,
             structlog.processors.dict_tracebacks,
             structlog.processors.JSONRenderer(),
         ]
@@ -84,10 +83,7 @@ def setup_logging():
 
     # Configure uvicorn loggers to prevent duplicate output
     # By setting propagate=False, uvicorn won't print to its own handlers
-    uvicorn_error = logging.getLogger("uvicorn.error")
-    uvicorn_error.handlers = [handler]
-    uvicorn_error.propagate = False
-
-    uvicorn_access = logging.getLogger("uvicorn.access")
-    uvicorn_access.handlers = [handler]
-    uvicorn_access.propagate = False
+    for logger_name in ["uvicorn.error", "uvicorn.access"]:
+        logger = logging.getLogger(logger_name)
+        logger.handlers = [handler]
+        logger.propagate = False
