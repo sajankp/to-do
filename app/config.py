@@ -26,6 +26,13 @@ class Settings(BaseSettings):
     access_token_expire_seconds: int = Field(..., validation_alias="ACCESS_TOKEN_EXPIRE_SECONDS")
     refresh_token_expire_seconds: int = Field(..., validation_alias="REFRESH_TOKEN_EXPIRE_SECONDS")
 
+    # Environment
+    environment: str = Field("development", validation_alias="ENVIRONMENT")
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment.lower() == "production"
+
     # Rate Limiting
     rate_limit_enabled: bool = Field(True, validation_alias="RATE_LIMIT_ENABLED")
     rate_limit_default: str = Field("100/minute", validation_alias="RATE_LIMIT_DEFAULT")

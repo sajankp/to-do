@@ -65,6 +65,7 @@ This repository contains the **backend only**. Frontend is in [sajankp/to-do-fro
 - Always filter data by `request.state.user_id` to enforce user isolation
 
 ### 2. Module Imports
+- **Imports must ALWAYS be at the top of the file** (no imports inside functions or middle of file)
 - Project uses absolute imports: `from app.module import ...`
 - `conftest.py` adds project root to Python path for tests
 - `pytest.ini` has `pythonpath = .` configuration
