@@ -35,6 +35,7 @@ from app.routers.todo import router as todo_router
 from app.routers.user import router as user_router
 from app.utils.constants import FAILED_TO_CREATE_USER, MISSING_TOKEN
 from app.utils.health import app_check_health, check_app_readiness
+from app.utils.jwt import decode_jwt_token
 from app.utils.logging import setup_logging
 from app.utils.rate_limiter import limiter
 from app.utils.validate_env import validate_env
@@ -186,8 +187,6 @@ def login_for_access_token(
 @limiter.limit(settings.rate_limit_auth)
 def refresh_token(refresh_token: str, request: Request):
     # Decode the refresh token to extract user info and session ID
-    from app.utils.jwt import decode_jwt_token
-
     payload = decode_jwt_token(refresh_token)
     if not payload:
         raise HTTPException(
