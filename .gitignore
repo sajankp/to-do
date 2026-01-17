@@ -155,4 +155,7 @@ cython_debug/
 .idea/
 .vscode/
 
+# Application logs
+logs/
+
 *-workspace

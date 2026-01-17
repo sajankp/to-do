@@ -18,6 +18,15 @@ def _drop_color_message_key(_, __, event_dict: EventDict) -> EventDict:
     return event_dict
 
 
+def _drop_internal_structlog_keys(_, __, event_dict: EventDict) -> EventDict:
+    """
+    Remove internal structlog metadata that shouldn't appear in production logs.
+    """
+    event_dict.pop("_record", None)
+    event_dict.pop("_from_structlog", None)
+    return event_dict
+
+
 def setup_logging():
     """
     Configure structlog and standard logging.
@@ -37,6 +46,7 @@ def setup_logging():
     if settings.is_production:
         processors = shared_processors + [
             _drop_color_message_key,
+            _drop_internal_structlog_keys,
             structlog.processors.dict_tracebacks,
             structlog.processors.JSONRenderer(),
         ]
@@ -58,6 +68,7 @@ def setup_logging():
         foreign_pre_chain=shared_processors,
         processors=[
             _drop_color_message_key,
+            _drop_internal_structlog_keys,
             structlog.processors.JSONRenderer()
             if settings.is_production
             else structlog.dev.ConsoleRenderer(),
@@ -71,6 +82,12 @@ def setup_logging():
     root_logger.handlers = [handler]
     root_logger.setLevel(logging.INFO)
 
-    # Quiet down some noisy libraries
-    logging.getLogger("uvicorn.error").handlers = [handler]
-    logging.getLogger("uvicorn.access").handlers = [handler]
+    # Configure uvicorn loggers to prevent duplicate output
+    # By setting propagate=False, uvicorn won't print to its own handlers
+    uvicorn_error = logging.getLogger("uvicorn.error")
+    uvicorn_error.handlers = [handler]
+    uvicorn_error.propagate = False
+
+    uvicorn_access = logging.getLogger("uvicorn.access")
+    uvicorn_access.handlers = [handler]
+    uvicorn_access.propagate = False
