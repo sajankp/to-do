@@ -185,7 +185,19 @@ def login_for_access_token(
 @app.post("/token/refresh", response_model=Token)
 @limiter.limit(settings.rate_limit_auth)
 def refresh_token(refresh_token: str, request: Request):
-    username, user_id = get_user_info_from_token(refresh_token)
+    # Decode the refresh token to extract user info and session ID
+    from app.utils.jwt import decode_jwt_token
+
+    payload = decode_jwt_token(refresh_token)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+        )
+
+    username = payload.get("sub")
+    user_id = payload.get("sub_id")
+    sid = payload.get("sid")  # Extract session ID from refresh token
+
     if not username or not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
@@ -195,10 +207,12 @@ def refresh_token(refresh_token: str, request: Request):
     if not user or user.disabled:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
+    # Create new access token with the same session ID
     access_token_expires = timedelta(seconds=settings.access_token_expire_seconds)
     access_token = create_token(
         data={"sub": username, "sub_id": user_id},
         expires_delta=access_token_expires,
+        sid=sid,  # Propagate session ID to maintain session tracking
     )
 
     return {
