@@ -26,9 +26,21 @@ Tokens stored in localStorage are vulnerable to XSS attacks. This spec migrates 
 Add cookie configuration:
 
 ```python
-cookie_secure: bool = Field(default=True, description="Use Secure flag (HTTPS only)")
-cookie_samesite: str = Field(default="lax", description="SameSite policy")
-cookie_domain: str = Field(default="", description="Cookie domain")
+# Cookie settings
+# Uses existing is_production property from Settings class
+cookie_secure: bool = Field(
+    default=True,
+    description="Use Secure flag (HTTPS only). Override to False for local dev."
+)
+
+# Then in middleware/endpoints, use:
+# settings.cookie_secure if settings.is_production else False
+
+cookie_samesite: str = Field(default="lax", description="SameSite policy (see Security Considerations)")
+cookie_domain: str = Field(
+    default="",
+    description="Cookie domain. Empty = current host only. Set to '.yourdomain.com' for cross-subdomain sharing."
+)
 ```
 
 ---
@@ -44,12 +56,17 @@ cookie_domain: str = Field(default="", description="Cookie domain")
 - Read `refresh_token` from cookie instead of query param
 - Set new `access_token` cookie in response
 
-**New `/auth/logout` endpoint:**
-- Clear both cookies
+**New `POST /auth/logout` endpoint:**
+- Clear both cookies by setting `Max-Age=0`
+- Must use POST method to prevent CSRF attacks
 
 **Auth middleware:**
-- Read `access_token` from cookie
+- Read `access_token` from cookie first
 - Fall back to `Authorization` header for backward compatibility
+
+> **Deprecation Note:** The `Authorization` header fallback is for migration only.
+> It will be removed in a future release (target: v2.0). Clients should migrate
+> to cookie-based auth within 6 months of this release.
 
 ---
 
@@ -71,7 +88,24 @@ make test
 
 ## Security Considerations
 
-- HttpOnly prevents XSS access to tokens
-- Secure flag ensures HTTPS-only transmission
-- SameSite=Lax prevents CSRF for non-GET requests
-- Explicit domain prevents cross-subdomain leakage
+### Why HttpOnly Cookies?
+HttpOnly cookies cannot be accessed by JavaScript, making them immune to XSS token theft attacks. Even if an attacker injects malicious scripts, they cannot read or exfiltrate the authentication tokens.
+
+### Cookie Attributes
+
+| Attribute | Value | Rationale |
+|-----------|-------|-----------|
+| **HttpOnly** | `true` | Prevents JavaScript access, mitigating XSS |
+| **Secure** | `true` (prod) | Ensures cookies only sent over HTTPS |
+| **SameSite** | `Lax` | See below |
+| **Domain** | `""` (empty) | Scopes to origin host only |
+
+### Why SameSite=Lax over Strict?
+
+- **Strict:** Cookie never sent on cross-site requests, including top-level navigation. This would break links from emails/external sites - users would appear logged out when clicking a link to the app.
+
+- **Lax (chosen):** Cookie sent on top-level `GET` navigation but NOT on cross-site `POST`/`PUT`/`DELETE` requests. This provides CSRF protection for state-changing operations while preserving the expected user experience for navigation.
+
+### Domain Configuration
+- Empty domain (default) = cookie scoped to exact origin host only
+- Set explicitly (e.g., `.yourdomain.com`) only if frontend/backend are on different subdomains and need to share the cookie
