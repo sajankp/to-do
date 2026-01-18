@@ -8,6 +8,7 @@ from app.config import get_settings
 
 settings = get_settings()
 
+
 UVICORN_LOGGERS = ["uvicorn.error", "uvicorn.access"]
 
 
@@ -49,12 +50,14 @@ def setup_logging():
         processors = shared_processors + [
             _drop_color_message_key,
             structlog.processors.dict_tracebacks,
-            structlog.processors.JSONRenderer(),
+            # Don't render to JSON yet, let the stdlib formatter do it
+            structlog.stdlib.render_to_log_kwargs,
         ]
     else:
         processors = shared_processors + [
             structlog.processors.ExceptionPrettyPrinter(),
-            structlog.dev.ConsoleRenderer(),
+            # Don't render to console yet, let the stdlib formatter do it
+            structlog.stdlib.render_to_log_kwargs,
         ]
 
     structlog.configure(
@@ -81,7 +84,7 @@ def setup_logging():
 
     root_logger = logging.getLogger()
     root_logger.handlers = [handler]
-    root_logger.setLevel(logging.INFO)
+    root_logger.setLevel(getattr(logging, settings.log_level))
 
     # Configure uvicorn loggers to prevent duplicate output
     # By setting propagate=False, uvicorn won't print to its own handlers

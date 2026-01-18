@@ -2,7 +2,9 @@ from unittest.mock import Mock, patch
 
 import pytest
 from fastapi.testclient import TestClient
+from slowapi import Limiter
 
+from app.config import Settings
 from app.main import app
 from app.utils.rate_limiter import limiter
 
@@ -17,11 +19,29 @@ def reset_limiter():
     app.settings = Mock()
 
     # Reset limiter storage before each test
+    limiter.enabled = True
+
+    # Also restore default limits which are empty when disabled in .env.test
+    if not limiter._default_limits:
+        # Get default value directly from pydantic model definition
+        default_limit = Settings.model_fields["rate_limit_default"].default
+
+        # Create a temporary limiter to parse the limits for us safely
+        # IMPORTANT: Use the key_func from the global limiter so that the limits use the correct key generation (User ID)
+        temp_limiter = Limiter(key_func=limiter._key_func, default_limits=[default_limit])
+        limiter._default_limits = temp_limiter._default_limits
+
+    # Reset the storage (Redis or Memory)
     if hasattr(limiter.limiter, "storage"):
         limiter.limiter.storage.reset()
     elif hasattr(limiter.limiter, "_storage"):
         limiter.limiter._storage.reset()
+
     yield
+
+    # Cleanup: disable again to not affect other tests if they run in same session/process
+    limiter.enabled = False
+    limiter._default_limits = []
 
 
 def test_auth_rate_limiting():

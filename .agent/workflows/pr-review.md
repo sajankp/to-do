@@ -6,6 +6,15 @@ description: Review and process open GitHub PRs
 
 Use this workflow to systematically review and process open PRs.
 
+> [!CAUTION]
+> **Global Rules Apply Throughout This Workflow**
+> - Never commit without explicit user approval ("AGREE", "YES", "PROCEED")
+> - Never merge or close a PR without explicit user approval
+> - Verify every commit with `git log` + `git status`
+> - Run local tests before pushing (Gatekeeper Rule)
+>
+> See: Global User Protocols in your user rules
+
 ## 🧭 When to Use This Workflow
 
 ```
@@ -14,6 +23,29 @@ Do I have open PRs to process?
 └── NO → Is there a new PR from Dependabot/other?
          └── Run `gh pr list --state open` to check
 ```
+
+---
+
+## Step 0: Pre-Review Verification (For Feature PRs)
+
+> [!IMPORTANT]
+> Before processing a PR that came from `/development-workflow`, verify compliance.
+
+For PRs implementing features (not Dependabot/minor fixes), confirm:
+
+```
+┌────────────────────────────────────────────────────────────┐
+│  PRE-REVIEW CHECKLIST                                      │
+├────────────────────────────────────────────────────────────┤
+│  □ Spec exists in docs/specs/ and status is "Implemented"  │
+│  □ Tests exist in the PR (TDD was followed)                │
+│  □ Full test suite passed locally (Gatekeeper Rule)        │
+│  □ All development workflow commits were user-approved     │
+│  □ Phase 5 verification was completed                      │
+└────────────────────────────────────────────────────────────┘
+```
+
+**If ANY item is missing** → Do not proceed. Return to `/development-workflow`.
 
 ---
 
@@ -81,6 +113,17 @@ For each review comment, ask yourself:
 - Verify against existing code conventions
 - Consider project-specific requirements
 
+**4. ⚠️ SPEC INTEGRITY CHECK (Critical)**
+
+> [!CAUTION]
+> **Before accepting ANY suggestion, verify it's consistent with the approved Spec.**
+
+- Does the suggested change align with `docs/specs/NNN-*.md`?
+- If the suggestion contradicts the Spec:
+  - **Do NOT accept it silently**
+  - STOP and discuss with user
+  - Options: Update Spec first, OR reject the suggestion with explanation
+
 **Example evaluation:**
 ```
 Comment: "Move DB write from utility to route handler"
@@ -88,8 +131,8 @@ Comment: "Move DB write from utility to route handler"
 Analysis:
 ✅ AGREE: Separation of concerns (utility does one thing)
 ✅ AGREE: Consistent with project's request.app.user pattern
-⚠️  BREAKS: Changes function signature (acceptable in spec)
-✅ DECISION: Accept, it's architecturally superior
+⚠️  SPEC CHECK: Does Spec-010 define DB writes in utility? → No, spec is silent
+✅ DECISION: Accept, it's architecturally superior AND spec-consistent
 ```
 
 Document your reasoning and decision before making changes.
@@ -105,7 +148,49 @@ gh api repos/OWNER/REPO/pulls/<PR_NUMBER>/comments --jq '.[] | {id: .id, path: .
 
 This is useful when you need comment IDs to reply to specific feedback.
 
-### Step 2.4: Reply to Review Comments
+### Step 2.4: Address Feedback and Commit
+
+> [!CAUTION]
+> **STOP AND ASK BEFORE COMMITTING**
+> This step involves code changes. Follow the same commit protocol as `/development-workflow`.
+
+**When fixing issues from review:**
+
+1. **Make the code changes**
+
+2. **Run local tests** (Gatekeeper Rule - MANDATORY):
+   ```bash
+   pytest --cov=app app/tests/ -q
+   ```
+   All tests must pass before proceeding.
+
+3. **Stage changes**:
+   ```bash
+   git add <files>
+   ```
+
+4. **STOP - Request user approval**:
+   ```
+   Message: "Ready to commit PR feedback fixes with message:
+            'fix: address review feedback on [feature]'
+            Local tests passing. Proceed?"
+   ```
+
+5. **Only commit after explicit approval** ("yes", "proceed", "commit")
+
+6. **Verify commit succeeded**:
+   ```bash
+   git log --oneline -1  # Confirm commit appears
+   git status            # Check for uncommitted changes (pre-commit can fail)
+   ```
+   If `git status` shows changes → pre-commit failed → fix and retry.
+
+7. **Push changes**:
+   ```bash
+   git push
+   ```
+
+### Step 2.5: Reply to Review Comments
 
 After addressing feedback, document what was done by replying to each comment thread:
 
@@ -117,16 +202,10 @@ gh pr view <PR_NUMBER> --comments
 # Reply to specific comment
 gh api repos/OWNER/REPO/pulls/<PR_NUMBER>/comments/<COMMENT_ID>/replies \
   -X POST \
-  -f body="✅ Fixed: Updated authenticate_user() to return (user, new_hash) tuple.
-  - Moved DB update to route handler
-  - Using request.app.user pattern per project conventions
-  - Added proper exception handling (PyMongoError)
-
+  -f body="✅ Fixed: [Description]
+  - Change 1
+  - Change 2
   See commit: [sha]"
-
-# CRITICAL: Verify commit succeeded
-git log --oneline -3  # Confirm commit appears
-git status            # Check for uncommitted changes (pre-commit can fail silently)
 ```
 
 **Mark conversations as resolved** (after fixing the issues):
@@ -196,7 +275,8 @@ mutation {
 > 5. After resolving all threads, the PR should be mergeable
 
 
-### Step 2.5: Request Re-Review (After Addressing Feedback)
+
+### Step 2.6: Request Re-Review (After Addressing Feedback)
 
 After fixing issues identified by `gemini-code-assist`, request a fresh review:
 
@@ -245,16 +325,37 @@ gh pr view <PR_NUMBER> --json title,state,statusCheckRollup,comments,reviews --j
 gh pr checks <PR_NUMBER> --log | tail -50
 ```
 
-
-
 ## Step 5: Process PR
 
 ### If CI Passed and No Open Comments
-```bash
-gh pr merge <PR_NUMBER> --merge
-```
+
+> [!CAUTION]
+> **NEVER merge without explicit user approval.**
+> Even if CI passes, you MUST request final sign-off.
+
+1. **Request final merge approval**:
+   ```
+   Message: "PR #<NUMBER> is ready to merge:
+            - CI: ✅ All checks passing
+            - AI Review: ✅ All comments addressed/resolved
+            - Tests: ✅ Passing locally
+
+            Approve merge?"
+   ```
+
+2. **Only merge after explicit approval**:
+   ```bash
+   gh pr merge <PR_NUMBER> --merge
+   ```
+
+3. **Verify merge succeeded**:
+   ```bash
+   gh pr view <PR_NUMBER> --json state --jq '.state'
+   # Should output: MERGED
+   ```
 
 ### If CI Failed Due to Old Base Branch
+
 ```bash
 gh pr comment <PR_NUMBER> --body "@dependabot rebase"
 ```
@@ -289,6 +390,20 @@ gh pr comment <PR_NUMBER> --body "Closing this PR as the issue is now tracked in
 gh pr close <PR_NUMBER>
 ```
 
-## Step 6: Update Documentation
+## Step 6: Post-Merge Cleanup
+
+After PR is merged:
+
+- [ ] Update ROADMAP.md if applicable
+- [ ] Close related issues
+- [ ] Update spec status if needed
+- [ ] Update ARCHITECTURE.md if system architecture changed
+
+## Step 7: Update Documentation
 
 If you encounter new patterns, add them to `AGENTS.md`.
+
+---
+
+*Workflow established: 2025-01-05*
+*Tightened safety protocols: 2026-01-18*
