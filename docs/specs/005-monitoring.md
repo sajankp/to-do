@@ -173,8 +173,17 @@ Beyond standard HTTP metrics, track application-specific KPIs:
 |-------------|------|--------|-------------|
 | `fasttodo_logins_total` | Counter | `status` (success/failed) | Total login attempts |
 | `fasttodo_registrations_total` | Counter | - | New user registrations |
-| `fasttodo_active_users` | Gauge | `period` (daily/weekly/monthly) | Active user counts |
-| `fasttodo_sessions_active` | Gauge | - | Current active sessions |
+
+> [!NOTE]
+> **DAU/WAU/MAU Calculation:** Active user counts (daily/weekly/monthly) are calculated at query time
+> via PromQL on the `fasttodo_logins_total` counter, not exported as app metrics.
+> Example: `count(increase(fasttodo_logins_total{status="success"}[24h]))`
+
+> [!TIP]
+> **Future: Session Tracking with Redis**
+> If a Redis session store is introduced, we can add `fasttodo_sessions_active` gauge
+> to track real-time active sessions. This requires stateful session management
+> (storing session data in Redis with TTL) rather than pure stateless JWTs.
 
 ### Todo Metrics
 
