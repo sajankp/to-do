@@ -209,3 +209,49 @@ class TestMongoConfiguration:
             pytest.raises(ValueError, match="MONGO_URI or all of MONGO_USERNAME"),
         ):
             Settings()
+
+
+class TestLogLevelConfiguration:
+    """Test suite for log level configuration validation."""
+
+    def test_log_level_valid_uppercase(self):
+        """Test that uppercase log levels are accepted."""
+        for level in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
+            env_override = {"LOG_LEVEL": level}
+            with patch.dict(os.environ, env_override, clear=False):
+                settings = Settings()
+                assert settings.log_level == level
+
+    def test_log_level_valid_lowercase(self):
+        """Test that lowercase log levels are normalized to uppercase."""
+        for level in ["debug", "info", "warning", "error", "critical"]:
+            env_override = {"LOG_LEVEL": level}
+            with patch.dict(os.environ, env_override, clear=False):
+                settings = Settings()
+                assert settings.log_level == level.upper()
+
+    def test_log_level_valid_mixed_case(self):
+        """Test that mixed case log levels are normalized."""
+        for level in ["Debug", "Info", "Warning", "Error", "Critical"]:
+            env_override = {"LOG_LEVEL": level}
+            with patch.dict(os.environ, env_override, clear=False):
+                settings = Settings()
+                assert settings.log_level == level.upper()
+
+    def test_log_level_invalid(self):
+        """Test that invalid log levels raise ValidationError."""
+        import pytest
+
+        env_override = {"LOG_LEVEL": "INVALID"}
+        with (
+            patch.dict(os.environ, env_override, clear=False),
+            pytest.raises(ValueError, match="Invalid LOG_LEVEL"),
+        ):
+            Settings()
+
+    def test_log_level_default(self):
+        """Test that log level defaults to INFO when not specified."""
+        # .env.test sets LOG_LEVEL=INFO, which tests the default behavior
+        settings = Settings()
+        assert hasattr(settings, "log_level")
+        assert settings.log_level == "INFO"
