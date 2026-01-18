@@ -7,23 +7,7 @@ Future fixtures can be added here as needed.
 
 from pathlib import Path
 
-import pytest
 from dotenv import load_dotenv
-
-
-@pytest.fixture(scope="session", autouse=True)
-def load_test_env():
-    """
-    Load .env.test file before running tests.
-
-    This ensures tests use a dedicated test environment configuration
-    instead of the developer's local .env file.
-
-    The fixture runs automatically (autouse=True) once per test session.
-    """
-    # Logic to reload if needed, but relying on top-level execution for now
-    pass
-
 
 # Load .env.test immediately when conftest is imported
 # This ensures environment variables are set before app modules are imported during collection
