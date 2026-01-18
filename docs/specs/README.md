@@ -29,6 +29,9 @@ See [development workflow](../../.agent/workflows/development-workflow.md) for t
 | 001 | [Todo Completion Status](001-todo-completion.md) | ✅ Implemented | [ADR-009](../adr/009-add-todo-completion-status.md) |
 | 002 | [Gemini API Backend Proxy](002-gemini-api-proxy.md) | ✅ Implemented | [ADR-008](../adr/008-gemini-api-backend-proxy.md) |
 | 003 | Security Headers Middleware | 📋 Planned | - |
+| 004 | [Structured Logging](004-structured-logging.md) | ✅ Implemented | [ADR-004](../adr/004-logging-identity-strategy.md) |
+| 004a | [Configurable Log Level](004a-configurable-log-level.md) | ✅ Implemented | - |
+| 005 | [Monitoring & Observability](005-monitoring.md) | 🔍 In Review | [ADR-011](../adr/011-opentelemetry-observability-stack.md) |
 | 010 | [Password Hashing Migration](010-password-hashing-migration.md) | 📋 Planned | [ADR-010](../adr/010-password-hashing-library-migration.md) |
 
 ---
