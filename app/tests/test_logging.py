@@ -114,7 +114,17 @@ def test_logging_output_format(capsys, monkeypatch):
     assert not isinstance(data.get("event"), str) or not data["event"].startswith("{")
 
 
-def test_log_level_applied_to_root_logger(monkeypatch):
+@pytest.mark.parametrize(
+    "level_str",
+    [
+        "DEBUG",
+        "INFO",
+        "WARNING",
+        "ERROR",
+        "CRITICAL",
+    ],
+)
+def test_log_level_applied_to_root_logger(monkeypatch, level_str):
     """
     Verify that the LOG_LEVEL environment variable controls the actual logging level.
     """
@@ -124,25 +134,16 @@ def test_log_level_applied_to_root_logger(monkeypatch):
     from app.config import get_settings
     from app.utils.logging import setup_logging
 
-    # Set LOG_LEVEL to DEBUG
-    monkeypatch.setenv("LOG_LEVEL", "DEBUG")
+    # Set LOG_LEVEL
+    monkeypatch.setenv("LOG_LEVEL", level_str)
 
     # Reload settings with the new env var
-    debug_settings = get_settings()
-    monkeypatch.setattr(logging_utils, "settings", debug_settings)
+    settings = get_settings()
+    monkeypatch.setattr(logging_utils, "settings", settings)
 
     # Re-run setup_logging to apply the new level
     setup_logging()
 
-    # Verify root logger level is DEBUG
+    # Verify root logger level
     root_logger = logging.getLogger()
-    assert root_logger.level == logging.DEBUG
-
-    # Test with ERROR level
-    monkeypatch.setenv("LOG_LEVEL", "ERROR")
-    error_settings = get_settings()
-    monkeypatch.setattr(logging_utils, "settings", error_settings)
-    setup_logging()
-
-    root_logger = logging.getLogger()
-    assert root_logger.level == logging.ERROR
+    assert root_logger.level == getattr(logging, level_str)

@@ -2,6 +2,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 from fastapi.testclient import TestClient
+from slowapi.wrappers import LimitGroup
 
 from app.main import app
 from app.utils.rate_limiter import limiter
@@ -17,11 +18,21 @@ def reset_limiter():
     app.settings = Mock()
 
     # Reset limiter storage before each test
+    limiter.enabled = True
+    # Also restore default limits which are empty when disabled in .env.test
+    if not limiter._default_limits:
+        limiter._default_limits = [
+            LimitGroup("100/minute", limiter._key_func, None, False, None, None, None, 1, False)
+        ]
+
     if hasattr(limiter.limiter, "storage"):
         limiter.limiter.storage.reset()
     elif hasattr(limiter.limiter, "_storage"):
         limiter.limiter._storage.reset()
     yield
+    # Cleanup?
+    limiter.enabled = False
+    limiter._default_limits = []
 
 
 def test_auth_rate_limiting():
