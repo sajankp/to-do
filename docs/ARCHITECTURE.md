@@ -1,6 +1,6 @@
 # FastTodo System Specification
 
-> **Living Document** | Last Updated: 2026-01-12
+> **Living Document** | Last Updated: 2026-01-18
 > This is the canonical reference for the FastTodo system architecture, design decisions, and known challenges.
 
 ---
