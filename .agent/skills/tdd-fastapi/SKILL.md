@@ -122,7 +122,6 @@ class TestAuthentication:
     def test_access_token_contains_user_id(self):
         """Token should contain user_id in payload."""
         token = create_access_token(user_id="user123", username="testuser")
-        token = create_access_token(user_id="user123", username="testuser")
         # Decode and verify payload
         # Note: decode_token would be a project utility you implement
         payload = decode_token(token)
