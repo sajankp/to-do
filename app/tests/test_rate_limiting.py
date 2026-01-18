@@ -21,8 +21,12 @@ def reset_limiter():
     limiter.enabled = True
     # Also restore default limits which are empty when disabled in .env.test
     if not limiter._default_limits:
+        from app.config import Settings
+
+        # Get default value directly from pydantic model definition to avoid needing an instantiated settings object
+        default_limit = Settings.model_fields["rate_limit_default"].default
         limiter._default_limits = [
-            LimitGroup("100/minute", limiter._key_func, None, False, None, None, None, 1, False)
+            LimitGroup(default_limit, limiter._key_func, None, False, None, None, None, 1, False)
         ]
 
     if hasattr(limiter.limiter, "storage"):
