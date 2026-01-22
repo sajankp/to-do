@@ -1,62 +1,117 @@
 ---
-description: Spec-driven development workflow for new features and architectural changes
+description: Spec-driven development workflow with mandatory TDD for new features and architectural changes
 ---
 
-# Spec-Driven Development Workflow
+# Spec-Driven Development Workflow with TDD
 
 This workflow MUST be followed for any new feature or architectural change.
 
-## ⚠️ Core Principle: Specification Before Implementation
+## ⚠️ Core Principle: Specification Before Implementation, Tests Before Code
 
-**DO NOT** jump straight to coding. Follow the Spec-Driven Development (SDD) process:
+**DO NOT** jump straight to coding. Follow the Spec-Driven Development (SDD) process with mandatory TDD:
 
 ```
-1. Create Feature Spec (docs/specs/NNN-feature.md)
-   ↓
-2. CHECKPOINT: User reviews spec → Approve
-   ↓
-3. Create ADR (if architectural decision was made)
-   ↓
-4. (If ADR) CHECKPOINT: User reviews ADR → Approve
-   ↓
-5. Create feature branch and commit approvals
-   ↓
-6. Implement code (following the spec exactly)
-   ↓
-7. Update ARCHITECTURE.md (only if system architecture changed)
-   ↓
-8. Create PR with all changes
+Phase 0: Discovery (optional)     → Research if needed
+    ↓
+Phase 1: Specification            → Create spec, get approval
+    ↓
+Phase 2: Test-First (TDD Red)     → Write failing tests
+    ↓
+Phase 3: Implementation (TDD Green) → Make tests pass
+    ↓
+Phase 4: Refactor                 → Clean up, keep tests green
+    ↓
+Phase 5: Verification             → Validate against spec
+    ↓
+Phase 6: Pull Request             → Create PR, follow /pr-review
 ```
 
 > [!CAUTION]
 > **INCREMENTAL REVIEW PROCESS**
 > - After creating spec: STOP and request review
 > - After creating ADR (if needed): STOP and request review
-> - Only proceed to next step after explicit approval
+> - After writing tests: STOP and request review (test case checkpoint)
+> - After implementation: Verify spec match before PR
+> - Before EVERY commit: Request explicit user approval
 
 ---
 
-## 🧭 Decision Flowchart: Do I Need This Workflow?
+## 🚨 Scope Check: Does This Need the Full Workflow?
 
-Before starting, ask yourself:
+Before starting any work, evaluate using this **hybrid criteria**:
 
 ```
-Is this a new user-facing feature or API change?
-├── YES → Full SDD workflow (spec required)
-└── NO → Is it a breaking change to existing behavior?
-         ├── YES → Full SDD workflow
-         └── NO → Is it CI/infra/dependency maintenance?
-                  ├── YES → Direct fix (no spec needed)
-                  └── NO → Bug fix or minor refactor?
-                           ├── YES → Direct fix (no spec needed)
-                           └── UNSURE → Ask the user
+┌────────────────────────────────────────────────────────────┐
+│  TRIGGER FULL SDD WORKFLOW IF ANY ARE TRUE:                │
+├────────────────────────────────────────────────────────────┤
+│  □ Time estimate > 2 hours                                 │
+│  □ Touching > 3 files                                      │
+│  □ Risk surface: auth, DB schema, or API contracts         │
+│  □ Second touch on same area within a week                 │
+│  □ Can't explain the change in one sentence                │
+├────────────────────────────────────────────────────────────┤
+│  If ANY box is checked → Use full workflow                 │
+│  If NONE → Proceed with minor fix (but stay vigilant)      │
+└────────────────────────────────────────────────────────────┘
 ```
+
+> [!TIP]
+> **The gut check rule:** If you're asking "Should this have a spec?" → It probably should.
+
+### ✅ Requires This Workflow
+- Adding new model fields (e.g., `completed` field)
+- New API endpoints
+- Authentication/security changes
+- Database schema changes
+- New architectural patterns
+- Breaking changes
+- Major refactors
+
+### ❌ Does NOT Require Workflow (Minor Changes)
+- Bug fixes (single file, clear cause)
+- UI styling tweaks
+- Code formatting
+- Documentation fixes
+- Adding tests to existing code
+- **CI/Infrastructure fixes** (workflow files, Dependabot, pre-commit configs)
+- **Dependency updates** (unless they require code changes beyond version bumps)
+- **Configuration changes** for test/CI environments
+- **Routine security patches**
+
+### 🚦 Scope Creep Alert
+
+If a "minor fix" starts hitting the triggers above:
+1. **STOP** immediately
+2. **Document** what you've done so far
+3. **Notify user**: "This grew beyond a minor fix. Should I create a spec?"
 
 ---
 
-## Step-by-Step Process
+## Phase 0: Discovery (Optional)
 
-### Step 1: Create Feature Spec
+Use this phase when you need to **research before specifying**.
+
+### When to Use
+- Exploring unfamiliar patterns (e.g., FastAPI async, OpenTelemetry)
+- Comparing implementation options
+- Understanding third-party API behavior
+- Learning new libraries
+
+### What to Do
+1. **Time-box** exploration (suggest: 30-60 minutes max)
+2. **Document findings** (in chat, not committed files)
+3. **Summarize options** with trade-offs
+4. **Ask user** to confirm direction before writing spec
+
+### Output
+- Understanding, not code
+- Clear recommendation for spec
+
+---
+
+## Phase 1: Specification
+
+### Step 1.1: Create Feature Spec
 
 When a new feature or change is proposed:
 
@@ -68,12 +123,12 @@ When a new feature or change is proposed:
    - **API Changes**: New/modified endpoints, request/response format
    - **Data Model Changes**: Schema changes, new fields
    - **Implementation Plan**: Step-by-step approach
-   - **Test Strategy**: How to verify correctness
+   - **Test Strategy**: How to verify correctness (TDD will use this)
    - **Open Questions**: Things to clarify
 
 4. **STOP HERE** - Do not commit, do not create ADR yet
 
-### Step 2: CHECKPOINT - Review Spec
+### Step 1.2: CHECKPOINT - Review Spec
 
 Use `notify_user` to request review of the spec ONLY:
 
@@ -81,15 +136,15 @@ Use `notify_user` to request review of the spec ONLY:
 PathsToReview: ["/absolute/path/to/docs/specs/NNN-feature.md"]
 BlockedOnUser: true
 Message: "I've created a feature spec. Please review.
-         If approved, I'll commit and proceed."
+         If approved, I'll proceed to ADR (if needed) or TDD."
 ```
 
 **Wait for user response:**
-- ✅ User approves → Proceed to Step 3
-- ❌ User requests changes → Update spec, return to Step 2
+- ✅ User approves → Proceed to Step 1.3 or Phase 2
+- ❌ User requests changes → Update spec, return to review
 - ⏸️ User defers → Stop, don't proceed
 
-### Step 3: Create ADR (If Needed)
+### Step 1.3: Create ADR (If Needed)
 
 Create an ADR **only if** you made a non-obvious choice between alternatives.
 
@@ -105,100 +160,277 @@ Create an ADR **only if** you made a non-obvious choice between alternatives.
 
 If ADR is needed:
 1. Create in `docs/adr/` with naming: `NNN-descriptive-title.md`
-2. Include:
-   - **Context**: Background and problem
-   - **Options Considered**: What alternatives existed
-   - **Decision**: What we chose and why
-   - **Consequences**: Trade-offs accepted
+2. Include Context, Options Considered, Decision, Consequences
+3. **STOP HERE** - Request review before proceeding
 
-3. **STOP HERE** - Request review before committing
-
-### Step 4: CHECKPOINT - Review ADR (If Applicable)
-
-Use `notify_user` to request review of ADR:
+### Step 1.4: CHECKPOINT - Review ADR (If Applicable)
 
 ```
 PathsToReview: ["/absolute/path/to/docs/adr/NNN-....md"]
 BlockedOnUser: true
 Message: "I've created ADR-NNN. Please review.
-         If approved, I'll create feature branch and proceed to implementation."
+         If approved, I'll create feature branch and write tests."
 ```
 
-### Step 5: Create Feature Branch and Commit Approvals
+---
 
-Once user approves spec (and ADR if applicable):
+## Phase 2: Test-First (TDD Red Phase)
 
-1. **Create feature branch:**
-   ```bash
-   git checkout -b feat/descriptive-name
-   ```
+> [!IMPORTANT]
+> **TDD IS MANDATORY.** Tests must be written BEFORE implementation code.
 
-2. **Update spec/ADR status to approved:**
-   - Change spec status from "Planned" to "Approved"
-   - Change ADR status from "Proposed" to "Accepted" (if applicable)
+### Step 2.1: Create Feature Branch
 
-3. **Stage and commit approval updates:**
-   ```bash
-   git add docs/specs/NNN-*.md
-   git add docs/adr/NNN-*.md  # if ADR exists
-   git commit -m "docs: approve spec-NNN and ADR-NNN for [feature]"
-   ```
+```bash
+git checkout -b feat/descriptive-name
+```
 
-4. **Verify commit:**
-   ```bash
-   git log --oneline -1
-   git status  # Should show clean working tree
-   ```
+### Step 2.2: Update Spec Status
 
-### Step 6: Implement Code
+Change spec status from "Planned" to "Approved" (and ADR if applicable).
 
-Only after spec (and ADR if applicable) are approved:
-1. **CRITICAL:** Create a dedicated feature branch (e.g., `feat/my-feature`).
-   - Command: `git checkout -b feat/my-feature`
-   - **Agent/User Check:** Confirm with the user: "I am creating/switching to branch `[branch_name]` to implement this. Is that correct?"
-2. Implement backend changes **following the spec exactly**
-3. Write tests as defined in spec
-4. Implement frontend changes (if applicable)
-5. Run tests, ensure passing
-6. Commit with conventional commit format
+### Step 2.3: Write Failing Tests
 
-### Step 7: Update ARCHITECTURE.md (After Implementation)
+Based on the spec's **Test Strategy** section:
 
-Update `docs/ARCHITECTURE.md` **only if** the system architecture actually changed:
-- New component added
-- New architectural pattern introduced
-- Security model changed
-- Data flow changed
+1. **Create test file(s)** in the appropriate test directory
+2. **Write test cases** that cover:
+   - Happy path scenarios
+   - Edge cases
+   - Error handling
+   - Security constraints (if applicable)
+3. **Tests MUST fail** initially:
+   - This proves they're testing something real
+   - If tests pass without implementation, they're useless
 
-**When to update:**
-- ✅ **AFTER implementation** - in the same PR/commit as the code
-- ✅ When the change is system-level (affects architecture diagram)
-- ❌ NOT for implementation details (which library, which algorithm)
+```bash
+# Run tests - they SHOULD fail
+pytest app/tests/path/to/test_file.py -v
 
-**Examples:**
-- ✅ Add new middleware → Update ARCHITECTURE.md (new component in diagram)
-- ✅ Change auth flow → Update ARCHITECTURE.md (security model changed)
-- ❌ Migrate bcrypt → Argon2id → Don't update (same auth model, different implementation)
-- ❌ Upgrade pytest version → Don't update (dependency, not architecture)
-
-**What to update:**
-- System diagrams if component added
-- Security architecture table if security model changed
-- Component specifications if responsibilities changed
-
-**Do NOT** add detailed feature specs to ARCHITECTURE.md. That content stays in `docs/specs/`.
-
-### Step 8: Create PR and Run Tests
-
-After implementation is complete:
-
-1. Push the feature branch: `git push -u origin feat/my-feature`
-2. Create PR: `gh pr create --title "feat: [description]" --body "Closes #issue"`
-3. Run full test suite locally and confirm all tests pass
-4. **STOP** - Follow `/pr-review` workflow to process the PR
+# Expected output: FAILED (red phase)
+```
 
 > [!TIP]
-> After implementation, use `/pr-review` to process the PR through AI review and merge.
+> Use the `/tdd-fastapi` skill for FastAPI-specific testing patterns.
+
+### Step 2.4: CHECKPOINT - Review Test Cases
+
+```
+PathsToReview: ["/absolute/path/to/app/tests/..."]
+BlockedOnUser: true
+Message: "I've written failing tests per the spec's Test Strategy.
+         Tests fail as expected (Red phase). Please review test coverage.
+         After approval, I'll implement to make them pass."
+```
+
+### Step 2.5: CHECKPOINT - Pre-Commit Approval
+
+```bash
+git add app/tests/...
+```
+
+Request approval:
+```
+Message: "Ready to commit test scaffolding with message:
+         'test: add failing tests for [feature]'
+         Proceed?"
+```
+
+**Only commit after explicit approval.**
+
+Verify commit succeeded:
+```bash
+git log --oneline -1
+git status  # Should be clean
+```
+
+---
+
+## Phase 3: Implementation (TDD Green Phase)
+
+### Step 3.1: Implement Code
+
+1. **Make tests pass** - Focus on the simplest solution
+2. **Follow spec exactly** - Don't add unrequested features
+3. **Run tests frequently** - After each significant change
+
+```bash
+# Run tests - work until they pass
+pytest app/tests/path/to/test_file.py -v
+
+# Expected output: PASSED (green phase)
+```
+
+### Step 3.2: Handle Spec Gaps (Iteration Protocol)
+
+During implementation, if you discover issues:
+
+| Discovery | Action |
+|-----------|--------|
+| **Spec gap** (missing requirement) | STOP → Explain what's missing and why → User decides: update spec or defer |
+| **Spec ambiguity** (unclear) | STOP → Explain options → User clarifies → Update spec → Continue |
+| **Spec wrong** (can't implement as written) | STOP → Explain issue and alternative → User revises spec → Continue |
+| **Unexpected complexity** | Re-check scope triggers → If hit, escalate to full workflow |
+
+> [!CAUTION]
+> **Always discuss spec issues with user.** Don't silently deviate from the spec or make assumptions.
+
+### Step 3.3: CHECKPOINT - Pre-Commit Approval
+
+```bash
+git add app/...  # Implementation files
+```
+
+Request approval:
+```
+Message: "Ready to commit implementation with message:
+         'feat: implement [feature]'
+         All tests passing. Proceed?"
+```
+
+Verify:
+```bash
+git log --oneline -1
+git status
+```
+
+---
+
+## Phase 4: Refactor (TDD Refactor Phase)
+
+### Step 4.1: Clean Up Code
+
+With tests green, improve code quality:
+- Remove duplication (DRY)
+- Improve naming and readability
+- Optimize performance (if needed)
+- Add type hints (if missing)
+
+### Step 4.2: Keep Tests Green
+
+```bash
+# After each refactor, verify tests still pass
+pytest app/tests/path/to/test_file.py -v
+```
+
+### Step 4.3: CHECKPOINT - Pre-Commit Approval (If Changes Made)
+
+If refactoring resulted in meaningful changes:
+
+```bash
+git add -A
+```
+
+Request approval:
+```
+Message: "Ready to commit refactoring with message:
+         'refactor: clean up [feature] implementation'
+         All tests still passing. Proceed?"
+```
+
+---
+
+## Phase 5: Verification
+
+### Step 5.1: Run Full Test Suite
+
+```bash
+# All tests, with coverage
+pytest --cov=app --cov-report=term-missing app/tests/
+```
+
+All tests must pass. Coverage should meet project threshold.
+
+### Step 5.2: Integration/Manual Testing
+
+Per the spec's verification plan:
+- Test with actual MongoDB (if integration tests defined)
+- Manual testing for UI-affecting changes
+- API testing via Swagger UI
+
+### Step 5.3: CHECKPOINT - Verify Spec Match
+
+Review the spec and confirm:
+
+- [ ] All requirements implemented
+- [ ] All test cases from Test Strategy covered
+- [ ] No unrequested features added
+- [ ] Edge cases handled as specified
+
+If spec match fails: Go back to Phase 3.
+
+### Step 5.4: Update Spec Status
+
+Change spec status from "Approved" to "Implemented".
+
+---
+
+## Phase 6: Pull Request
+
+### Step 6.1: Push Feature Branch
+
+```bash
+git push -u origin feat/descriptive-name
+```
+
+### Step 6.2: Create PR
+
+```bash
+gh pr create --title "feat: [description]" --body "Closes #issue"
+```
+
+### Step 6.3: Fill Post-Deployment Checklist
+
+If changes require deployment tasks (new env vars, migrations, etc.), complete the PR template checklist.
+
+### Step 6.4: Follow /pr-review Workflow
+
+```
+→ See /.agent/workflows/pr-review.md
+```
+
+### Step 6.5: Post-Merge Cleanup
+
+After PR is merged:
+- Update ROADMAP.md if applicable
+- Close related issues
+- Update ARCHITECTURE.md if system architecture changed
+
+---
+
+## Commit Guidance
+
+### Commit Frequency
+
+**One commit per phase** (preferred):
+- `docs: add spec-NNN for [feature]` (Phase 1)
+- `test: add failing tests for [feature]` (Phase 2)
+- `feat: implement [feature]` (Phase 3)
+- `refactor: clean up [feature]` (Phase 4, if applicable)
+
+**Multiple commits within a phase** (when needed):
+- If touching > 5 files in a phase, consider logical splits
+- Group by component (e.g., models, routers, tests)
+
+### Commit Message Format
+
+Use [Conventional Commits](https://www.conventionalcommits.org/):
+- `feat:` New feature
+- `fix:` Bug fix
+- `test:` Adding/updating tests
+- `refactor:` Code improvement (no behavior change)
+- `docs:` Documentation changes
+- `chore:` Maintenance (deps, CI, etc.)
+
+### Pre-Commit Verification
+
+After EVERY commit:
+```bash
+git log --oneline -1  # Verify commit in history
+git status            # Check for uncommitted changes (pre-commit failure)
+```
+
+If `git status` shows changes after commit → pre-commit hook failed → fix and retry.
 
 ---
 
@@ -206,66 +438,34 @@ After implementation is complete:
 
 | Document | Purpose | Contains |
 |----------|---------|----------|
-| `docs/specs/*.md` | Feature blueprint | Problem, solution, API, implementation plan |
+| `docs/specs/*.md` | Feature blueprint | Problem, solution, API, implementation plan, test strategy |
 | `docs/adr/*.md` | Decision record | Options, trade-offs, why we chose this |
 | `docs/ARCHITECTURE.md` | System overview | Current state, not decision history |
 | `docs/ROADMAP.md` | Planning | Phases, priorities, technical debt |
 
 ---
 
-## Examples
-
-### ✅ Requires This Workflow
-- Adding new model fields (e.g., `completed` field)
-- New API endpoints
-- Authentication/security changes
-- Database schema changes
-- New architectural patterns
-- Breaking changes
-- Major refactors
-
-### ❌ Does NOT Require Workflow (Minor Changes)
-- Bug fixes
-- UI styling tweaks
-- Code formatting
-- Documentation fixes
-- Adding tests to existing code
-- **CI/Infrastructure fixes** (workflow files, Dependabot, pre-commit configs)
-- **Dependency updates** (unless they require code changes beyond version bumps)
-- **Configuration changes** for test/CI environments
-- **Routine security patches**
-
-### 🤔 When Unsure
-
-If the change:
-1. Has **no user-facing impact** AND
-2. Doesn't **change API contracts** AND
-3. Doesn't **alter data models**
-
-→ It's likely a minor change. When in doubt, ask the user.
-
----
-
 ## Why This Matters
 
-- **Spec-Driven Development**: Industry-standard approach used by AWS Kiro, GitHub Spec Kit
-- **Clear blueprints**: Specs define exactly what to build
-- **Decision transparency**: ADRs capture the "why"
-- **Clean architecture docs**: ARCHITECTURE.md stays lean
-- **AI-friendly**: Specs serve as clear instructions for AI agents
+- **Spec-Driven Development**: Industry-standard approach (AWS Kiro, GitHub Spec Kit)
+- **Mandatory TDD**: Catches bugs early, forces good design
+- **Clear checkpoints**: Ensures user alignment at every stage
+- **Iteration protocol**: Handles real-world complexity gracefully
+- **AI-friendly**: Specs + tests serve as clear instructions for agents
 
 ---
 
 ## Enforcement
 
-If you see me jumping to implementation without following this workflow:
-
-1. **Stop me immediately**
-2. **Remind me**: "Follow the SDD workflow: spec → approve → ADR (if needed) → implement"
-3. **I will backtrack** and do it properly
+If you see me:
+- Jumping to implementation without spec → STOP, remind me of SDD
+- Writing code before tests → STOP, remind me of TDD
+- Committing without approval → This violates global rules
+- Deviating from spec silently → STOP, require explicit discussion
 
 ---
 
 *Workflow established: 2025-12-21*
 *Updated to SDD: 2025-12-28*
 *Added decision criteria: 2025-12-30*
+*Added TDD + enhanced checkpoints: 2026-01-18*

@@ -1,4 +1,4 @@
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -25,6 +25,20 @@ class Settings(BaseSettings):
     password_algorithm: str = Field(..., validation_alias="PASSWORD_ALGORITHM")
     access_token_expire_seconds: int = Field(..., validation_alias="ACCESS_TOKEN_EXPIRE_SECONDS")
     refresh_token_expire_seconds: int = Field(..., validation_alias="REFRESH_TOKEN_EXPIRE_SECONDS")
+
+    # Environment
+    environment: str = Field("development", validation_alias="ENVIRONMENT")
+
+    # Logging
+    log_level: str = Field(
+        "INFO",
+        validation_alias="LOG_LEVEL",
+        description="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
+    )
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment.lower() == "production"
 
     # Rate Limiting
     rate_limit_enabled: bool = Field(True, validation_alias="RATE_LIMIT_ENABLED")
@@ -54,6 +68,33 @@ class Settings(BaseSettings):
     )
 
     model_config = SettingsConfigDict(env_file=".env")
+
+    @field_validator("log_level", mode="before")
+    @classmethod
+    def validate_log_level(cls, value: str) -> str:
+        """Validate and normalize log level.
+
+        Args:
+            value: Log level string (case-insensitive)
+
+        Returns:
+            Normalized uppercase log level
+
+        Raises:
+            ValueError: If log level is invalid
+        """
+        if not isinstance(value, str):
+            raise ValueError(f"LOG_LEVEL must be a string, got {type(value).__name__}")
+
+        normalized = value.upper()
+        valid_levels = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+
+        if normalized not in valid_levels:
+            raise ValueError(
+                f"Invalid LOG_LEVEL: {value}. Must be one of: {', '.join(sorted(valid_levels))}"
+            )
+
+        return normalized
 
     @model_validator(mode="after")
     def check_mongo_config(self) -> "Settings":
