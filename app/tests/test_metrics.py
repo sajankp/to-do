@@ -1,18 +1,28 @@
+import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app
+from app.main import app, settings
 
 client = TestClient(app)
 
 
-def test_metrics_endpoint_exists():
-    """Verify that the /metrics endpoint is exposed."""
+@pytest.fixture
+def enable_dev_mode():
+    """Enable dev mode for tests."""
+    original_val = settings.metrics_dev_mode
+    settings.metrics_dev_mode = True
+    yield
+    settings.metrics_dev_mode = original_val
+
+
+def test_metrics_endpoint_exists(enable_dev_mode):
+    """Verify that the /metrics endpoint is exposed (in dev mode)."""
     response = client.get("/metrics")
     assert response.status_code == 200
     assert "text/plain" in response.headers["content-type"]
 
 
-def test_metrics_content_format():
+def test_metrics_content_format(enable_dev_mode):
     """Verify that the /metrics endpoint returns Prometheus formatted metrics."""
     response = client.get("/health")  # Generate some traffic
     assert response.status_code == 200
@@ -26,7 +36,7 @@ def test_metrics_content_format():
     assert "http_request_duration_seconds" in content
 
 
-def test_custom_metrics_registered():
+def test_custom_metrics_registered(enable_dev_mode):
     """Verify that custom metrics are registered and appear in the output."""
     # We expect these metrics to exist even if 0
     response = client.get("/metrics")
@@ -96,3 +106,45 @@ def test_login_metric_increment(monkeypatch):
     assert response_fail.status_code == 401
     new_count_failed = LOGINS_TOTAL.labels(status="failed")._value.get()
     assert new_count_failed == initial_count_failed + 1
+
+
+def test_metrics_auth():
+    """Verify metrics authentication logic."""
+    # 1. Default state (No token, Dev mode False) -> SHOULD FAIL
+    original_dev_mode = settings.metrics_dev_mode
+    original_token = settings.metrics_bearer_token
+    settings.metrics_dev_mode = False
+    settings.metrics_bearer_token = None
+
+    try:
+        response = client.get("/metrics")
+        assert response.status_code == 403
+
+        # 2. Dev mode True -> SHOULD PASS
+        settings.metrics_dev_mode = True
+        response = client.get("/metrics")
+        assert response.status_code == 200
+
+        # 3. Token Configured -> SHOULD ENFORCE TOKEN
+        settings.metrics_bearer_token = "secret-token"
+        settings.metrics_dev_mode = (
+            True  # Even with dev mode, token should assume precedence or at least be checkable
+        )
+
+        # Request without token -> Should it fail?
+        # Our logic: if token set: check token.
+        # So it should FAIL even if dev_mode is True, because 'if settings.metrics_bearer_token' block is entered.
+        response = client.get("/metrics")
+        assert response.status_code == 403
+
+        # Request with wrong token -> FAIL
+        response = client.get("/metrics", headers={"Authorization": "Bearer wrong-token"})
+        assert response.status_code == 403
+
+        # Request with correct token -> PASS
+        response = client.get("/metrics", headers={"Authorization": "Bearer secret-token"})
+        assert response.status_code == 200
+
+    finally:
+        settings.metrics_dev_mode = original_dev_mode
+        settings.metrics_bearer_token = original_token

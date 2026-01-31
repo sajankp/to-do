@@ -73,6 +73,7 @@ app = FastAPI(lifespan=lifespan)
 def verify_metrics_token(request: Request):
     """Dependency to protect the /metrics endpoint."""
     if settings.metrics_bearer_token:
+        # If token is configured, ENFORCE it strictly
         auth_header = request.headers.get("Authorization")
         expected_auth = f"Bearer {settings.metrics_bearer_token}"
         # Use constant-time comparison to prevent timing attacks
@@ -81,6 +82,16 @@ def verify_metrics_token(request: Request):
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Forbidden",
             )
+    elif settings.metrics_dev_mode:
+        # If no token but Dev Mode is enabled, allow public access
+        # Ensure we log this potential risk in non-testing environments
+        pass
+    else:
+        # Default: DENY if no token and not in Dev Mode (Secure by Default)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Configure METRICS_BEARER_TOKEN or METRICS_DEV_MODE",
+        )
 
 
 setup_telemetry(app, settings)

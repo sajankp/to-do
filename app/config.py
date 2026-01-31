@@ -77,6 +77,11 @@ class Settings(BaseSettings):
         validation_alias="METRICS_BEARER_TOKEN",
         description="Optional bearer token for /metrics endpoint authentication",
     )
+    metrics_dev_mode: bool = Field(
+        False,
+        validation_alias="METRICS_DEV_MODE",
+        description="If True, allows public access to /metrics when no token is set (DEV ONLY)",
+    )
 
     # Application Metadata
     app_version: str = Field("1.0.0", validation_alias="APP_VERSION")
