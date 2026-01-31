@@ -54,11 +54,7 @@ def add_trace_context(logger: Any, method_name: str, event_dict: dict[str, Any])
     """
     Structlog processor to add OTel trace_id and span_id to logs.
     """
-    span = trace.get_current_span()
-    if span == trace.INVALID_SPAN:
-        return event_dict
-
-    ctx = span.get_span_context()
+    ctx = trace.get_current_span().get_span_context()
     if ctx.is_valid:
         event_dict["trace_id"] = trace.format_trace_id(ctx.trace_id)
         event_dict["span_id"] = trace.format_span_id(ctx.span_id)

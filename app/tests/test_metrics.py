@@ -40,48 +40,54 @@ def test_custom_metrics_registered():
 
 
 def test_login_metric_increment(monkeypatch):
-    """Verify fasttodo_logins_total increments on login."""
+    """Verify fasttodo_logins_total increments on login success and failure."""
+    from unittest.mock import Mock
+
     from app.models.user import UserInDB
     from app.utils.metrics import LOGINS_TOTAL
 
-    # Get initial count
-    initial_count = LOGINS_TOTAL.labels(status="success")._value.get()
+    # --- Test successful login ---
+    initial_count_success = LOGINS_TOTAL.labels(status="success")._value.get()
 
     # Mock authentication to succeed
-    def mock_authenticate_user(username, password):
-        return UserInDB(
-            username="testuser",
-            email="test@example.com",
-            hashed_password="hashed",
-            id="507f1f77bcf86cd799439011",
-        ), None
+    mock_auth_success = Mock(
+        return_value=(
+            UserInDB(
+                username="testuser",
+                email="test@example.com",
+                hashed_password="hashed",
+                id="507f1f77bcf86cd799439011",
+            ),
+            "new_hash_value",  # Simulate hash migration
+        )
+    )
+    monkeypatch.setattr("app.main.authenticate_user", mock_auth_success)
 
-    # Patch the function in app.main (where it is imported and used)
-    # Note: app.main imports authenticate_user from app.routers.auth
-    monkeypatch.setattr("app.main.authenticate_user", mock_authenticate_user)
+    # Mock the database update_one call to avoid DB dependency
+    from app.main import app
 
-    # Also need to mock get_user_by_username for CreateToken internal checks if any?
-    # In main.py login_for_access_token, it calls authenticate_user, then create_token.
-    # create_token doesn't check DB.
-    # But it calls request.app.user.update_one for migration check. We should mock that too or ignore if not reached.
+    mock_update_one = Mock(return_value=None)
+    if hasattr(app, "user"):
+        original_update_one = app.user.update_one
+        app.user.update_one = mock_update_one
 
-    # Perform login
     response = client.post("/token", data={"username": "testuser", "password": "password"})
+    assert response.status_code == 200, response.text
+    new_count_success = LOGINS_TOTAL.labels(status="success")._value.get()
+    assert new_count_success == initial_count_success + 1
 
-    # Check if incremented
-    new_count = LOGINS_TOTAL.labels(status="success")._value.get()
+    # Restore if mocked
+    if hasattr(app, "user") and "original_update_one" in locals():
+        app.user.update_one = original_update_one
 
-    # Note: The test client might run in same process so the registry is shared.
-    # If the login succeeded (200), it should increment.
-    # However, without full DB mock, login might fail at other steps (like update_one).
-    # But let's check response status.
-    if response.status_code == 200:
-        assert new_count == initial_count + 1
-    else:
-        # If it failed due to DB connection (which is expected in unit test without mock DB),
-        # we might catch the failure metric instead?
-        # But we mocked authenticate_user to return a user.
-        # It proceeds to `request.app.user.update_one`. accessing request.app.user which is a Collection.
-        # In unit test, app.user might be None or Mock.
-        # Let's inspect what happens.
-        pass
+    # --- Test failed login ---
+    initial_count_failed = LOGINS_TOTAL.labels(status="failed")._value.get()
+
+    # Mock authentication to fa il
+    mock_auth_fail = Mock(return_value=(None, None))
+    monkeypatch.setattr("app.main.authenticate_user", mock_auth_fail)
+
+    response_fail = client.post("/token", data={"username": "baduser", "password": "badpass"})
+    assert response_fail.status_code == 401
+    new_count_failed = LOGINS_TOTAL.labels(status="failed")._value.get()
+    assert new_count_failed == initial_count_failed + 1

@@ -75,9 +75,9 @@ class TestTelemetry:
             method_name = "info"
             event_dict = {"event": "test"}
 
-            result = add_trace_context(logger, method_name, event_dict)
+            result = add_trace_context(logger, method_name, event_dict.copy())
 
-            # Should not crash, might add empty or 0 trace_id depending on impl
-            # Usually structlog processor leaves it out or adds None if configured
-            # For this test, let's assume it adds them as None or 0 or simply returns dict
-            assert isinstance(result, dict)
+            # The dictionary should be returned without modification
+            assert "trace_id" not in result
+            assert "span_id" not in result
+            assert result == {"event": "test"}

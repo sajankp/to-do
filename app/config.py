@@ -72,6 +72,11 @@ class Settings(BaseSettings):
         None, validation_alias="OTEL_EXPORTER_OTLP_ENDPOINT", description="OTLP Exporter Endpoint"
     )
     otel_service_name: str = Field("fasttodo", validation_alias="OTEL_SERVICE_NAME")
+    metrics_bearer_token: str | None = Field(
+        None,
+        validation_alias="METRICS_BEARER_TOKEN",
+        description="Optional bearer token for /metrics endpoint authentication",
+    )
 
     model_config = SettingsConfigDict(env_file=".env")
 

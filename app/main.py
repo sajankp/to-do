@@ -103,6 +103,19 @@ async def add_user_info_to_request(request: Request, call_next):
         response = await call_next(request)
         return response
 
+    # Check metrics endpoint authentication (if token is configured)
+    if request.url.path == "/metrics":
+        if settings.metrics_bearer_token:
+            auth_header = request.headers.get("Authorization")
+            expected_auth = f"Bearer {settings.metrics_bearer_token}"
+            if not auth_header or auth_header != expected_auth:
+                return JSONResponse(
+                    content={"detail": "Forbidden"},
+                    status_code=status.HTTP_403_FORBIDDEN,
+                )
+        response = await call_next(request)
+        return response
+
     if request.url.path in (
         "/token",
         "/docs",
@@ -112,7 +125,6 @@ async def add_user_info_to_request(request: Request, call_next):
         "/health",
         "/health/ready",
         "/user",
-        "/metrics",
         "/api/ai/voice/stream",  # WebSocket authenticates via first message
     ):
         response = await call_next(request)

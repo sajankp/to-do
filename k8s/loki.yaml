@@ -21,9 +21,6 @@ spec:
         image: grafana/loki:2.9.2
         ports:
         - containerPort: 3100
-        command:
-        - /usr/bin/loki
-        - -config.file=/etc/loki/local-config.yaml
 ---
 apiVersion: v1
 kind: Service
