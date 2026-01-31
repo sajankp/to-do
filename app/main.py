@@ -69,10 +69,24 @@ async def lifespan(application: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+
+def verify_metrics_token(request: Request):
+    """Dependency to protect the /metrics endpoint."""
+    if settings.metrics_bearer_token:
+        auth_header = request.headers.get("Authorization")
+        expected_auth = f"Bearer {settings.metrics_bearer_token}"
+        # Use constant-time comparison to prevent timing attacks
+        if not (auth_header and secrets.compare_digest(auth_header, expected_auth)):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Forbidden",
+            )
+
+
 setup_telemetry(app, settings)
 
 # Setup Prometheus Metrics
-Instrumentator().instrument(app).expose(app)
+Instrumentator().instrument(app).expose(app, dependencies=[Depends(verify_metrics_token)])
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -104,20 +118,6 @@ async def add_user_info_to_request(request: Request, call_next):
         response = await call_next(request)
         return response
 
-    # Check metrics endpoint authentication (if token is configured)
-    if request.url.path == "/metrics":
-        if settings.metrics_bearer_token:
-            auth_header = request.headers.get("Authorization")
-            expected_auth = f"Bearer {settings.metrics_bearer_token}"
-            # Use constant-time comparison to prevent timing attacks
-            if not (auth_header and secrets.compare_digest(auth_header, expected_auth)):
-                return JSONResponse(
-                    content={"detail": "Forbidden"},
-                    status_code=status.HTTP_403_FORBIDDEN,
-                )
-        response = await call_next(request)
-        return response
-
     if request.url.path in (
         "/token",
         "/docs",
@@ -128,6 +128,7 @@ async def add_user_info_to_request(request: Request, call_next):
         "/health/ready",
         "/user",
         "/api/ai/voice/stream",  # WebSocket authenticates via first message
+        "/metrics",
     ):
         response = await call_next(request)
         return response

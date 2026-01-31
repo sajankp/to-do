@@ -67,9 +67,14 @@ def test_login_metric_increment(monkeypatch):
     from app.main import app
 
     mock_update_one = Mock(return_value=None)
-    if hasattr(app, "user"):
-        original_update_one = app.user.update_one
-        app.user.update_one = mock_update_one
+    mock_update_one = Mock(return_value=None)
+
+    # Ensure app.user exists for the test
+    if not hasattr(app, "user"):
+        app.user = Mock()
+
+    original_update_one = app.user.update_one
+    app.user.update_one = mock_update_one
 
     response = client.post("/token", data={"username": "testuser", "password": "password"})
     assert response.status_code == 200, response.text
