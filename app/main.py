@@ -1,4 +1,5 @@
 import logging
+import secrets
 import sys
 import uuid
 from datetime import timedelta
@@ -10,6 +11,7 @@ from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from prometheus_fastapi_instrumentator import Instrumentator
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -31,13 +33,16 @@ from app.routers.auth import (
     hash_password,
 )
 from app.routers.auth import router as auth_router
+from app.routers.health import router as health_router
 from app.routers.todo import router as todo_router
 from app.routers.user import router as user_router
 from app.utils.constants import FAILED_TO_CREATE_USER, MISSING_TOKEN
-from app.utils.health import app_check_health, check_app_readiness
+from app.utils.health import check_app_readiness
 from app.utils.jwt import decode_jwt_token
 from app.utils.logging import setup_logging
+from app.utils.metrics import LOGINS_TOTAL, REGISTRATIONS_TOTAL
 from app.utils.rate_limiter import limiter
+from app.utils.telemetry import setup_telemetry
 from app.utils.validate_env import validate_env
 
 # Initialize logging before creating the app
@@ -64,6 +69,41 @@ async def lifespan(application: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+
+def verify_metrics_token(request: Request):
+    """Dependency to protect the /metrics endpoint."""
+    if settings.metrics_bearer_token:
+        # If token is configured, ENFORCE it strictly
+        auth_header = request.headers.get("Authorization")
+        expected_auth = f"Bearer {settings.metrics_bearer_token}"
+        # Use constant-time comparison to prevent timing attacks
+        if not (auth_header and secrets.compare_digest(auth_header, expected_auth)):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Forbidden",
+            )
+    elif settings.metrics_dev_mode:
+        # If no token but Dev Mode is enabled, allow public access
+        # Ensure we log this potential risk in non-testing environments
+        if settings.environment.lower() != "testing":
+            logging.warning(
+                "Metrics endpoint is publicly accessible due to METRICS_DEV_MODE=True. "
+                "This is a security risk in a production environment."
+            )
+        pass
+    else:
+        # Default: DENY if no token and not in Dev Mode (Secure by Default)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Configure METRICS_BEARER_TOKEN or METRICS_DEV_MODE",
+        )
+
+
+setup_telemetry(app, settings)
+
+# Setup Prometheus Metrics
+Instrumentator().instrument(app).expose(app, dependencies=[Depends(verify_metrics_token)])
+
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Logging middleware should be one of the first to capture everything
@@ -81,6 +121,7 @@ app.add_middleware(
 )
 
 app.include_router(ai_stream_router, prefix="/api/ai", tags=["ai-stream"])
+app.include_router(health_router, tags=["health"])
 app.include_router(todo_router, prefix="/todo", tags=["todo"])
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(user_router, prefix="/user", tags=["user"])
@@ -100,8 +141,10 @@ async def add_user_info_to_request(request: Request, call_next):
         "/",
         "/token/refresh",
         "/health",
+        "/health/ready",
         "/user",
         "/api/ai/voice/stream",  # WebSocket authenticates via first message
+        "/metrics",
     ):
         response = await call_next(request)
         return response
@@ -132,11 +175,6 @@ def read_root():
     return {"message": "Hello, World!"}
 
 
-@app.get("/health")
-def check_health(token: str = Depends(oauth2_scheme)):
-    return app_check_health(app)
-
-
 @app.post("/token", response_model=Token)
 @limiter.limit(settings.rate_limit_auth)
 def login_for_access_token(
@@ -145,11 +183,14 @@ def login_for_access_token(
     # Authenticate user
     user, new_hash = authenticate_user(form_data.username, form_data.password)
     if not user:
+        LOGINS_TOTAL.labels(status="failed").inc()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    LOGINS_TOTAL.labels(status="success").inc()
 
     # Transparent migration: upgrade old bcrypt hashes to Argon2id
     if new_hash:
@@ -230,6 +271,7 @@ def create_user(user_in: UserRegistration, request: Request):
     )
     result = request.app.user.insert_one(user.model_dump())
     if result.acknowledged:
+        REGISTRATIONS_TOTAL.inc()
         return True
     else:
         raise HTTPException(

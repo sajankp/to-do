@@ -440,11 +440,17 @@ class TestTodoRouter:
         """Test successful todo deletion"""
         request = Mock(spec=Request)
         todo_id = PyObjectId("507f1f77bcf86cd799439012")
+        user_id = PyObjectId("507f1f77bcf86cd799439011")
+        request.state.user_id = user_id
 
         # Mock database collection
         mock_collection = Mock()
         # Mock existing todo
-        mock_collection.find_one.return_value = {"_id": todo_id, "title": "Test"}
+        mock_collection.find_one.return_value = {
+            "_id": todo_id,
+            "title": "Test",
+            "user_id": user_id,
+        }
         # Mock successful deletion
         mock_delete_result = Mock()
         mock_delete_result.deleted_count = 1
@@ -456,8 +462,8 @@ class TestTodoRouter:
 
         # Assertions
         assert result["message"] == TODO_DELETED_SUCCESSFULLY
-        mock_collection.find_one.assert_called_once_with({"_id": todo_id})
-        mock_collection.delete_one.assert_called_once_with({"_id": todo_id})
+        mock_collection.find_one.assert_called_once_with({"_id": todo_id, "user_id": user_id})
+        mock_collection.delete_one.assert_called_once_with({"_id": todo_id, "user_id": user_id})
 
     def test_delete_todo_not_found(self):
         """Test deleting a non-existent todo"""
@@ -481,11 +487,17 @@ class TestTodoRouter:
         """Test todo deletion database failure"""
         request = Mock(spec=Request)
         todo_id = PyObjectId("507f1f77bcf86cd799439012")
+        user_id = PyObjectId("507f1f77bcf86cd799439011")
+        request.state.user_id = user_id
 
         # Mock database collection
         mock_collection = Mock()
         # Mock existing todo
-        mock_collection.find_one.return_value = {"_id": todo_id, "title": "Test"}
+        mock_collection.find_one.return_value = {
+            "_id": todo_id,
+            "title": "Test",
+            "user_id": user_id,
+        }
         # Mock failed deletion
         mock_delete_result = Mock()
         mock_delete_result.deleted_count = 0
