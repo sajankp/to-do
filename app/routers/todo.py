@@ -88,7 +88,8 @@ def update_todo(
     if result.modified_count == 0:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=NO_CHANGES)
 
-    if update_data.get("completed") is True:
+    # Only increment completed metric if state changed from incomplete to complete
+    if update_data.get("completed") is True and not existing_todo.get("completed"):
         TODOS_COMPLETED_TOTAL.inc()
 
     updated_todo = request.app.todo.find_one({"_id": ObjectId(todo_id)})
@@ -99,12 +100,12 @@ def update_todo(
 
 @router.delete("/{todo_id}")
 def delete_todo(todo_id: PyObjectId, request: Request):
-    existing_todo = request.app.todo.find_one({"_id": todo_id})
+    existing_todo = request.app.todo.find_one({"_id": todo_id, "user_id": request.state.user_id})
 
     if not existing_todo:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=TODO_NOT_FOUND)
 
-    result = request.app.todo.delete_one({"_id": todo_id})
+    result = request.app.todo.delete_one({"_id": todo_id, "user_id": request.state.user_id})
 
     if result.deleted_count == 1:
         TODOS_DELETED_TOTAL.inc()

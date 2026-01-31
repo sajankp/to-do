@@ -78,6 +78,9 @@ class Settings(BaseSettings):
         description="Optional bearer token for /metrics endpoint authentication",
     )
 
+    # Application Metadata
+    app_version: str = Field("1.0.0", validation_alias="APP_VERSION")
+
     model_config = SettingsConfigDict(env_file=".env")
 
     @field_validator("log_level", mode="before")

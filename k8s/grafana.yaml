@@ -5,7 +5,11 @@ metadata:
   namespace: observability
 type: Opaque
 stringData:
-  admin-password: "changeme"  # TODO: Change this in production
+  # Password is substituted from GRAFANA_ADMIN_PASSWORD environment variable
+  # During deployment, run: envsubst < grafana.yaml | kubectl apply -f -
+  # Or set in CI/CD pipeline (GitHub Actions, GitLab CI, etc.)
+  # For production, use External Secrets Operator with Vault/AWS Secrets Manager
+  admin-password: "${GRAFANA_ADMIN_PASSWORD}"
 ---
 apiVersion: apps/v1
 kind: Deployment

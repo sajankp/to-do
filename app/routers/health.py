@@ -2,9 +2,11 @@ from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, Request, status
 
+from app.config import get_settings
 from app.models.health import HealthResponse, ReadinessResponse
 
 router = APIRouter(tags=["health"])
+settings = get_settings()
 
 
 @router.get("/health", response_model=HealthResponse)
@@ -13,7 +15,7 @@ def health_check():
     return HealthResponse(
         status="healthy",
         timestamp=datetime.now(UTC),
-        version="1.0.0",
+        version=settings.app_version,
     )
 
 

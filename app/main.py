@@ -1,4 +1,5 @@
 import logging
+import secrets
 import sys
 import uuid
 from datetime import timedelta
@@ -108,7 +109,8 @@ async def add_user_info_to_request(request: Request, call_next):
         if settings.metrics_bearer_token:
             auth_header = request.headers.get("Authorization")
             expected_auth = f"Bearer {settings.metrics_bearer_token}"
-            if not auth_header or auth_header != expected_auth:
+            # Use constant-time comparison to prevent timing attacks
+            if not (auth_header and secrets.compare_digest(auth_header, expected_auth)):
                 return JSONResponse(
                     content={"detail": "Forbidden"},
                     status_code=status.HTTP_403_FORBIDDEN,
