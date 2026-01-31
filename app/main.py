@@ -85,6 +85,11 @@ def verify_metrics_token(request: Request):
     elif settings.metrics_dev_mode:
         # If no token but Dev Mode is enabled, allow public access
         # Ensure we log this potential risk in non-testing environments
+        if settings.environment.lower() != "testing":
+            logging.warning(
+                "Metrics endpoint is publicly accessible due to METRICS_DEV_MODE=True. "
+                "This is a security risk in a production environment."
+            )
         pass
     else:
         # Default: DENY if no token and not in Dev Mode (Secure by Default)

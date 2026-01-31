@@ -19,6 +19,9 @@ This is the standard Kubernetes approach for handling secrets in manifests.
 export GRAFANA_ADMIN_PASSWORD="your-secure-password"
 
 # Deploy with environment variable substitution
+# Safety check: Ensure password is set
+[ -z "$GRAFANA_ADMIN_PASSWORD" ] && { echo "Error: GRAFANA_ADMIN_PASSWORD is not set"; exit 1; }
+
 envsubst < k8s/grafana.yaml | kubectl apply -f -
 envsubst < k8s/prometheus.yaml | kubectl apply -f -
 envsubst < k8s/loki.yaml | kubectl apply -f -
