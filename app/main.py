@@ -31,10 +31,11 @@ from app.routers.auth import (
     hash_password,
 )
 from app.routers.auth import router as auth_router
+from app.routers.health import router as health_router
 from app.routers.todo import router as todo_router
 from app.routers.user import router as user_router
 from app.utils.constants import FAILED_TO_CREATE_USER, MISSING_TOKEN
-from app.utils.health import app_check_health, check_app_readiness
+from app.utils.health import check_app_readiness
 from app.utils.jwt import decode_jwt_token
 from app.utils.logging import setup_logging
 from app.utils.rate_limiter import limiter
@@ -81,6 +82,7 @@ app.add_middleware(
 )
 
 app.include_router(ai_stream_router, prefix="/api/ai", tags=["ai-stream"])
+app.include_router(health_router, tags=["health"])
 app.include_router(todo_router, prefix="/todo", tags=["todo"])
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(user_router, prefix="/user", tags=["user"])
@@ -100,6 +102,7 @@ async def add_user_info_to_request(request: Request, call_next):
         "/",
         "/token/refresh",
         "/health",
+        "/health/ready",
         "/user",
         "/api/ai/voice/stream",  # WebSocket authenticates via first message
     ):
@@ -130,11 +133,6 @@ async def add_user_info_to_request(request: Request, call_next):
 @app.get("/")
 def read_root():
     return {"message": "Hello, World!"}
-
-
-@app.get("/health")
-def check_health(token: str = Depends(oauth2_scheme)):
-    return app_check_health(app)
 
 
 @app.post("/token", response_model=Token)
