@@ -67,6 +67,12 @@ class Settings(BaseSettings):
         "10/minute", validation_alias="AI_RATE_LIMIT", description="AI endpoint rate limit"
     )
 
+    # Observability
+    otel_exporter_otlp_endpoint: str | None = Field(
+        None, validation_alias="OTEL_EXPORTER_OTLP_ENDPOINT", description="OTLP Exporter Endpoint"
+    )
+    otel_service_name: str = Field("fasttodo", validation_alias="OTEL_SERVICE_NAME")
+
     model_config = SettingsConfigDict(env_file=".env")
 
     @field_validator("log_level", mode="before")

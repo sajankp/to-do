@@ -101,6 +101,14 @@ graph TB
         GEMINI[Gemini API]
     end
 
+    subgraph "Observability Layer"
+        OTEL[OTel Collector]
+        PROM[Prometheus]
+        JAEGER[Jaeger]
+        LOKI[Loki]
+        GRAFANA[Grafana]
+    end
+
     WEB --> GW
     VOICE --> GW
     GW --> MW
@@ -116,6 +124,19 @@ graph TB
     TODO --> MONGO
     USER --> MONGO
     AI --> GEMINI
+
+    GW -.-> OTEL
+    AUTH -.-> OTEL
+    TODO -.-> OTEL
+    USER -.-> OTEL
+    AI -.-> OTEL
+
+    OTEL --> PROM
+    OTEL --> JAEGER
+    OTEL --> LOKI
+    PROM --> GRAFANA
+    JAEGER --> GRAFANA
+    LOKI --> GRAFANA
 
 ```
 
@@ -468,64 +489,14 @@ GET /v2/todo/  # New format
 
 
 
-### 11. (TD-005) Missing Monitoring & Observability
+### 11. (TD-005) Missing Monitoring & Observability [RESOLVED]
+**Status:** Implemented (Spec-005)
 
-**Current State:**
-- No metrics collection
-- No alerting
-- No performance monitoring
-- Basic health check only
-
-**Risk:**
-- No visibility into production performance
-- Can't detect degradation before failure
-- No capacity planning data
-- Manual incident detection only
-
-**Mitigation - Prometheus Metrics:**
-```python
-from prometheus_client import Counter, Histogram, generate_latest
-
-# Define metrics
-request_count = Counter('http_requests_total', 'Total HTTP requests', ['method', 'endpoint', 'status'])
-request_duration = Histogram('http_request_duration_seconds', 'HTTP request duration')
-db_query_duration = Histogram('db_query_duration_seconds', 'Database query duration')
-
-@app.middleware("http")
-async def metrics_middleware(request: Request, call_next):
-    start_time = time.time()
-    response = await call_next(request)
-    duration = time.time() - start_time
-
-    request_count.labels(
-        method=request.method,
-        endpoint=request.url.path,
-        status=response.status_code
-    ).inc()
-    request_duration.observe(duration)
-
-    return response
-
-@app.get("/metrics")
-def metrics():
-    return Response(generate_latest(), media_type="text/plain")
-```
-
-**Grafana Dashboards:**
-- Request rate (req/sec)
-- Error rate (4xx, 5xx)
-- Response time (p50, p95, p99)
-- Database query performance
-- Active users
-
-**Alerting Rules:**
-- Error rate > 5%
-- Response time p95 > 500ms
-- Database connection pool exhausted
-
-**Priority:** Critical (cannot operate production without this)
-
----
+**Implementation:**
+- **Metrics:** OpenTelemetry + Prometheus (internal `/metrics`)
+- **Tracing:** OpenTelemetry + Jaeger (sampled at 10%)
+- **Logs:** Structlog + OpenTelemetry + Loki (correlated with traces)
+- **Deployment:** Kubernetes manifests in `k8s/`
 
 
 

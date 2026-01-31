@@ -10,6 +10,7 @@ from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from prometheus_fastapi_instrumentator import Instrumentator
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -38,7 +39,9 @@ from app.utils.constants import FAILED_TO_CREATE_USER, MISSING_TOKEN
 from app.utils.health import check_app_readiness
 from app.utils.jwt import decode_jwt_token
 from app.utils.logging import setup_logging
+from app.utils.metrics import LOGINS_TOTAL, REGISTRATIONS_TOTAL
 from app.utils.rate_limiter import limiter
+from app.utils.telemetry import setup_telemetry
 from app.utils.validate_env import validate_env
 
 # Initialize logging before creating the app
@@ -64,6 +67,11 @@ async def lifespan(application: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+setup_telemetry(app, settings)
+
+# Setup Prometheus Metrics
+Instrumentator().instrument(app).expose(app)
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -104,6 +112,7 @@ async def add_user_info_to_request(request: Request, call_next):
         "/health",
         "/health/ready",
         "/user",
+        "/metrics",
         "/api/ai/voice/stream",  # WebSocket authenticates via first message
     ):
         response = await call_next(request)
@@ -143,11 +152,14 @@ def login_for_access_token(
     # Authenticate user
     user, new_hash = authenticate_user(form_data.username, form_data.password)
     if not user:
+        LOGINS_TOTAL.labels(status="failed").inc()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    LOGINS_TOTAL.labels(status="success").inc()
 
     # Transparent migration: upgrade old bcrypt hashes to Argon2id
     if new_hash:
@@ -228,6 +240,7 @@ def create_user(user_in: UserRegistration, request: Request):
     )
     result = request.app.user.insert_one(user.model_dump())
     if result.acknowledged:
+        REGISTRATIONS_TOTAL.inc()
         return True
     else:
         raise HTTPException(

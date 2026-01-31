@@ -11,16 +11,16 @@ class TestTelemetry:
         app = Mock()
 
         # Mock settings to enable OTel
-        app.state.settings = Mock()
-        app.state.settings.otel_exporter_otlp_endpoint = "http://localhost:4317"
-        app.state.settings.otel_service_name = "test-service"
+        settings = Mock()
+        settings.otel_exporter_otlp_endpoint = "http://localhost:4317"
+        settings.otel_service_name = "test-service"
 
         with patch("app.utils.telemetry.TracerProvider") as mock_provider, patch(
             "app.utils.telemetry.set_tracer_provider"
         ) as mock_set_provider, patch(
             "app.utils.telemetry.BatchSpanProcessor"
         ) as mock_processor, patch("app.utils.telemetry.OTLPSpanExporter") as mock_exporter:
-            setup_telemetry(app)
+            setup_telemetry(app, settings)
 
             mock_set_provider.assert_called_once()
             mock_provider.return_value.add_span_processor.assert_called_with(
@@ -31,11 +31,11 @@ class TestTelemetry:
     def test_otel_disabled_when_no_endpoint(self):
         """Test that OTel setup is skipped/disabled when endpoint is missing"""
         app = Mock()
-        app.state.settings = Mock()
-        app.state.settings.otel_exporter_otlp_endpoint = None
+        settings = Mock()
+        settings.otel_exporter_otlp_endpoint = None
 
         with patch("app.utils.telemetry.set_tracer_provider") as mock_set_provider:
-            setup_telemetry(app)
+            setup_telemetry(app, settings)
             mock_set_provider.assert_not_called()
 
     def test_trace_context_injected_in_logs(self):
@@ -66,9 +66,10 @@ class TestTelemetry:
         """Test seamless handling when no active span exists"""
         from app.utils.telemetry import add_trace_context
 
+        # Use INVALID_SPAN_CONTEXT which acts like a no-op context
         with patch(
             "opentelemetry.trace.get_current_span",
-            return_value=trace.NonRecordingSpan(trace.SpanContext.get_current()),
+            return_value=trace.NonRecordingSpan(trace.INVALID_SPAN_CONTEXT),
         ):
             logger = Mock()
             method_name = "info"

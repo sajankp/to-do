@@ -12,6 +12,11 @@ from app.utils.constants import (
     TODO_DELETED_SUCCESSFULLY,
     TODO_NOT_FOUND,
 )
+from app.utils.metrics import (
+    TODOS_COMPLETED_TOTAL,
+    TODOS_CREATED_TOTAL,
+    TODOS_DELETED_TOTAL,
+)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 router = APIRouter(dependencies=[Depends(oauth2_scheme)])
@@ -45,6 +50,7 @@ def create_todo(request: Request, todo: CreateTodo):
 
     if result.acknowledged:
         new_todo.id = result.inserted_id
+        TODOS_CREATED_TOTAL.inc()
         return TodoResponse.from_db(new_todo)
     else:
         raise HTTPException(
@@ -82,6 +88,9 @@ def update_todo(
     if result.modified_count == 0:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=NO_CHANGES)
 
+    if update_data.get("completed") is True:
+        TODOS_COMPLETED_TOTAL.inc()
+
     updated_todo = request.app.todo.find_one({"_id": ObjectId(todo_id)})
     todo_db = TodoInDB(**updated_todo)
 
@@ -98,6 +107,7 @@ def delete_todo(todo_id: PyObjectId, request: Request):
     result = request.app.todo.delete_one({"_id": todo_id})
 
     if result.deleted_count == 1:
+        TODOS_DELETED_TOTAL.inc()
         return {"message": TODO_DELETED_SUCCESSFULLY}
     else:
         raise HTTPException(

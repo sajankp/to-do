@@ -13,6 +13,7 @@ from jose import JWTError, jwt
 
 from app.config import get_settings
 from app.routers.auth import PASSWORD_ALGORITHM, SECRET_KEY
+from app.utils.metrics import AI_ERRORS_TOTAL, AI_REQUESTS_TOTAL
 from app.utils.user import get_user_by_username
 
 router = APIRouter()
@@ -164,6 +165,7 @@ class GeminiLiveProxy:
 
                 # Notify client that connection is established
                 await self.websocket.send_json({"type": "connected"})
+                AI_REQUESTS_TOTAL.labels(status="success").inc()
 
                 # Start bidirectional streaming
                 await asyncio.gather(
@@ -173,6 +175,8 @@ class GeminiLiveProxy:
 
         except Exception as e:
             logger.exception("Failed to connect to Gemini Live API")
+            AI_REQUESTS_TOTAL.labels(status="error").inc()
+            AI_ERRORS_TOTAL.labels(error_type="connection_error").inc()
             await self.websocket.send_json(
                 {
                     "type": "error",
