@@ -19,3 +19,12 @@ pre-commit>=3.6.0
 ruff>=0.1.9
 google-genai==1.57.0
 structlog==24.1.0
+
+# Monitoring & Observability
+opentelemetry-api>=1.22.0
+opentelemetry-sdk>=1.22.0
+opentelemetry-exporter-otlp>=1.22.0
+opentelemetry-instrumentation-fastapi>=0.43b0
+opentelemetry-instrumentation-pymongo>=0.43b0
+opentelemetry-instrumentation-logging>=0.43b0
+prometheus-fastapi-instrumentator>=7.0.0
