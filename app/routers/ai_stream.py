@@ -4,6 +4,7 @@ import asyncio
 import base64
 import contextlib
 import logging
+import time
 from typing import Any
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
@@ -13,6 +14,7 @@ from jose import JWTError, jwt
 
 from app.config import get_settings
 from app.routers.auth import PASSWORD_ALGORITHM, SECRET_KEY
+from app.utils.metrics import AI_ERRORS_TOTAL, AI_LATENCY_SECONDS, AI_REQUESTS_TOTAL
 from app.utils.user import get_user_by_username
 
 router = APIRouter()
@@ -30,6 +32,7 @@ class GeminiLiveProxy:
         self.gemini_session: Any = None
         self.todos: list[dict] = []
         self._running = False
+        self._session_start_time: float = 0.0  # Track session duration for latency metric
 
     async def authenticate_token(self, token: str) -> bool:
         """Validate JWT token and return True if valid."""
@@ -161,9 +164,11 @@ class GeminiLiveProxy:
             ) as session:
                 self.gemini_session = session
                 self._running = True
+                self._session_start_time = time.time()  # Start tracking session duration
 
                 # Notify client that connection is established
                 await self.websocket.send_json({"type": "connected"})
+                AI_REQUESTS_TOTAL.labels(status="success").inc()
 
                 # Start bidirectional streaming
                 await asyncio.gather(
@@ -173,6 +178,8 @@ class GeminiLiveProxy:
 
         except Exception as e:
             logger.exception("Failed to connect to Gemini Live API")
+            AI_REQUESTS_TOTAL.labels(status="error").inc()
+            AI_ERRORS_TOTAL.labels(error_type="connection_error").inc()
             await self.websocket.send_json(
                 {
                     "type": "error",
@@ -401,6 +408,17 @@ class GeminiLiveProxy:
     async def stop(self) -> None:
         """Stop the proxy session."""
         self._running = False
+
+        # Record session latency if session was active
+        if self._session_start_time > 0:
+            duration = time.time() - self._session_start_time
+            AI_LATENCY_SECONDS.observe(duration)
+            logger.info(f"AI session duration: {duration:.2f}s")
+
+        # TODO: Track AI token usage - Gemini Live API doesn't expose token counts
+        # in real-time streaming mode. Consider using Gemini API's usage metadata
+        # from non-streaming endpoints or estimate based on audio duration.
+
         if self.gemini_session:
             with contextlib.suppress(Exception):
                 await self.gemini_session.close()

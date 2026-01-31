@@ -67,6 +67,25 @@ class Settings(BaseSettings):
         "10/minute", validation_alias="AI_RATE_LIMIT", description="AI endpoint rate limit"
     )
 
+    # Observability
+    otel_exporter_otlp_endpoint: str | None = Field(
+        None, validation_alias="OTEL_EXPORTER_OTLP_ENDPOINT", description="OTLP Exporter Endpoint"
+    )
+    otel_service_name: str = Field("fasttodo", validation_alias="OTEL_SERVICE_NAME")
+    metrics_bearer_token: str | None = Field(
+        None,
+        validation_alias="METRICS_BEARER_TOKEN",
+        description="Optional bearer token for /metrics endpoint authentication",
+    )
+    metrics_dev_mode: bool = Field(
+        False,
+        validation_alias="METRICS_DEV_MODE",
+        description="If True, allows public access to /metrics when no token is set (DEV ONLY)",
+    )
+
+    # Application Metadata
+    app_version: str = Field("1.0.0", validation_alias="APP_VERSION")
+
     model_config = SettingsConfigDict(env_file=".env")
 
     @field_validator("log_level", mode="before")

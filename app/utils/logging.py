@@ -5,6 +5,7 @@ import structlog
 from structlog.types import EventDict, Processor
 
 from app.config import get_settings
+from app.utils.telemetry import add_trace_context
 
 settings = get_settings()
 
@@ -38,6 +39,7 @@ def setup_logging():
     # Shared processors for both structlog and standard logging
     shared_processors: list[Processor] = [
         structlog.contextvars.merge_contextvars,
+        add_trace_context,
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
         structlog.stdlib.PositionalArgumentsFormatter(),

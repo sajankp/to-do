@@ -1,6 +1,6 @@
 # Spec-005: Monitoring & Observability
 
-**Status:** In Review
+**Status:** Approved
 **Related Issue:** TD-005
 **Effort:** 3-5 Days
 **ADR:** [ADR-011](../adr/011-opentelemetry-observability-stack.md)

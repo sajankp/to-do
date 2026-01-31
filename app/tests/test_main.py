@@ -39,9 +39,10 @@ def test_read_main():
     assert response.json() == {"message": "Hello, World!"}
 
 
-def test_health_endpoint_unauthorized():
+def test_health_endpoint_accessible():
+    """Test that /health endpoint is publicly accessible (no auth required)"""
     response = client.get("/health")
-    assert response.status_code == 401
+    assert response.status_code == 200
 
 
 # Assuming a mock for the MongoDB client is available
