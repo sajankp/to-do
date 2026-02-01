@@ -22,9 +22,6 @@ def get_mongo_client(settings: Settings | None = None):
     return client
 
 
-mongodb_client = get_mongo_client()
-
-
 def get_todo_collection(client: MongoClient, settings: Settings | None = None):
     """Get todo collection using the provided MongoDB client.
 

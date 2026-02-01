@@ -231,11 +231,9 @@ class TestGetCurrentActiveUser:
 
         from unittest.mock import Mock
 
-        mock_request = Mock()
         mock_client = Mock()
-        mock_request.app.mongodb_client = mock_client
 
-        user = get_current_active_user(mock_request, mock_token)
+        user = get_current_active_user(mock_token, mock_client)
 
         mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
         mock_get_user.assert_called_once_with("test_user", mock_client)
@@ -256,10 +254,10 @@ class TestGetCurrentActiveUser:
 
         from unittest.mock import Mock
 
-        mock_request = Mock()
+        mock_client = Mock()
 
         with pytest.raises(HTTPException) as exc_info:
-            get_current_active_user(mock_request, mock_token)
+            get_current_active_user(mock_token, mock_client)
 
         mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
         assert exc_info.value.status_code == credentials_exception.status_code
@@ -279,10 +277,10 @@ class TestGetCurrentActiveUser:
 
         from unittest.mock import Mock
 
-        mock_request = Mock()
+        mock_client = Mock()
 
         with pytest.raises(HTTPException) as exc_info:
-            get_current_active_user(mock_request, mock_token)
+            get_current_active_user(mock_token, mock_client)
 
         mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
         assert exc_info.value.status_code == credentials_exception.status_code
@@ -302,12 +300,10 @@ class TestGetCurrentActiveUser:
 
         from unittest.mock import Mock
 
-        mock_request = Mock()
         mock_client = Mock()
-        mock_request.app.mongodb_client = mock_client
 
         with pytest.raises(HTTPException) as exc_info:
-            get_current_active_user(mock_request, mock_token)
+            get_current_active_user(mock_token, mock_client)
 
         mock_get_user.assert_called_once_with("nonexistent_user", mock_client)
 

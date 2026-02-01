@@ -1,13 +1,18 @@
 from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pwdlib import PasswordHash
 from pwdlib.hashers.argon2 import Argon2Hasher
 from pwdlib.hashers.bcrypt import BcryptHasher
 
+if TYPE_CHECKING:
+    from pymongo import MongoClient
+
 from app.config import get_settings
+from app.database.dependencies import get_mongodb_client
 from app.models.user import UserInDB
 from app.utils.constants import INVALID_TOKEN
 from app.utils.user import get_user_by_username
@@ -76,8 +81,10 @@ def authenticate_user(username: str, password: str, client):
     return user, new_hash
 
 
-def get_current_active_user(request: Request, token: str = Depends(oauth2_scheme)) -> UserInDB:
-    client = request.app.mongodb_client
+def get_current_active_user(
+    token: str = Depends(oauth2_scheme),
+    client: "MongoClient" = Depends(get_mongodb_client),
+) -> UserInDB:
     credentials_exception = HTTPException(
         status_code=401,
         detail=INVALID_TOKEN,

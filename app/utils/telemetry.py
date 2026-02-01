@@ -22,7 +22,7 @@ def _init_tracer_provider(settings: Any) -> TracerProvider:
 
     # Ensure endpoint has the correct path for HTTP protocol
     if not otel_endpoint.endswith("/v1/traces"):
-        otel_endpoint = f"{otel_endpoint}/v1/traces"
+        otel_endpoint = f"{otel_endpoint.rstrip('/')}/v1/traces"
 
     # Create tracer provider with service name
     resource = Resource.create(attributes={"service.name": service_name})

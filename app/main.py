@@ -75,11 +75,6 @@ async def lifespan(application: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
-def get_mongodb_client(request: Request):
-    """FastAPI dependency to inject MongoDB client from app state."""
-    return request.app.mongodb_client
-
-
 def verify_metrics_token(request: Request):
     """Dependency to protect the /metrics endpoint."""
     if settings.metrics_bearer_token:
