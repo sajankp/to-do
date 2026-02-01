@@ -17,7 +17,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import get_settings
-from app.database.mongodb import mongodb_client
+from app.database.mongodb import get_mongo_client
 
 # specific imports for logging
 from app.middleware.logging import StructlogMiddleware
@@ -42,7 +42,7 @@ from app.utils.jwt import decode_jwt_token
 from app.utils.logging import setup_logging
 from app.utils.metrics import LOGINS_TOTAL, REGISTRATIONS_TOTAL
 from app.utils.rate_limiter import limiter
-from app.utils.telemetry import setup_telemetry
+from app.utils.telemetry import setup_pymongo_telemetry, setup_telemetry
 from app.utils.validate_env import validate_env
 
 # Initialize logging before creating the app
@@ -58,7 +58,12 @@ async def lifespan(application: FastAPI):
     if not await check_app_readiness():
         logging.error("Application failed to start.")
         sys.exit(1)
-    application.mongodb_client = mongodb_client
+
+    # Setup PyMongo instrumentation BEFORE creating MongoDB client
+    setup_pymongo_telemetry()
+
+    # Create MongoDB client AFTER PyMongo instrumentation
+    application.mongodb_client = get_mongo_client(settings)
     application.database = application.mongodb_client[settings.mongo_db]
     application.todo = application.database[settings.mongo_todo_collection]
     application.user = application.database[settings.mongo_user_collection]
@@ -104,6 +109,7 @@ def verify_metrics_token(request: Request):
         )
 
 
+# Setup OpenTelemetry for FastAPI (must happen before app serves requests)
 setup_telemetry(app, settings)
 
 # Setup Prometheus Metrics
