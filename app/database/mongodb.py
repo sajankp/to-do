@@ -25,15 +25,27 @@ def get_mongo_client(settings: Settings | None = None):
 mongodb_client = get_mongo_client()
 
 
-def get_todo_collection(settings: Settings | None = None):
+def get_todo_collection(client: MongoClient, settings: Settings | None = None):
+    """Get todo collection using the provided MongoDB client.
+
+    Args:
+        client: MongoDB client instance (should be the instrumented client from app state)
+        settings: Optional settings, will use default if not provided
+    """
     if settings is None:
         settings = get_settings()
-    database = mongodb_client[settings.mongo_db]
+    database = client[settings.mongo_db]
     return database[settings.mongo_todo_collection]
 
 
-def get_user_collection(settings: Settings | None = None):
+def get_user_collection(client: MongoClient, settings: Settings | None = None):
+    """Get user collection using the provided MongoDB client.
+
+    Args:
+        client: MongoDB client instance (should be the instrumented client from app state)
+        settings: Optional settings, will use default if not provided
+    """
     if settings is None:
         settings = get_settings()
-    database = mongodb_client[settings.mongo_db]
+    database = client[settings.mongo_db]
     return database[settings.mongo_user_collection]

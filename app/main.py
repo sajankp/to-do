@@ -70,6 +70,11 @@ async def lifespan(application: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
+def get_mongodb_client(request: Request):
+    """FastAPI dependency to inject MongoDB client from app state."""
+    return request.app.mongodb_client
+
+
 def verify_metrics_token(request: Request):
     """Dependency to protect the /metrics endpoint."""
     if settings.metrics_bearer_token:
@@ -181,7 +186,9 @@ def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()], request: Request
 ):
     # Authenticate user
-    user, new_hash = authenticate_user(form_data.username, form_data.password)
+    user, new_hash = authenticate_user(
+        form_data.username, form_data.password, request.app.mongodb_client
+    )
     if not user:
         LOGINS_TOTAL.labels(status="failed").inc()
         raise HTTPException(
@@ -243,7 +250,7 @@ def refresh_token(refresh_token: str, request: Request):
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
         )
 
-    user = get_user_by_username(username)
+    user = get_user_by_username(username, request.app.mongodb_client)
     if not user or user.disabled:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 

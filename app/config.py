@@ -1,3 +1,5 @@
+import functools
+
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -153,5 +155,6 @@ class Settings(BaseSettings):
         return self._parse_comma_separated_config(self.cors_allow_headers)
 
 
+@functools.lru_cache
 def get_settings() -> Settings:
     return Settings()

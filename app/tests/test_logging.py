@@ -15,8 +15,8 @@ app.add_middleware(StructlogMiddleware)
 
 
 @app.get("/test")
-def test_endpoint():
-    # Return the bound context variables for verification
+def endpoint_for_testing():
+    """FastAPI endpoint (not a pytest test) that returns contextvars for verification."""
     return structlog.contextvars.get_contextvars()
 
 
@@ -80,6 +80,8 @@ def test_logging_output_format(capsys, monkeypatch):
     # We must construct a settings object that has environment="production"
     # Pydantic settings are best created fresh.
     monkeypatch.setenv("ENVIRONMENT", "production")
+    # Clear cache so monkeypatch takes effect
+    get_settings.cache_clear()
     prod_settings = get_settings()  # Should match env var
     monkeypatch.setattr(logging_utils, "settings", prod_settings)
 
@@ -137,6 +139,8 @@ def test_log_level_applied_to_root_logger(monkeypatch, level_str):
     # Set LOG_LEVEL
     monkeypatch.setenv("LOG_LEVEL", level_str)
 
+    # Clear cache so monkeypatch takes effect
+    get_settings.cache_clear()
     # Reload settings with the new env var
     settings = get_settings()
     monkeypatch.setattr(logging_utils, "settings", settings)

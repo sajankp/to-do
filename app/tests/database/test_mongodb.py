@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from pymongo.collection import Collection
 
 from app.config import get_settings
-from app.database.mongodb import get_todo_collection, get_user_collection
+from app.database.mongodb import get_mongo_client, get_todo_collection, get_user_collection
 
 app = FastAPI()
 
@@ -16,7 +16,7 @@ class TestMongoCollections:
         # Default test values
         self.test_database = "test_database"
         self.test_user_collection = "test_collection"
-        self.test_todo_collection = "test_collection"
+        self.test_todo_collection = "test_todos_collection"
 
     def set_env(self, monkeypatch, database, user_collection=None, todo_collection=None):
         monkeypatch.setenv("MONGO_DATABASE", database)
@@ -32,30 +32,51 @@ class TestMongoCollections:
         return get_settings()
 
     def test_returns_collection_object(self, monkeypatch):
+        from app.config import get_settings
+
+        get_settings.cache_clear()
+
         settings = self.get_settings_with_env(
             monkeypatch, self.test_database, user_collection=self.test_user_collection
         )
-        collection = get_user_collection(settings)
+        mongo_client = get_mongo_client(settings)
+        collection = get_user_collection(mongo_client, settings)
         assert isinstance(collection, Collection)
 
     def test_returns_correct_database(self, monkeypatch):
+        from app.config import get_settings
+
+        get_settings.cache_clear()
+
         settings = self.get_settings_with_env(
             monkeypatch, self.test_database, user_collection=self.test_user_collection
         )
-        collection = get_user_collection(settings)
+        mongo_client = get_mongo_client(settings)
+        collection = get_user_collection(mongo_client, settings)
         assert collection.database.name == self.test_database
 
     def test_returns_correct_collection_name(self, monkeypatch):
+        from app.config import get_settings
+
+        get_settings.cache_clear()
+
         settings = self.get_settings_with_env(
             monkeypatch, self.test_database, user_collection=self.test_user_collection
         )
-        collection = get_user_collection(settings)
+        mongo_client = get_mongo_client(settings)
+        collection = get_user_collection(mongo_client, settings)
         assert collection.name == self.test_user_collection
 
     def test_uses_environment_variables(self, monkeypatch):
+        # Clear the lru_cache to ensure monkeypatch takes effect
+        from app.config import get_settings
+
+        get_settings.cache_clear()
+
         settings = self.get_settings_with_env(
             monkeypatch, self.test_database, todo_collection=self.test_todo_collection
         )
-        collection = get_todo_collection(settings)
+        mongo_client = get_mongo_client(settings)
+        collection = get_todo_collection(mongo_client, settings)
         assert collection.database.name == self.test_database
         assert collection.name == self.test_todo_collection

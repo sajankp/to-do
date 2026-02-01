@@ -58,14 +58,14 @@ def create_token(data: dict, expires_delta: timedelta | None = None, sid: str | 
     return encoded_jwt
 
 
-def authenticate_user(username: str, password: str):
+def authenticate_user(username: str, password: str, client):
     """Authenticate a user and return the user object and optional new hash.
 
     Returns:
         Tuple[Optional[UserInDB], Optional[str]]: (user, new_hash) where new_hash
         is set if password migration is needed, or (None, None) if auth fails.
     """
-    user = get_user_by_username(username)
+    user = get_user_by_username(username, client)
     if not user:
         return None, None
 
@@ -76,7 +76,7 @@ def authenticate_user(username: str, password: str):
     return user, new_hash
 
 
-def get_current_active_user(token: str = Depends(oauth2_scheme)) -> UserInDB:
+def get_current_active_user(token: str = Depends(oauth2_scheme), client=None) -> UserInDB:
     credentials_exception = HTTPException(
         status_code=401,
         detail=INVALID_TOKEN,
@@ -89,7 +89,7 @@ def get_current_active_user(token: str = Depends(oauth2_scheme)) -> UserInDB:
             raise credentials_exception
     except JWTError as e:
         raise credentials_exception from e
-    user = get_user_by_username(username)
+    user = get_user_by_username(username, client)
     if not user:
         raise credentials_exception
     return user

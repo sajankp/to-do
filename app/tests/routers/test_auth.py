@@ -182,6 +182,8 @@ def test_verify_password(mock_verify_and_update):
 @patch("app.routers.auth.get_user_by_username")
 @patch("app.routers.auth.verify_password")
 def test_authenticate_user(mock_verify_password, mock_get_user):
+    from unittest.mock import Mock
+
     mock_user = UserInDB(
         username="test_user",
         hashed_password="hashed_password",
@@ -189,10 +191,11 @@ def test_authenticate_user(mock_verify_password, mock_get_user):
     )
     mock_get_user.return_value = mock_user
     mock_verify_password.return_value = (True, None)
+    mock_client = Mock()
 
-    user, new_hash = authenticate_user("test_user", "plain_password")
+    user, new_hash = authenticate_user("test_user", "plain_password", mock_client)
 
-    mock_get_user.assert_called_once_with("test_user")
+    mock_get_user.assert_called_once_with("test_user", mock_client)
     mock_verify_password.assert_called_once_with("plain_password", "hashed_password")
     assert isinstance(user, UserInDB)
     assert user.username == "test_user", "Expected username to match 'test_user'."
@@ -201,11 +204,14 @@ def test_authenticate_user(mock_verify_password, mock_get_user):
 
 @patch("app.routers.auth.get_user_by_username")
 def test_authenticate_user_invalid(mock_get_user):
+    from unittest.mock import Mock
+
     mock_get_user.return_value = None
+    mock_client = Mock()
 
-    user, new_hash = authenticate_user("invalid_user", "plain_password")
+    user, new_hash = authenticate_user("invalid_user", "plain_password", mock_client)
 
-    mock_get_user.assert_called_once_with("invalid_user")
+    mock_get_user.assert_called_once_with("invalid_user", mock_client)
     assert user is None
     assert new_hash is None
 
@@ -226,7 +232,7 @@ class TestGetCurrentActiveUser:
         user = get_current_active_user(mock_token)
 
         mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
-        mock_get_user.assert_called_once_with("test_user")
+        mock_get_user.assert_called_once_with("test_user", None)
         assert isinstance(user, UserInDB)
         assert user.username == mock_user.username
 
@@ -284,7 +290,7 @@ class TestGetCurrentActiveUser:
             get_current_active_user(mock_token)
 
         mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
-        mock_get_user.assert_called_once_with("nonexistent_user")
+        mock_get_user.assert_called_once_with("nonexistent_user", None)
         assert exc_info.value.status_code == credentials_exception.status_code
         assert exc_info.value.detail == credentials_exception.detail
 
@@ -292,6 +298,8 @@ class TestGetCurrentActiveUser:
 @patch("app.routers.auth.get_user_by_username")
 @patch("app.routers.auth.verify_password")
 def test_authenticate_user_wrong_password(mock_verify_password, mock_get_user):
+    from unittest.mock import Mock
+
     mock_user = UserInDB(
         username="test_user",
         hashed_password="hashed_password",
@@ -299,10 +307,11 @@ def test_authenticate_user_wrong_password(mock_verify_password, mock_get_user):
     )
     mock_get_user.return_value = mock_user
     mock_verify_password.return_value = (False, None)  # Simulate wrong password
+    mock_client = Mock()
 
-    user, new_hash = authenticate_user("test_user", "wrong_password")
+    user, new_hash = authenticate_user("test_user", "wrong_password", mock_client)
 
-    mock_get_user.assert_called_once_with("test_user")
+    mock_get_user.assert_called_once_with("test_user", mock_client)
     mock_verify_password.assert_called_once_with("wrong_password", "hashed_password")
     assert user is None, "authenticate_user should return None on wrong password"
     assert new_hash is None

@@ -77,11 +77,16 @@ def test_login_metric_increment(monkeypatch):
     from app.main import app
 
     mock_update_one = Mock(return_value=None)
-    mock_update_one = Mock(return_value=None)
 
-    # Ensure app.user exists for the test
+    # Ensure app attributes exist for the test (normally set in lifespan)
+    if not hasattr(app, "mongodb_client"):
+        app.mongodb_client = Mock()
     if not hasattr(app, "user"):
         app.user = Mock()
+    if not hasattr(app, "todo"):
+        app.todo = Mock()
+    if not hasattr(app, "settings"):
+        app.settings = Mock()
 
     original_update_one = app.user.update_one
     app.user.update_one = mock_update_one
