@@ -54,17 +54,21 @@ app = FastAPI()
 
 
 @pytest.mark.asyncio
-@patch("app.main.mongodb_client")
+@patch("app.main.get_mongo_client")
 @patch("app.main.check_app_readiness")
-async def test_lifespan_with_fastapi_instance(mock_check_app_readiness, mock_mongodb_client):
-    mock_database = Mock(side_effect=lambda name: Mock(name=f"MockCollection-{name}"))
-    mock_mongodb_client.return_value = mock_database
+async def test_lifespan_with_fastapi_instance(mock_check_app_readiness, mock_get_mongo_client):
+    mock_database = Mock()
+    mock_database.__getitem__ = Mock(return_value=Mock(name="MockCollection"))
+    # Return a client that returns databases when accessed as dict/attribute
+    mock_client = Mock()
+    mock_client.__getitem__ = Mock(return_value=mock_database)
+    mock_get_mongo_client.return_value = mock_client
     mock_check_app_readiness.return_value = True
 
     async with lifespan(app) as _:
-        assert app.mongodb_client is mock_mongodb_client
+        assert app.mongodb_client is mock_client
         assert app.todo == app.database["todo"]
         assert app.user == app.database["user"]
 
     # Ensure MongoDB client is closed after the context manager exits
-    assert mock_mongodb_client.close.called
+    assert mock_get_mongo_client.return_value.close.called

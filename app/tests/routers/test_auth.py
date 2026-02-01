@@ -229,10 +229,16 @@ class TestGetCurrentActiveUser:
         mock_decode.return_value = {"sub": "test_user"}
         mock_token = "mock.jwt.token"
 
-        user = get_current_active_user(mock_token)
+        from unittest.mock import Mock
+
+        mock_request = Mock()
+        mock_client = Mock()
+        mock_request.app.mongodb_client = mock_client
+
+        user = get_current_active_user(mock_request, mock_token)
 
         mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
-        mock_get_user.assert_called_once_with("test_user", None)
+        mock_get_user.assert_called_once_with("test_user", mock_client)
         assert isinstance(user, UserInDB)
         assert user.username == mock_user.username
 
@@ -248,8 +254,12 @@ class TestGetCurrentActiveUser:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+        from unittest.mock import Mock
+
+        mock_request = Mock()
+
         with pytest.raises(HTTPException) as exc_info:
-            get_current_active_user(mock_token)
+            get_current_active_user(mock_request, mock_token)
 
         mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
         assert exc_info.value.status_code == credentials_exception.status_code
@@ -267,8 +277,12 @@ class TestGetCurrentActiveUser:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+        from unittest.mock import Mock
+
+        mock_request = Mock()
+
         with pytest.raises(HTTPException) as exc_info:
-            get_current_active_user(mock_token)
+            get_current_active_user(mock_request, mock_token)
 
         mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
         assert exc_info.value.status_code == credentials_exception.status_code
@@ -286,11 +300,18 @@ class TestGetCurrentActiveUser:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+        from unittest.mock import Mock
+
+        mock_request = Mock()
+        mock_client = Mock()
+        mock_request.app.mongodb_client = mock_client
+
         with pytest.raises(HTTPException) as exc_info:
-            get_current_active_user(mock_token)
+            get_current_active_user(mock_request, mock_token)
+
+        mock_get_user.assert_called_once_with("nonexistent_user", mock_client)
 
         mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
-        mock_get_user.assert_called_once_with("nonexistent_user", None)
         assert exc_info.value.status_code == credentials_exception.status_code
         assert exc_info.value.detail == credentials_exception.detail
 

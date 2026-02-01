@@ -1,6 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pwdlib import PasswordHash
@@ -76,7 +76,8 @@ def authenticate_user(username: str, password: str, client):
     return user, new_hash
 
 
-def get_current_active_user(token: str = Depends(oauth2_scheme), client=None) -> UserInDB:
+def get_current_active_user(request: Request, token: str = Depends(oauth2_scheme)) -> UserInDB:
+    client = request.app.mongodb_client
     credentials_exception = HTTPException(
         status_code=401,
         detail=INVALID_TOKEN,

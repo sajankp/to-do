@@ -26,7 +26,7 @@ class TestTelemetry:
             mock_provider.return_value.add_span_processor.assert_called_with(
                 mock_processor.return_value
             )
-            mock_exporter.assert_called_with(endpoint="http://localhost:4317")
+            mock_exporter.assert_called_with(endpoint="http://localhost:4317/v1/traces")
 
     def test_otel_disabled_when_no_endpoint(self):
         """Test that OTel setup is skipped/disabled when endpoint is missing"""

@@ -72,6 +72,7 @@ curl -X POST http://localhost:8000/user \
 curl -X POST http://localhost:8000/todo/ \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
+  # Note: Replace YOUR_TOKEN with the access_token received from /token endpoint
   -d '{"title":"Test Todo","description":"Testing observability"}'
 ```
 
