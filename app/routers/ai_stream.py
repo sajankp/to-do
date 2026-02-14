@@ -41,7 +41,9 @@ class GeminiLiveProxy:
             username = payload.get("sub")
             if not username:
                 return False
-            user = get_user_by_username(username)
+            # Access MongoDB client from websocket app state
+            client = self.websocket.app.mongodb_client
+            user = get_user_by_username(username, client)
             if not user:
                 return False
             self.username = username

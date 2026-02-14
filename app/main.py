@@ -17,7 +17,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import get_settings
-from app.database.mongodb import mongodb_client
+from app.database.mongodb import get_mongo_client
 
 # specific imports for logging
 from app.middleware.logging import StructlogMiddleware
@@ -42,7 +42,7 @@ from app.utils.jwt import decode_jwt_token
 from app.utils.logging import setup_logging
 from app.utils.metrics import LOGINS_TOTAL, REGISTRATIONS_TOTAL
 from app.utils.rate_limiter import limiter
-from app.utils.telemetry import setup_telemetry
+from app.utils.telemetry import setup_pymongo_telemetry, setup_telemetry
 from app.utils.validate_env import validate_env
 
 # Initialize logging before creating the app
@@ -58,7 +58,12 @@ async def lifespan(application: FastAPI):
     if not await check_app_readiness():
         logging.error("Application failed to start.")
         sys.exit(1)
-    application.mongodb_client = mongodb_client
+
+    # Setup PyMongo instrumentation BEFORE creating MongoDB client
+    setup_pymongo_telemetry()
+
+    # Create MongoDB client AFTER PyMongo instrumentation
+    application.mongodb_client = get_mongo_client(settings)
     application.database = application.mongodb_client[settings.mongo_db]
     application.todo = application.database[settings.mongo_todo_collection]
     application.user = application.database[settings.mongo_user_collection]
@@ -99,6 +104,7 @@ def verify_metrics_token(request: Request):
         )
 
 
+# Setup OpenTelemetry for FastAPI (must happen before app serves requests)
 setup_telemetry(app, settings)
 
 # Setup Prometheus Metrics
@@ -181,7 +187,9 @@ def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()], request: Request
 ):
     # Authenticate user
-    user, new_hash = authenticate_user(form_data.username, form_data.password)
+    user, new_hash = authenticate_user(
+        form_data.username, form_data.password, request.app.mongodb_client
+    )
     if not user:
         LOGINS_TOTAL.labels(status="failed").inc()
         raise HTTPException(
@@ -243,7 +251,7 @@ def refresh_token(refresh_token: str, request: Request):
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
         )
 
-    user = get_user_by_username(username)
+    user = get_user_by_username(username, request.app.mongodb_client)
     if not user or user.disabled:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 

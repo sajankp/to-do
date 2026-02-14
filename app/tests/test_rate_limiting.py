@@ -14,6 +14,7 @@ client = TestClient(app)
 @pytest.fixture(autouse=True)
 def reset_limiter():
     # Mock app attributes that are usually set in lifespan
+    app.mongodb_client = Mock()
     app.todo = Mock()
     app.user = Mock()
     app.settings = Mock()
