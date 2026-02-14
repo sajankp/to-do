@@ -1,5 +1,6 @@
 from unittest.mock import Mock
 
+import pymongo.errors
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -40,3 +41,21 @@ def test_create_user_validation_error():
     )
 
     assert response.status_code == 422
+
+
+def test_create_user_duplicate():
+    # Mock the user collection and simulation DuplicateKeyError
+    app.user = Mock()
+    app.user.insert_one = Mock(side_effect=pymongo.errors.DuplicateKeyError("duplicate"))
+
+    client = TestClient(app)
+
+    response = client.post(
+        "/user",
+        json={"username": "existing", "email": "exists@example.com", "password": "password123"},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Username or email already exists"
+
+    # Verify duplicate user handling
