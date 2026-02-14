@@ -12,11 +12,8 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.trace import set_tracer_provider
 
 
-def _init_tracer_provider(settings: Any) -> TracerProvider:
+def _init_tracer_provider(service_name: str, otel_endpoint: str) -> TracerProvider:
     """Initialize and configure the OpenTelemetry tracer provider."""
-    service_name = getattr(settings, "otel_service_name", "fasttodo")
-    otel_endpoint = getattr(settings, "otel_exporter_otlp_endpoint", None)
-
     # Ensure endpoint has the correct path for HTTP protocol
     if not otel_endpoint.endswith("/v1/traces"):
         otel_endpoint = f"{otel_endpoint.rstrip('/')}/v1/traces"
@@ -51,8 +48,10 @@ def setup_telemetry(app: FastAPI, settings: Any) -> None:
     if not otel_endpoint:
         return  # Telemetry disabled
 
+    service_name = getattr(settings, "otel_service_name", "fasttodo")
+
     # Initialize tracer provider
-    tracer_provider = _init_tracer_provider(settings)
+    tracer_provider = _init_tracer_provider(service_name, otel_endpoint)
 
     # Instrument FastAPI
     FastAPIInstrumentor.instrument_app(app, tracer_provider=tracer_provider)

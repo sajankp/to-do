@@ -21,6 +21,14 @@ from app.utils.constants import INVALID_TOKEN
 from app.utils.jwt import decode_jwt_token
 
 
+@pytest.fixture
+def mock_mongo_client():
+    """Fixture for mock MongoDB client used across auth tests."""
+    from unittest.mock import Mock
+
+    return Mock()
+
+
 class TestDecodeJWTToken:
     @patch("jose.jwt.decode")
     def test_valid_token_decodes_successfully(self, mock_decode):
@@ -181,9 +189,7 @@ def test_verify_password(mock_verify_and_update):
 
 @patch("app.routers.auth.get_user_by_username")
 @patch("app.routers.auth.verify_password")
-def test_authenticate_user(mock_verify_password, mock_get_user):
-    from unittest.mock import Mock
-
+def test_authenticate_user(mock_verify_password, mock_get_user, mock_mongo_client):
     mock_user = UserInDB(
         username="test_user",
         hashed_password="hashed_password",
@@ -191,11 +197,10 @@ def test_authenticate_user(mock_verify_password, mock_get_user):
     )
     mock_get_user.return_value = mock_user
     mock_verify_password.return_value = (True, None)
-    mock_client = Mock()
 
-    user, new_hash = authenticate_user("test_user", "plain_password", mock_client)
+    user, new_hash = authenticate_user("test_user", "plain_password", mock_mongo_client)
 
-    mock_get_user.assert_called_once_with("test_user", mock_client)
+    mock_get_user.assert_called_once_with("test_user", mock_mongo_client)
     mock_verify_password.assert_called_once_with("plain_password", "hashed_password")
     assert isinstance(user, UserInDB)
     assert user.username == "test_user", "Expected username to match 'test_user'."
@@ -203,15 +208,12 @@ def test_authenticate_user(mock_verify_password, mock_get_user):
 
 
 @patch("app.routers.auth.get_user_by_username")
-def test_authenticate_user_invalid(mock_get_user):
-    from unittest.mock import Mock
-
+def test_authenticate_user_invalid(mock_get_user, mock_mongo_client):
     mock_get_user.return_value = None
-    mock_client = Mock()
 
-    user, new_hash = authenticate_user("invalid_user", "plain_password", mock_client)
+    user, new_hash = authenticate_user("invalid_user", "plain_password", mock_mongo_client)
 
-    mock_get_user.assert_called_once_with("invalid_user", mock_client)
+    mock_get_user.assert_called_once_with("invalid_user", mock_mongo_client)
     assert user is None
     assert new_hash is None
 
@@ -219,7 +221,7 @@ def test_authenticate_user_invalid(mock_get_user):
 class TestGetCurrentActiveUser:
     @patch("app.routers.auth.get_user_by_username")
     @patch("jose.jwt.decode")
-    def test_valid_token_returns_user(self, mock_decode, mock_get_user):
+    def test_valid_token_returns_user(self, mock_decode, mock_get_user, mock_mongo_client):
         mock_user = UserInDB(
             username="test_user",
             hashed_password="hashed_password",
@@ -229,20 +231,16 @@ class TestGetCurrentActiveUser:
         mock_decode.return_value = {"sub": "test_user"}
         mock_token = "mock.jwt.token"
 
-        from unittest.mock import Mock
-
-        mock_client = Mock()
-
-        user = get_current_active_user(mock_token, mock_client)
+        user = get_current_active_user(mock_token, mock_mongo_client)
 
         mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
-        mock_get_user.assert_called_once_with("test_user", mock_client)
+        mock_get_user.assert_called_once_with("test_user", mock_mongo_client)
         assert isinstance(user, UserInDB)
         assert user.username == mock_user.username
 
     @patch("app.routers.auth.get_user_by_username")
     @patch("jose.jwt.decode")
-    def test_missing_username_raises_exception(self, mock_decode, mock_get_user):
+    def test_missing_username_raises_exception(self, mock_decode, mock_get_user, mock_mongo_client):
         mock_decode.return_value = {"sub": None}
         mock_get_user.return_value = None
         mock_token = "mock.jwt.token"
@@ -252,12 +250,8 @@ class TestGetCurrentActiveUser:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-        from unittest.mock import Mock
-
-        mock_client = Mock()
-
         with pytest.raises(HTTPException) as exc_info:
-            get_current_active_user(mock_token, mock_client)
+            get_current_active_user(mock_token, mock_mongo_client)
 
         mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
         assert exc_info.value.status_code == credentials_exception.status_code
@@ -265,7 +259,7 @@ class TestGetCurrentActiveUser:
 
     @patch("app.routers.auth.get_user_by_username")
     @patch("jose.jwt.decode")
-    def test_invalid_token_raises_exception(self, mock_decode, mock_get_user):
+    def test_invalid_token_raises_exception(self, mock_decode, mock_get_user, mock_mongo_client):
         mock_decode.side_effect = JWTError
         mock_get_user.return_value = None
         mock_token = "mock.jwt.token"
@@ -275,12 +269,8 @@ class TestGetCurrentActiveUser:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-        from unittest.mock import Mock
-
-        mock_client = Mock()
-
         with pytest.raises(HTTPException) as exc_info:
-            get_current_active_user(mock_token, mock_client)
+            get_current_active_user(mock_token, mock_mongo_client)
 
         mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
         assert exc_info.value.status_code == credentials_exception.status_code
@@ -288,7 +278,7 @@ class TestGetCurrentActiveUser:
 
     @patch("app.routers.auth.get_user_by_username")
     @patch("jose.jwt.decode")
-    def test_user_not_found_raises_exception(self, mock_decode, mock_get_user):
+    def test_user_not_found_raises_exception(self, mock_decode, mock_get_user, mock_mongo_client):
         mock_decode.return_value = {"sub": "nonexistent_user"}
         mock_get_user.return_value = None
         mock_token = "mock.jwt.token"
@@ -298,14 +288,10 @@ class TestGetCurrentActiveUser:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-        from unittest.mock import Mock
-
-        mock_client = Mock()
-
         with pytest.raises(HTTPException) as exc_info:
-            get_current_active_user(mock_token, mock_client)
+            get_current_active_user(mock_token, mock_mongo_client)
 
-        mock_get_user.assert_called_once_with("nonexistent_user", mock_client)
+        mock_get_user.assert_called_once_with("nonexistent_user", mock_mongo_client)
 
         mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
         assert exc_info.value.status_code == credentials_exception.status_code
@@ -314,9 +300,7 @@ class TestGetCurrentActiveUser:
 
 @patch("app.routers.auth.get_user_by_username")
 @patch("app.routers.auth.verify_password")
-def test_authenticate_user_wrong_password(mock_verify_password, mock_get_user):
-    from unittest.mock import Mock
-
+def test_authenticate_user_wrong_password(mock_verify_password, mock_get_user, mock_mongo_client):
     mock_user = UserInDB(
         username="test_user",
         hashed_password="hashed_password",
@@ -324,11 +308,10 @@ def test_authenticate_user_wrong_password(mock_verify_password, mock_get_user):
     )
     mock_get_user.return_value = mock_user
     mock_verify_password.return_value = (False, None)  # Simulate wrong password
-    mock_client = Mock()
 
-    user, new_hash = authenticate_user("test_user", "wrong_password", mock_client)
+    user, new_hash = authenticate_user("test_user", "wrong_password", mock_mongo_client)
 
-    mock_get_user.assert_called_once_with("test_user", mock_client)
+    mock_get_user.assert_called_once_with("test_user", mock_mongo_client)
     mock_verify_password.assert_called_once_with("wrong_password", "hashed_password")
     assert user is None, "authenticate_user should return None on wrong password"
     assert new_hash is None
