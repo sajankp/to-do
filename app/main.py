@@ -17,6 +17,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import get_settings
+from app.database.indexes import create_indexes
 from app.database.mongodb import get_mongo_client
 
 # specific imports for logging
@@ -68,6 +69,10 @@ async def lifespan(application: FastAPI):
     application.todo = application.database[settings.mongo_todo_collection]
     application.user = application.database[settings.mongo_user_collection]
     application.settings = settings
+
+    # Create database indexes
+    create_indexes(application.mongodb_client)
+
     yield
     application.mongodb_client.close()
 
@@ -277,12 +282,18 @@ def create_user(user_in: UserRegistration, request: Request):
     user = CreateUser(
         username=user_in.username, email=user_in.email, hashed_password=hashed_password
     )
-    result = request.app.user.insert_one(user.model_dump())
-    if result.acknowledged:
-        REGISTRATIONS_TOTAL.inc()
-        return True
-    else:
+    try:
+        result = request.app.user.insert_one(user.model_dump())
+        if result.acknowledged:
+            REGISTRATIONS_TOTAL.inc()
+            return True
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=FAILED_TO_CREATE_USER,
+            )
+    except pymongo.errors.DuplicateKeyError:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=FAILED_TO_CREATE_USER,
-        )
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Username or email already exists",
+        ) from None

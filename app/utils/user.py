@@ -20,3 +20,21 @@ def get_user_by_username(username: str, client: MongoClient) -> UserInDB | None:
     if user_data:
         return UserInDB(**user_data)
     return None
+
+
+def get_user_by_email(email: str, client: MongoClient) -> UserInDB | None:
+    """
+    Fetch a user from the database by email.
+
+    Args:
+        email: The email to search for.
+        client: MongoDB client instance
+
+    Returns:
+        UserInDB if found, None otherwise.
+    """
+    user_collection = get_user_collection(client)
+    user_data = user_collection.find_one({"email": email})
+    if user_data:
+        return UserInDB(**user_data)
+    return None
