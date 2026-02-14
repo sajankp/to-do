@@ -17,9 +17,9 @@ This document explains how to run the FastTodo application with a complete obser
                               │ OTLP HTTP (port 4318)
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│         OpenTelemetry Collector (Ports 4317, 4318, 8889)        │
+│         OpenTelemetry Collector (Ports 4317, 4318)              │
 │  • Receives telemetry via OTLP                                  │
-│  • Routes traces → Jaeger, metrics → Prometheus, logs → Loki   │
+│  • Routes traces → Jaeger, logs → Loki                          │
 └──────────────────────────────┬──────────────────────────────────┘
                                │
          ┌─────────────────────┼─────────────────────┐
@@ -47,7 +47,7 @@ This document explains how to run the FastTodo application with a complete obser
 - **Grafana** - http://localhost:3000 (admin/admin)
 - **Jaeger UI** - http://localhost:16686
 - **Prometheus** - http://localhost:9090
-- **OpenTelemetry Collector** - localhost:4317 (gRPC), localhost:4318 (HTTP)
+- **OpenTelemetry Collector** - localhost:4317 (gRPC), localhost:4318 (HTTP) [traces + logs only]
 
 ## Quick Start
 

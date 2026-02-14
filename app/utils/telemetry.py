@@ -17,9 +17,6 @@ def _init_tracer_provider(settings: Any) -> TracerProvider:
     service_name = getattr(settings, "otel_service_name", "fasttodo")
     otel_endpoint = getattr(settings, "otel_exporter_otlp_endpoint", None)
 
-    if not otel_endpoint:
-        raise ValueError("OTEL_EXPORTER_OTLP_ENDPOINT not configured")
-
     # Ensure endpoint has the correct path for HTTP protocol
     if not otel_endpoint.endswith("/v1/traces"):
         otel_endpoint = f"{otel_endpoint.rstrip('/')}/v1/traces"
