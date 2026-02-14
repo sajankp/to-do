@@ -57,8 +57,9 @@ app = FastAPI()
 @patch("app.main.get_mongo_client")
 @patch("app.main.check_app_readiness")
 async def test_lifespan_with_fastapi_instance(mock_check_app_readiness, mock_get_mongo_client):
+    mock_collection = Mock(name="MockCollection")
     mock_database = Mock()
-    mock_database.__getitem__ = Mock(return_value=Mock(name="MockCollection"))
+    mock_database.__getitem__ = Mock(return_value=mock_collection)
     # Return a client that returns databases when accessed as dict/attribute
     mock_client = Mock()
     mock_client.__getitem__ = Mock(return_value=mock_database)
@@ -67,8 +68,8 @@ async def test_lifespan_with_fastapi_instance(mock_check_app_readiness, mock_get
 
     async with lifespan(app) as _:
         assert app.mongodb_client is mock_client
-        assert app.todo == app.database["todo"]
-        assert app.user == app.database["user"]
+        assert app.todo is mock_collection
+        assert app.user is mock_collection
 
     # Ensure MongoDB client is closed after the context manager exits
     assert mock_get_mongo_client.return_value.close.called

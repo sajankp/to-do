@@ -12,7 +12,13 @@ echo "🔨  Rebuilding and starting services..."
 docker compose up --build -d
 
 echo "⏳  Waiting for services to be ready..."
-sleep 10
+# Wait for the main app to be healthy
+echo "Waiting for FastTodo app..."
+until curl -s -f http://localhost:8000/health > /dev/null; do
+    printf '.'
+    sleep 2
+done
+echo " App is ready!"
 
 echo "✅  Environment reset complete!"
 echo "📊  Grafana: http://localhost:3000 (admin/admin)"
