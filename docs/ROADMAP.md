@@ -39,7 +39,7 @@
 |------|-------------|--------|--------|
 | TD-003 | Security headers middleware (OWASP) | 4 hours | ✅ |
 | TD-004 | Structured logging (structlog + configurable level) | 1 day | ✅ |
-| TD-005 | Monitoring/Observability (OpenTelemetry + Prometheus) | 3-5 days | 🔄 In Progress |
+| TD-005 | Monitoring/Observability (OpenTelemetry + Prometheus) | 3-5 days | ✅ |
 | TD-002 | Database indexes | 1 hour | 🔲 |
 | TD-012 | Move password to request body | 2 hours | ✅ |
 | TD-013 | Email uniqueness check | 1 hour | 🔲 |
@@ -152,7 +152,7 @@
 | TD-002 | Add database indexes | High | 1 hour |
 | TD-003 | Security headers middleware | High | ✅ Complete |
 | TD-004 | Structured logging (structlog + configurable level) | High | ✅ Complete |
-| TD-005 | Monitoring/Observability (OpenTelemetry) | Critical | 🔄 In Progress |
+| TD-005 | Monitoring/Observability (OpenTelemetry + Prometheus) | Critical | ✅ Complete |
 | TD-006 | Gemini API backend proxy | High | ✅ Complete |
 | TD-007 | Frontend linting - Phase 1 | High | 2 hours |
 | TD-007a | Frontend linting - Phase 2 | Medium | 4 hours |
@@ -192,4 +192,4 @@
 
 ---
 
-*Last updated: 2026-01-18*
+*Last updated: 2026-02-15*
