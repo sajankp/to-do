@@ -137,7 +137,8 @@ gh api graphql -f query='
 query {
   repository(owner: "OWNER", name: "REPO") {
     pullRequest(number: PR_NUMBER) {
-      reviewThreads(first: 10) {
+      id
+      reviewThreads(first: 100) {
         nodes {
           id
           isResolved
@@ -145,9 +146,6 @@ query {
           comments(first: 1) {
             nodes {
               body
-              pullRequest {
-                id
-              }
             }
           }
         }
@@ -194,14 +192,6 @@ mutation {
 > 3. Then resolve the thread
 > 4. The `isOutdated: true` flag indicates the code has changed since the comment
 > 5. After resolving all threads, the PR should be mergeable
-
-> [!TIP]
-> **Best Practice**: For each addressed comment, leave a reply explaining:
-> - ✅ What was changed
-> - 📝 Why (if you deviated from suggestion)
-> - 🔗 Commit SHA reference
->
-> This creates an audit trail and helps reviewers understand your decisions.
 
 ### Step 2.5: Request Re-Review (After Addressing Feedback)
 
