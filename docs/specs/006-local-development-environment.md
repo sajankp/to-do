@@ -51,6 +51,12 @@ No new API changes beyond those already defined in Spec-005 (e.g., `/metrics`, `
 - Create `k8s/` directory.
 - Add manifests for `otel-collector`, `prometheus`, `jaeger`, `grafana`, `loki`.
 
+## Current Implementation Notes (as of 2026-02-15)
+
+- `docker-compose.yml` orchestrates backend, MongoDB, and the observability stack (OTel Collector, Jaeger, Prometheus, Loki, Grafana).
+- Frontend is not containerized in this repo; there is no frontend service in `docker-compose.yml`.
+- Observability config files live at repo root (`otel-collector-config.yaml`, `prometheus.yml`, `grafana-datasources.yml`) rather than under a `config/` directory.
+
 ## Test Strategy
 
 ### Automated Tests

@@ -97,6 +97,18 @@ cors_allow_credentials: bool = Field(
 
 ---
 
+## Current Implementation Notes (as of 2026-02-15)
+
+- Login and refresh set/read HttpOnly cookies for `access_token` and `refresh_token`.
+- `/auth/logout` is implemented and clears both cookies.
+- `remember_me` is not implemented; refresh cookie is always set with standard expiry.
+- Auth middleware reads `access_token` from cookies only; `Authorization` header fallback is not implemented.
+- `cookie_secure` is forced `True` when `SameSite=None` (required by browsers), regardless of environment.
+- CSRF mitigation is implemented for cookie-auth state-changing requests:
+  - middleware blocks authenticated `POST`/`PUT`/`PATCH`/`DELETE` when `Origin` is missing/untrusted
+  - `/token/refresh` and `/auth/logout` enforce trusted `Origin` validation
+- WebSocket CSWSH mitigation is implemented: `/api/ai/voice/stream` validates `Origin` before `accept()`.
+
 ## Verification Plan
 
 ### Automated Tests
@@ -142,8 +154,9 @@ HttpOnly cookies cannot be accessed by JavaScript, making them immune to XSS tok
 
 With `SameSite=None`, we lose some automatic CSRF protection. Mitigations:
 1. **CORS:** Only allows requests from `https://sajankp.github.io`
-2. **State-changing endpoints:** All use POST/PUT/DELETE (not GET)
-3. **Future consideration:** Add CSRF token header if needed
+2. **Origin validation:** trusted `Origin` is required for cookie-auth state-changing requests
+3. **State-changing endpoints:** protected routes use unsafe methods (`POST`/`PUT`/`PATCH`/`DELETE`)
+4. **Future consideration:** Add CSRF token header for stronger defense-in-depth
 
 ### Future: Same-Origin Deployment
 If frontend/backend move to same domain (e.g., custom domain), update:

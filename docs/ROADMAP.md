@@ -39,11 +39,11 @@
 |------|-------------|--------|--------|
 | TD-003 | Security headers middleware (OWASP) | 4 hours | ✅ |
 | TD-004 | Structured logging (structlog + configurable level) | 1 day | ✅ |
-| TD-005 | Monitoring/Observability (OpenTelemetry + Prometheus) | 3-5 days | ✅ |
-| TD-002 | Database indexes | 1 hour | ✅ |
+| TD-005 | Monitoring/Observability (OpenTelemetry + Prometheus) | 3-5 days | 🟨 Partial |
+| TD-002 | Database indexes | 1 hour | 🟨 Partial |
 | TD-012 | Move password to request body | 2 hours | ✅ |
 | TD-013 | Email uniqueness check | 1 hour | ✅ |
-| TD-006 | Gemini API backend proxy | 2 days | ✅ |
+| TD-006 | Gemini API backend proxy | 2 days | 🟨 Partial |
 | TD-011 | Frontend token refresh | 1 day | 🔲 |
 
 ---
@@ -77,7 +77,7 @@
 | Item | Description | Effort | Status |
 |------|-------------|--------|--------|
 | - | 2FA & OAuth | 5 days | 🔲 |
-| TD-015 | HttpOnly cookie tokens | 2 days | 🔲 |
+| TD-015 | HttpOnly cookie tokens | 2 days | 🟨 Partial (backend) |
 | - | Kubernetes deployment | 3 days | 🔲 |
 | - | Advanced dashboards & alerting | 2 days | 🔲 |
 
@@ -146,14 +146,14 @@
 
 > Full details for each item are documented in [ARCHITECTURE.md](ARCHITECTURE.md#known-architectural-pitfalls).
 
-| ID | Description | Priority | Effort |
-|----|-------------|----------|--------|
+| ID | Description | Priority | Effort / Status |
+|----|-------------|----------|-----------------|
 | TD-001 | Migrate to async Motor | High | 3 days |
-| TD-002 | Add database indexes | High | 1 hour |
+| TD-002 | Add database indexes | High | 🟨 Partial |
 | TD-003 | Security headers middleware | High | ✅ Complete |
 | TD-004 | Structured logging (structlog + configurable level) | High | ✅ Complete |
-| TD-005 | Monitoring/Observability (OpenTelemetry + Prometheus) | Critical | ✅ Complete |
-| TD-006 | Gemini API backend proxy | High | ✅ Complete |
+| TD-005 | Monitoring/Observability (OpenTelemetry + Prometheus) | Critical | 🟨 Partial |
+| TD-006 | Gemini API backend proxy | High | 🟨 Partial |
 | TD-007 | Frontend linting - Phase 1 | High | 2 hours |
 | TD-007a | Frontend linting - Phase 2 | Medium | 4 hours |
 | TD-007b | Frontend linting - Phase 3 | Low | 8 hours |
@@ -162,9 +162,9 @@
 | TD-010 | Frontend testing setup | Medium | 2 days |
 | TD-011 | Token refresh | Medium | 1 day |
 | TD-012 | Move password to request body | Done | ✅ Complete |
-| TD-013 | Email uniqueness check | Low | 1 hour |
+| TD-013 | Email uniqueness check | Low | ✅ Complete |
 | TD-014 | API versioning | Low | 2 days |
-| TD-015 | HttpOnly cookie tokens | Low | 2 days |
+| TD-015 | HttpOnly cookie tokens | Low | 🟨 Partial (backend) |
 | TD-016 | E2E testing (Playwright) | High | 2 days |
 | TD-017 | Performance benchmarks | Medium | 1 day |
 | TD-018 | OpenAPI contract testing | Medium | 1 day |
