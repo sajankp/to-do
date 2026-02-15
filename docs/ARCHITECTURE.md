@@ -1,6 +1,6 @@
 # FastTodo System Specification
 
-> **Living Document** | Last Updated: 2026-01-18
+> **Living Document** | Last Updated: 2026-02-15
 > This is the canonical reference for the FastTodo system architecture, design decisions, and known challenges.
 
 ---
@@ -211,26 +211,26 @@ sequenceDiagram
     Note over C,A: Login
     C->>A: POST /token (form: username, password)
     A->>DB: Find user, verify password
-    A-->>C: {access_token, refresh_token}
+    A-->>C: Set HttpOnly cookies {access_token, refresh_token}
 
     Note over C,A: Authenticated Request
-    C->>A: GET /todo (Authorization: Bearer token)
+    C->>A: GET /todo (Cookie: access_token)
     A->>A: Validate token, extract user_id
     A->>DB: Find todos by user_id
     A-->>C: [todos]
 
     Note over C,A: Token Refresh
-    C->>A: POST /token/refresh?refresh_token=X
-    A->>A: Validate refresh token
-    A-->>C: {new access_token}
+    C->>A: POST /token/refresh (Cookie: refresh_token)
+    A->>A: Validate refresh token + token_type=refresh
+    A-->>C: Set HttpOnly cookie {access_token}
 ```
 
 ### Endpoints Summary
 
 | Method | Endpoint | Auth | Rate Limit | Description |
 |--------|----------|------|------------|-------------|
-| POST | `/token` | ❌ | 5/min | Login, get tokens |
-| POST | `/token/refresh` | ❌ | 5/min | Refresh access token |
+| POST | `/token` | ❌ | 5/min | Login, sets auth cookies |
+| POST | `/token/refresh` | ❌ | 5/min | Refresh access cookie from refresh cookie |
 | POST | `/user` | ❌ | 5/min | Register new user |
 | GET | `/user/me` | ✅ | 100/min | Get current user profile |
 | GET | `/todo/` | ✅ | 100/min | List user's todos |
@@ -238,7 +238,8 @@ sequenceDiagram
 | GET | `/todo/{id}` | ✅ | 100/min | Get specific todo |
 | PATCH | `/todo/{id}` | ✅ | 100/min | Update todo |
 | DELETE | `/todo/{id}` | ✅ | 100/min | Delete todo |
-| GET | `/health` | ✅ | - | Health check |
+| GET | `/health` | ❌ | - | Liveness probe |
+| GET | `/health/ready` | ❌ | - | Readiness probe |
 
 ---
 
@@ -307,15 +308,15 @@ erDiagram
 | Algorithm | HS256 (HMAC-SHA256) |
 | Access Token TTL | 30 minutes |
 | Refresh Token TTL | 1 hour |
-| Password Hashing | bcrypt with salt |
-| Token Storage | Client-side (localStorage) |
+| Password Hashing | Argon2id (bcrypt accepted for legacy verify-and-upgrade) |
+| Token Storage | HttpOnly secure cookies (`access_token`, `refresh_token`) |
 
 ### Authorization
 
 | Rule | Implementation |
 |------|----------------|
 | User Isolation | Todos filtered by `user_id` from JWT |
-| Ownership Check | Update/delete verify `todo.user_id == request.user_id` |
+| Ownership Check | Update/delete queries are scoped by `_id` + `user_id` |
 | Middleware | All routes except whitelist require valid JWT |
 
 ### Rate Limiting
@@ -374,21 +375,20 @@ users.create_index([("email", 1)], unique=True)
 
 ---
 
-### 3. (TD-003) Token in localStorage (XSS Vulnerable)
+### 3. (TD-003) Cookie Auth Hardening Follow-ups
 
 **Current State:**
-```typescript
-localStorage.setItem('token', response.access_token);
-```
+- Access and refresh tokens are now stored in HttpOnly cookies.
+- `/token/refresh` only accepts refresh tokens with `token_type=refresh`.
 
 **Risk:**
-- XSS attack can steal tokens
-- No way to revoke tokens server-side
+- No server-side refresh token revocation list yet.
+- Cookie policy/config mistakes can still weaken security in deployments.
 
 **Mitigation Options:**
-1. **HttpOnly cookies** - Prevents XSS access
-2. **Token rotation** - Limit damage window
-3. **Token blacklist** - Server-side revocation
+1. **Refresh token rotation** on every refresh
+2. **Token blacklist/revocation store** for forced logout
+3. **Operational guardrails** for secure cookie and CORS settings
 
 ---
 
