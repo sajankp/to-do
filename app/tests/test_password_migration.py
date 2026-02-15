@@ -14,6 +14,7 @@ client = TestClient(app)
 @pytest.fixture(autouse=True)
 def setup_app():
     """Mock app attributes that are usually set in lifespan."""
+    app.mongodb_client = Mock()
     app.user = Mock()
     app.todo = Mock()
     app.settings = Mock()

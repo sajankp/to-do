@@ -1,9 +1,9 @@
-fastapi==0.128.0
+fastapi==0.129.0
 pymongo==4.16.0
 python-dotenv==1.2.1
-pwdlib[argon2,bcrypt]==0.2.0
+pwdlib[argon2,bcrypt]==0.3.0
 python-jose[cryptography]==3.5.0
-python-multipart==0.0.21
+python-multipart==0.0.22
 pytest==9.0.2
 pytest-asyncio==1.3.0
 pytest-cov==7.0.0
@@ -14,8 +14,17 @@ pydantic_settings==2.12.0
 email-validator==2.3.0
 uvicorn==0.40.0
 slowapi==0.1.9
-redis==7.1.0
+redis==7.1.1
 pre-commit>=3.6.0
 ruff>=0.1.9
-google-genai==1.57.0
-structlog==24.1.0
+google-genai==1.63.0
+structlog==25.5.0
+
+# Monitoring & Observability
+opentelemetry-api>=1.22.0
+opentelemetry-sdk>=1.22.0
+opentelemetry-exporter-otlp>=1.22.0
+opentelemetry-instrumentation-fastapi>=0.43b0
+opentelemetry-instrumentation-pymongo>=0.43b0
+opentelemetry-instrumentation-logging>=0.43b0
+prometheus-fastapi-instrumentator>=7.0.0

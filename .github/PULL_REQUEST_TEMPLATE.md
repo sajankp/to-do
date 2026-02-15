@@ -38,3 +38,29 @@ Fixes #
 ## Additional Notes
 
 <!-- Any other context about the PR -->
+
+## 🚀 Post-Deployment Checklist
+
+<!--
+Remove this section if no deployment tasks are needed.
+Otherwise, check applicable items after merging to production.
+-->
+
+### Environment Variables
+<!-- List any new or changed environment variables for Render/production -->
+- [ ] N/A or list variables:
+  - `VARIABLE_NAME=value` (description)
+
+### Database Changes
+<!-- List any migrations, schema changes, or data updates -->
+- [ ] N/A or describe:
+
+### Manual Deployment Steps
+<!-- Any manual steps required after deployment -->
+- [ ] N/A or list steps:
+
+### Verification
+<!-- How to verify the deployment was successful -->
+- [ ] Smoke test:
+- [ ] Monitor logs for errors
+- [ ] Check metrics/dashboards

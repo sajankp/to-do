@@ -65,3 +65,33 @@ Implement `StructlogMiddleware` that:
 ### Manual Verification
 - **Local Dev:** Run `uvicorn`, interact with API, and verify pretty colorful logs in terminal.
 - **Production Simulation:** Set `ENV=production`, run app, and verify logs are single-line JSON objects.
+
+---
+
+## Production Improvements (Resolved)
+
+> **Note:** The following issues were identified in production and **resolved** in PR #95 and PR #96.
+
+### 1. Log Noise from Standard Library Interception
+**Issue:** Production logs contained internal metadata fields (`_record`, `_from_structlog`).
+**Fix:** Implemented filtered processor `_drop_internal_structlog_keys`.
+**Status:** ✅ Resolved
+
+### 2. Duplicate Plain-Text Logs from Uvicorn
+**Issue:** Uvicorn logs appeared as both JSON and plain text.
+**Fix:** Configured uvicorn loggers with `propagate=False` to prevent double-logging.
+**Status:** ✅ Resolved
+
+
+### 3. Session Tracking Works as Designed ✅
+**Verified:** Session IDs (`sid`) are correctly:
+- Generated on login
+- Included in JWTs
+- Extracted by middleware
+- Logged with each request
+- Maintained across token refreshes
+
+**Example from production:**
+```json
+{"sid": "0591431d-c39a-4166-a086-9c2633d291da", "path": "/todo/", "method": "GET", ...}
+```
