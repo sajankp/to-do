@@ -25,7 +25,7 @@ def test_csp_includes_required_domains():
 
     # Check for required domains
     assert "https://fonts.googleapis.com" in csp_tokens, "Google Fonts (style) missing"
-    assert "https://cdn.jsdelivr.net" in csp_tokens, "JSDelivr (script/style) missing"
+    assert "https://cdn.jsdelivr.net/npm/" in csp_tokens, "JSDelivr (script/style) missing"
     assert "https://fastapi.tiangolo.com" in csp_tokens, "FastAPI Favicon (img) missing"
     assert "https://fonts.gstatic.com" in csp_tokens, "Google Fonts (font) missing"
 
