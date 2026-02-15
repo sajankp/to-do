@@ -18,11 +18,16 @@ def test_csp_includes_required_domains():
     assert response.status_code == 200
     csp = response.headers["Content-Security-Policy"]
 
+    # Parse CSP into a flat list of tokens to check for exact presence
+    # This avoids "Incomplete URL substring sanitization" alerts from static analysis
+    # "default-src 'self'; img-src ..." -> ["default-src", "'self'", "img-src", ...]
+    csp_tokens = [t.strip() for directive in csp.split(";") for t in directive.strip().split()]
+
     # Check for required domains
-    assert "https://fonts.googleapis.com" in csp, "Google Fonts (style) missing"
-    assert "https://cdn.jsdelivr.net" in csp, "JSDelivr (script/style) missing"
-    assert "https://fastapi.tiangolo.com" in csp, "FastAPI Favicon (img) missing"
-    assert "https://fonts.gstatic.com" in csp, "Google Fonts (font) missing"
+    assert "https://fonts.googleapis.com" in csp_tokens, "Google Fonts (style) missing"
+    assert "https://cdn.jsdelivr.net" in csp_tokens, "JSDelivr (script/style) missing"
+    assert "https://fastapi.tiangolo.com" in csp_tokens, "FastAPI Favicon (img) missing"
+    assert "https://fonts.gstatic.com" in csp_tokens, "Google Fonts (font) missing"
 
 
 def test_csp_directives_specifics():
