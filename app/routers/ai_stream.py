@@ -15,6 +15,7 @@ from jose import JWTError, jwt
 from app.config import get_settings
 from app.routers.auth import PASSWORD_ALGORITHM, SECRET_KEY
 from app.utils.metrics import AI_ERRORS_TOTAL, AI_LATENCY_SECONDS, AI_REQUESTS_TOTAL
+from app.utils.security import is_origin_allowed
 from app.utils.user import get_user_by_username
 
 router = APIRouter()
@@ -437,8 +438,7 @@ async def voice_stream(websocket: WebSocket) -> None:
     {"type": "audio", "data": "<base64 PCM audio>"}
     """
     origin = websocket.headers.get("origin")
-    allowed_origins = settings.get_cors_origins_list()
-    if not origin or ("*" not in allowed_origins and origin not in allowed_origins):
+    if not is_origin_allowed(origin, settings.get_cors_origins_list()):
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 

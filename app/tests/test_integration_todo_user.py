@@ -319,7 +319,9 @@ class TestTodoUserIntegration:
         public_endpoints = [
             "/token",
             "/docs",
+            "/docs/oauth2-redirect",
             "/openapi.json",
+            "/redoc",
             "/",
             "/token/refresh",
             "/health",

@@ -43,6 +43,7 @@ from app.utils.jwt import decode_jwt_token
 from app.utils.logging import setup_logging
 from app.utils.metrics import LOGINS_TOTAL, REGISTRATIONS_TOTAL
 from app.utils.rate_limiter import limiter
+from app.utils.security import is_origin_allowed
 from app.utils.telemetry import setup_pymongo_telemetry, setup_telemetry
 from app.utils.validate_env import validate_env
 
@@ -138,13 +139,6 @@ app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(user_router, prefix="/user", tags=["user"])
 
 
-def _is_allowed_origin(origin: str | None) -> bool:
-    if not origin:
-        return False
-    allowed_origins = settings.get_cors_origins_list()
-    return "*" in allowed_origins or origin in allowed_origins
-
-
 @app.middleware("http")
 async def add_user_info_to_request(request: Request, call_next):
     # Allow OPTIONS requests (CORS preflight) to pass through without authentication
@@ -156,6 +150,7 @@ async def add_user_info_to_request(request: Request, call_next):
         "/token",
         "/docs",
         "/openapi.json",
+        "/redoc",
         "/",
         "/token/refresh",
         "/health",
@@ -164,7 +159,7 @@ async def add_user_info_to_request(request: Request, call_next):
         "/api/ai/voice/stream",  # WebSocket authenticates via first message
         "/metrics",
         "/auth/logout",
-    ):
+    ) or request.url.path.startswith("/docs/"):
         response = await call_next(request)
         return response
     try:
@@ -184,7 +179,9 @@ async def add_user_info_to_request(request: Request, call_next):
             if (
                 settings.cookie_samesite.lower() == "none"
                 and request.method in {"POST", "PUT", "PATCH", "DELETE"}
-                and not _is_allowed_origin(request.headers.get("origin"))
+                and not is_origin_allowed(
+                    request.headers.get("origin"), settings.get_cors_origins_list()
+                )
             ):
                 return JSONResponse(
                     content={"detail": "CSRF validation failed"},
@@ -204,34 +201,25 @@ async def add_user_info_to_request(request: Request, call_next):
 @app.post("/auth/logout")
 async def logout(request: Request, response: Response):
     """Logout by clearing auth cookies."""
-    if settings.cookie_samesite.lower() == "none" and not _is_allowed_origin(
-        request.headers.get("origin")
+    if settings.cookie_samesite.lower() == "none" and not is_origin_allowed(
+        request.headers.get("origin"), settings.get_cors_origins_list()
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="CSRF validation failed",
         )
 
-    response.set_cookie(
-        key="access_token",
-        value="",
-        httponly=True,
-        max_age=0,
-        expires=0,
-        samesite=settings.cookie_samesite,
-        secure=settings.cookie_secure,
-        domain=settings.cookie_domain,
-    )
-    response.set_cookie(
-        key="refresh_token",
-        value="",
-        httponly=True,
-        max_age=0,
-        expires=0,
-        samesite=settings.cookie_samesite,
-        secure=settings.cookie_secure,
-        domain=settings.cookie_domain,
-    )
+    for key in ("access_token", "refresh_token"):
+        response.set_cookie(
+            key=key,
+            value="",
+            httponly=True,
+            max_age=0,
+            expires=0,
+            samesite=settings.cookie_samesite,
+            secure=settings.cookie_secure,
+            domain=settings.cookie_domain,
+        )
     return {"message": "Logged out successfully"}
 
 
@@ -316,8 +304,8 @@ def login_for_access_token(
 @app.post("/token/refresh", response_model=Token)
 @limiter.limit(settings.rate_limit_auth)
 def refresh_token(request: Request, response: Response):
-    if settings.cookie_samesite.lower() == "none" and not _is_allowed_origin(
-        request.headers.get("origin")
+    if settings.cookie_samesite.lower() == "none" and not is_origin_allowed(
+        request.headers.get("origin"), settings.get_cors_origins_list()
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
