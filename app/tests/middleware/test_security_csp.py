@@ -50,3 +50,37 @@ def test_csp_directives_specifics():
     assert "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net" in csp
     assert "img-src 'self' data: https://fastapi.tiangolo.com" in csp
     assert "font-src 'self' https://fonts.gstatic.com" in csp
+
+
+def test_csp_configuration_override():
+    app = FastAPI()
+    app.add_middleware(SecurityHeadersMiddleware)
+
+    @app.get("/")
+    def read_root():
+        return {"msg": "ok"}
+
+    # We need to patch where it is used in the middleware
+    from unittest.mock import patch
+
+    from app.config import Settings
+
+    # Create a mock settings object with custom values
+    mock_settings = Settings()
+    mock_settings.csp_img_src = "https://img.example.com"
+    mock_settings.csp_style_src = "https://style.example.com"
+    mock_settings.csp_script_src = "https://script.example.com"
+    mock_settings.csp_font_src = "https://font.example.com"
+
+    with patch("app.middleware.security.get_settings", return_value=mock_settings):
+        client = TestClient(app)
+        response = client.get("/")
+
+        assert response.status_code == 200
+        csp = response.headers["Content-Security-Policy"]
+
+        # Verify overridden values are present
+        assert "img-src 'self' data: https://img.example.com;" in csp
+        assert "style-src 'self' 'unsafe-inline' https://style.example.com;" in csp
+        assert "script-src 'self' 'unsafe-inline' https://script.example.com;" in csp
+        assert "font-src 'self' https://font.example.com;" in csp

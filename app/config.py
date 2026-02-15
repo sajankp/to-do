@@ -72,6 +72,28 @@ class Settings(BaseSettings):
     cors_allow_methods: str = Field("*", validation_alias="CORS_ALLOW_METHODS")
     cors_allow_headers: str = Field("*", validation_alias="CORS_ALLOW_HEADERS")
 
+    # CSP Configuration
+    csp_img_src: str = Field(
+        "https://fastapi.tiangolo.com",
+        validation_alias="CSP_IMG_SRC",
+        description="Content Security Policy img-src directives (space separated)",
+    )
+    csp_style_src: str = Field(
+        "https://fonts.googleapis.com https://cdn.jsdelivr.net/npm/",
+        validation_alias="CSP_STYLE_SRC",
+        description="Content Security Policy style-src directives (space separated)",
+    )
+    csp_script_src: str = Field(
+        "https://cdn.jsdelivr.net/npm/",
+        validation_alias="CSP_SCRIPT_SRC",
+        description="Content Security Policy script-src directives (space separated)",
+    )
+    csp_font_src: str = Field(
+        "https://fonts.gstatic.com",
+        validation_alias="CSP_FONT_SRC",
+        description="Content Security Policy font-src directives (space separated)",
+    )
+
     # AI Configuration (Gemini API Proxy)
     gemini_api_key: str | None = Field(
         None, validation_alias="GEMINI_API_KEY", description="Google Gemini API key"
