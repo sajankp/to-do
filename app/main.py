@@ -138,6 +138,13 @@ app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(user_router, prefix="/user", tags=["user"])
 
 
+def _is_allowed_origin(origin: str | None) -> bool:
+    if not origin:
+        return False
+    allowed_origins = settings.get_cors_origins_list()
+    return "*" in allowed_origins or origin in allowed_origins
+
+
 @app.middleware("http")
 async def add_user_info_to_request(request: Request, call_next):
     # Allow OPTIONS requests (CORS preflight) to pass through without authentication
@@ -173,6 +180,17 @@ async def add_user_info_to_request(request: Request, call_next):
             username, user_id = get_user_info_from_token(token)
             request.state.user_id = PyObjectId(user_id)
             request.state.username = username
+
+            if (
+                settings.cookie_samesite.lower() == "none"
+                and request.method in {"POST", "PUT", "PATCH", "DELETE"}
+                and not _is_allowed_origin(request.headers.get("origin"))
+            ):
+                return JSONResponse(
+                    content={"detail": "CSRF validation failed"},
+                    status_code=status.HTTP_403_FORBIDDEN,
+                )
+
             response = await call_next(request)
             return response
     except HTTPException as e:
@@ -184,8 +202,16 @@ async def add_user_info_to_request(request: Request, call_next):
 
 
 @app.post("/auth/logout")
-async def logout(response: Response):
+async def logout(request: Request, response: Response):
     """Logout by clearing auth cookies."""
+    if settings.cookie_samesite.lower() == "none" and not _is_allowed_origin(
+        request.headers.get("origin")
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="CSRF validation failed",
+        )
+
     response.set_cookie(
         key="access_token",
         value="",
@@ -290,6 +316,14 @@ def login_for_access_token(
 @app.post("/token/refresh", response_model=Token)
 @limiter.limit(settings.rate_limit_auth)
 def refresh_token(request: Request, response: Response):
+    if settings.cookie_samesite.lower() == "none" and not _is_allowed_origin(
+        request.headers.get("origin")
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="CSRF validation failed",
+        )
+
     # Try getting refresh token from cookie first
     refresh_token = request.cookies.get("refresh_token")
     # Fallback to body/query not implemented as per spec we want strict cookie?

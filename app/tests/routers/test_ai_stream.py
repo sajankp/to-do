@@ -299,11 +299,14 @@ class TestGeminiLiveProxy:
 
 
 class TestVoiceStreamEndpointDirect:
+    allowed_headers = {"origin": "http://localhost:3000"}
+
     @pytest.mark.asyncio
     @patch("app.routers.ai_stream.GeminiLiveProxy")
     async def test_endpoint_success_flow(self, mock_proxy_cls):
         mock_ws = AsyncMock(spec=WebSocket)
         mock_ws.cookies = {}
+        mock_ws.headers = self.allowed_headers
         mock_ws.receive_json.return_value = {"type": "auth", "token": "valid"}
         mock_proxy_inst = AsyncMock()
         mock_proxy_inst.authenticate_token.return_value = True
@@ -326,6 +329,7 @@ class TestVoiceStreamEndpointDirect:
     async def test_endpoint_success_flow_cookies(self, mock_proxy_cls):
         mock_ws = AsyncMock(spec=WebSocket)
         mock_ws.cookies = {"access_token": "valid_cookie_token"}
+        mock_ws.headers = self.allowed_headers
 
         mock_proxy_inst = AsyncMock()
         mock_proxy_inst.authenticate_token.return_value = True
@@ -345,6 +349,7 @@ class TestVoiceStreamEndpointDirect:
     @pytest.mark.asyncio
     async def test_endpoint_no_auth(self):
         mock_ws = AsyncMock(spec=WebSocket)
+        mock_ws.headers = self.allowed_headers
         mock_ws.receive_json.return_value = {"type": "other"}
 
         await voice_stream(mock_ws)
@@ -357,6 +362,7 @@ class TestVoiceStreamEndpointDirect:
     @pytest.mark.asyncio
     async def test_endpoint_invalid_token(self):
         mock_ws = AsyncMock(spec=WebSocket)
+        mock_ws.headers = self.allowed_headers
         mock_ws.receive_json.return_value = {"type": "auth", "token": "bad"}
 
         # Mock Proxy to return specific instance that fails auth
@@ -373,6 +379,7 @@ class TestVoiceStreamEndpointDirect:
     @pytest.mark.asyncio
     async def test_endpoint_timeout(self):
         mock_ws = AsyncMock(spec=WebSocket)
+        mock_ws.headers = self.allowed_headers
         mock_ws.receive_json.side_effect = TimeoutError()
 
         await voice_stream(mock_ws)
@@ -383,6 +390,7 @@ class TestVoiceStreamEndpointDirect:
     @pytest.mark.asyncio
     async def test_endpoint_generic_exception(self):
         mock_ws = AsyncMock(spec=WebSocket)
+        mock_ws.headers = self.allowed_headers
         mock_ws.receive_json.side_effect = Exception("Boom")
 
         await voice_stream(mock_ws)
@@ -392,6 +400,7 @@ class TestVoiceStreamEndpointDirect:
     @pytest.mark.asyncio
     async def test_endpoint_disconnect_during_start(self):
         mock_ws = AsyncMock(spec=WebSocket)
+        mock_ws.headers = self.allowed_headers
         mock_ws.receive_json.return_value = {"type": "auth", "token": "valid"}
 
         with patch("app.routers.ai_stream.GeminiLiveProxy") as mock_cls:
@@ -404,3 +413,13 @@ class TestVoiceStreamEndpointDirect:
             await voice_stream(mock_ws)
             # Should log and exit gracefully, not raise
             mock_inst.stop.assert_awaited()
+
+    @pytest.mark.asyncio
+    async def test_endpoint_rejects_missing_origin(self):
+        mock_ws = AsyncMock(spec=WebSocket)
+        mock_ws.headers = {}
+
+        await voice_stream(mock_ws)
+
+        mock_ws.accept.assert_not_awaited()
+        mock_ws.close.assert_awaited_with(code=1008)

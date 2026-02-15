@@ -436,6 +436,12 @@ async def voice_stream(websocket: WebSocket) -> None:
     After authentication, send audio data:
     {"type": "audio", "data": "<base64 PCM audio>"}
     """
+    origin = websocket.headers.get("origin")
+    allowed_origins = settings.get_cors_origins_list()
+    if not origin or ("*" not in allowed_origins and origin not in allowed_origins):
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
     await websocket.accept()
 
     # Authenticate via Cookie (Preferred)
