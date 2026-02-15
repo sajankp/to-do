@@ -5,6 +5,7 @@ from app.config import get_settings
 from app.routers.auth import create_token
 
 settings = get_settings()
+ALLOWED_ORIGIN = "http://localhost:3000"
 
 # Local client fixture removed in favor of conftest.py shared fixture
 
@@ -77,7 +78,7 @@ class TestAuthCookies:
             mock_get_user.return_value = mock_user
 
             # Call refresh endpoint WITHOUT body/query params
-            response = client.post("/token/refresh")
+            response = client.post("/token/refresh", headers={"Origin": ALLOWED_ORIGIN})
 
             assert response.status_code == 200
             assert "access_token" in response.cookies
@@ -90,7 +91,7 @@ class TestAuthCookies:
         client.cookies.set("access_token", "old_token")
         client.cookies.set("refresh_token", "old_refresh")
 
-        response = client.post("/auth/logout")
+        response = client.post("/auth/logout", headers={"Origin": ALLOWED_ORIGIN})
 
         assert response.status_code == 200
 
@@ -117,16 +118,50 @@ class TestAuthCookies:
 
         # Use an origin likely to be in the allowed list (from .env or default)
         # The user's .env has http://localhost:3000.
-        allowed_origin = "http://localhost:3000"
-
         response = client.options(
             "/token",
             headers={
-                "Origin": allowed_origin,
+                "Origin": ALLOWED_ORIGIN,
                 "Access-Control-Request-Method": "POST",
             },
         )
 
         assert response.status_code == 200
-        assert response.headers.get("access-control-allow-origin") == allowed_origin
+        assert response.headers.get("access-control-allow-origin") == ALLOWED_ORIGIN
         assert response.headers.get("access-control-allow-credentials") == "true"
+
+    def test_refresh_rejects_missing_origin_header(self, client):
+        """Refresh endpoint should reject requests without trusted origin."""
+        refresh_token = create_token(
+            data={"sub": "testuser", "sub_id": "507f1f77bcf86cd799439011"},
+            expires_delta=timedelta(minutes=10),
+            sid="test-session-id",
+            token_type="refresh",
+        )
+        client.cookies.set("refresh_token", refresh_token)
+
+        with patch("app.main.get_user_by_username") as mock_get_user:
+            mock_user = Mock()
+            mock_user.username = "testuser"
+            mock_user.disabled = False
+            mock_get_user.return_value = mock_user
+
+            response = client.post("/token/refresh")
+
+        assert response.status_code == 403
+        assert response.json()["detail"] == "CSRF validation failed"
+
+    def test_protected_post_rejects_missing_origin(self, client):
+        """Authenticated unsafe requests must include a trusted Origin header."""
+        access_token = create_token(
+            data={"sub": "testuser", "sub_id": "507f1f77bcf86cd799439011"},
+            expires_delta=timedelta(minutes=10),
+            sid="test-session-id",
+            token_type="access",
+        )
+        client.cookies.set("access_token", access_token)
+
+        response = client.post("/todo/", json={})
+
+        assert response.status_code == 403
+        assert response.json()["detail"] == "CSRF validation failed"

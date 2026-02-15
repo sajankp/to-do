@@ -33,6 +33,7 @@ class TestTodoUserIntegration:
         request = Mock(spec=Request)
         request.app = mock_app
         request.url.path = "/todo/"
+        request.method = "GET"
         request.headers = {}
         request.cookies = {"access_token": "valid_token"}
         request.state = Mock()
@@ -102,6 +103,41 @@ class TestTodoUserIntegration:
         # Verify 401 response
         assert response.status_code == 401
         assert "Invalid token" in str(response.body)
+
+    @patch("app.main.get_user_info_from_token")
+    @pytest.mark.asyncio
+    async def test_middleware_rejects_unsafe_request_without_origin(
+        self, mock_get_user_info, mock_request
+    ):
+        """CSRF protection should block authenticated unsafe methods without Origin."""
+        mock_get_user_info.return_value = ("testuser", "507f1f77bcf86cd799439011")
+        mock_request.method = "POST"
+        mock_request.headers = {}
+
+        async def mock_call_next(request):
+            return Mock(status_code=200)
+
+        response = await add_user_info_to_request(mock_request, mock_call_next)
+
+        assert response.status_code == 403
+        assert "CSRF validation failed" in str(response.body)
+
+    @patch("app.main.get_user_info_from_token")
+    @pytest.mark.asyncio
+    async def test_middleware_allows_unsafe_request_with_trusted_origin(
+        self, mock_get_user_info, mock_request
+    ):
+        """CSRF protection should allow trusted browser origins."""
+        mock_get_user_info.return_value = ("testuser", "507f1f77bcf86cd799439011")
+        mock_request.method = "POST"
+        mock_request.headers = {"origin": "http://localhost:3000"}
+
+        async def mock_call_next(request):
+            return Mock(status_code=200)
+
+        response = await add_user_info_to_request(mock_request, mock_call_next)
+
+        assert response.status_code == 200
 
     def test_todo_creation_with_user_association(self, mock_request):
         """Test complete todo creation flow with user association"""
@@ -283,7 +319,9 @@ class TestTodoUserIntegration:
         public_endpoints = [
             "/token",
             "/docs",
+            "/docs/oauth2-redirect",
             "/openapi.json",
+            "/redoc",
             "/",
             "/token/refresh",
             "/health",

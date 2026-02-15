@@ -43,6 +43,7 @@ from app.utils.jwt import decode_jwt_token
 from app.utils.logging import setup_logging
 from app.utils.metrics import LOGINS_TOTAL, REGISTRATIONS_TOTAL
 from app.utils.rate_limiter import limiter
+from app.utils.security import is_origin_allowed
 from app.utils.telemetry import setup_pymongo_telemetry, setup_telemetry
 from app.utils.validate_env import validate_env
 
@@ -149,6 +150,7 @@ async def add_user_info_to_request(request: Request, call_next):
         "/token",
         "/docs",
         "/openapi.json",
+        "/redoc",
         "/",
         "/token/refresh",
         "/health",
@@ -157,7 +159,7 @@ async def add_user_info_to_request(request: Request, call_next):
         "/api/ai/voice/stream",  # WebSocket authenticates via first message
         "/metrics",
         "/auth/logout",
-    ):
+    ) or request.url.path.startswith("/docs/"):
         response = await call_next(request)
         return response
     try:
@@ -173,6 +175,19 @@ async def add_user_info_to_request(request: Request, call_next):
             username, user_id = get_user_info_from_token(token)
             request.state.user_id = PyObjectId(user_id)
             request.state.username = username
+
+            if (
+                settings.cookie_samesite.lower() == "none"
+                and request.method in {"POST", "PUT", "PATCH", "DELETE"}
+                and not is_origin_allowed(
+                    request.headers.get("origin"), settings.get_cors_origins_list()
+                )
+            ):
+                return JSONResponse(
+                    content={"detail": "CSRF validation failed"},
+                    status_code=status.HTTP_403_FORBIDDEN,
+                )
+
             response = await call_next(request)
             return response
     except HTTPException as e:
@@ -184,28 +199,27 @@ async def add_user_info_to_request(request: Request, call_next):
 
 
 @app.post("/auth/logout")
-async def logout(response: Response):
+async def logout(request: Request, response: Response):
     """Logout by clearing auth cookies."""
-    response.set_cookie(
-        key="access_token",
-        value="",
-        httponly=True,
-        max_age=0,
-        expires=0,
-        samesite=settings.cookie_samesite,
-        secure=settings.cookie_secure,
-        domain=settings.cookie_domain,
-    )
-    response.set_cookie(
-        key="refresh_token",
-        value="",
-        httponly=True,
-        max_age=0,
-        expires=0,
-        samesite=settings.cookie_samesite,
-        secure=settings.cookie_secure,
-        domain=settings.cookie_domain,
-    )
+    if settings.cookie_samesite.lower() == "none" and not is_origin_allowed(
+        request.headers.get("origin"), settings.get_cors_origins_list()
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="CSRF validation failed",
+        )
+
+    for key in ("access_token", "refresh_token"):
+        response.set_cookie(
+            key=key,
+            value="",
+            httponly=True,
+            max_age=0,
+            expires=0,
+            samesite=settings.cookie_samesite,
+            secure=settings.cookie_secure,
+            domain=settings.cookie_domain,
+        )
     return {"message": "Logged out successfully"}
 
 
@@ -290,6 +304,14 @@ def login_for_access_token(
 @app.post("/token/refresh", response_model=Token)
 @limiter.limit(settings.rate_limit_auth)
 def refresh_token(request: Request, response: Response):
+    if settings.cookie_samesite.lower() == "none" and not is_origin_allowed(
+        request.headers.get("origin"), settings.get_cors_origins_list()
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="CSRF validation failed",
+        )
+
     # Try getting refresh token from cookie first
     refresh_token = request.cookies.get("refresh_token")
     # Fallback to body/query not implemented as per spec we want strict cookie?
