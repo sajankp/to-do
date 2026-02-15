@@ -4,32 +4,6 @@ from fastapi.testclient import TestClient
 from app.middleware.security import SecurityHeadersMiddleware
 
 
-def test_csp_includes_required_domains():
-    app = FastAPI()
-    app.add_middleware(SecurityHeadersMiddleware)
-
-    @app.get("/")
-    def read_root():
-        return {"msg": "ok"}
-
-    client = TestClient(app)
-    response = client.get("/")
-
-    assert response.status_code == 200
-    csp = response.headers["Content-Security-Policy"]
-
-    # Parse CSP into a flat list of tokens to check for exact presence
-    # This avoids "Incomplete URL substring sanitization" alerts from static analysis
-    # "default-src 'self'; img-src ..." -> ["default-src", "'self'", "img-src", ...]
-    csp_tokens = [t.strip() for directive in csp.split(";") for t in directive.strip().split()]
-
-    # Check for required domains
-    assert "https://fonts.googleapis.com" in csp_tokens, "Google Fonts (style) missing"
-    assert "https://cdn.jsdelivr.net/npm/" in csp_tokens, "JSDelivr (script/style) missing"
-    assert "https://fastapi.tiangolo.com" in csp_tokens, "FastAPI Favicon (img) missing"
-    assert "https://fonts.gstatic.com" in csp_tokens, "Google Fonts (font) missing"
-
-
 def test_csp_directives_specifics():
     app = FastAPI()
     app.add_middleware(SecurityHeadersMiddleware)
@@ -40,16 +14,36 @@ def test_csp_directives_specifics():
 
     client = TestClient(app)
     response = client.get("/")
+    assert response.status_code == 200
     csp = response.headers["Content-Security-Policy"]
 
+    # Parse CSP into a dictionary for robust checking
+    # "default-src 'self'; img-src ..." -> {'default-src': {'self'}, 'img-src': ...}
+    directives = {}
+    for part in csp.split(";"):
+        tokens = part.strip().split()
+        if not tokens:
+            continue
+        directive = tokens[0]
+        sources = set(tokens[1:])
+        directives[directive] = sources
+
     # Check that directives are correctly formed
-    assert (
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net"
-        in csp
-    )
-    assert "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net" in csp
-    assert "img-src 'self' data: https://fastapi.tiangolo.com" in csp
-    assert "font-src 'self' https://fonts.gstatic.com" in csp
+    assert "https://fonts.googleapis.com" in directives["style-src"]
+    assert "https://cdn.jsdelivr.net/npm/" in directives["style-src"]
+    assert "'unsafe-inline'" in directives["style-src"]
+    assert "'self'" in directives["style-src"]
+
+    assert "https://cdn.jsdelivr.net/npm/" in directives["script-src"]
+    assert "'unsafe-inline'" in directives["script-src"]
+    assert "'self'" in directives["script-src"]
+
+    assert "https://fastapi.tiangolo.com" in directives["img-src"]
+    assert "data:" in directives["img-src"]
+    assert "'self'" in directives["img-src"]
+
+    assert "https://fonts.gstatic.com" in directives["font-src"]
+    assert "'self'" in directives["font-src"]
 
 
 def test_csp_configuration_override():

@@ -188,25 +188,21 @@ class Settings(BaseSettings):
         """
         raw_list = self._parse_comma_separated_config(self.cors_origins)
         clean_list = []
+        from urllib.parse import urlparse
+
         for origin in raw_list:
             if origin == "*":
                 clean_list.append("*")
                 continue
 
-            # Strip trailing slash
-            cleaned = origin.rstrip("/")
-
-            # If it contains a path after the domain, strip it
-            # e.g. https://site.com/foo -> https://site.com
-            # We look for the third slash (after https://)
-            # Find the start of the path (if any)
-            # Simple heuristic: split by / and take first 3 components (scheme // domain)
-            parts = cleaned.split("/")
-            if len(parts) > 3:
-                cleaned = "/".join(parts[:3])
-
-            clean_list.append(cleaned)
-
+            try:
+                parsed = urlparse(origin)
+                # An origin is scheme + netloc. This robustly strips path, query, etc.
+                if parsed.scheme and parsed.netloc:
+                    clean_list.append(f"{parsed.scheme}://{parsed.netloc}")
+            except ValueError:
+                # Ignore malformed origins. Consider logging a warning.
+                pass
         return clean_list
 
     def get_cors_methods_list(self) -> list[str]:

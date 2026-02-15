@@ -56,6 +56,21 @@ class TestCORSConfiguration:
             assert len(origins) == 2
             assert "" not in origins
 
+    def test_cors_origins_complex_parsing(self):
+        """Test that URL paths and queries are stripped correctly."""
+        test_origins = (
+            "https://site.com/path, "
+            "http://other.org:8080/foo?query=1, "
+            "https://sub.domain.net/#fragment"
+        )
+        with patch.dict(os.environ, {"CORS_ORIGINS": test_origins}):
+            settings = Settings()
+            origins = settings.get_cors_origins_list()
+            assert len(origins) == 3
+            assert "https://site.com" in origins
+            assert "http://other.org:8080" in origins
+            assert "https://sub.domain.net" in origins
+
     def test_cors_methods_wildcard(self):
         """Test CORS methods with wildcard configuration."""
         with patch.dict(os.environ, {"CORS_ALLOW_METHODS": "*"}):
