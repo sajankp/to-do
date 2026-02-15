@@ -6,11 +6,12 @@ from bson import ObjectId
 from fastapi import HTTPException, Request
 
 from app.models.base import PyObjectId
-from app.models.todo import CreateTodo, PriorityEnum, TodoResponse
-from app.routers.todo import create_todo, delete_todo, get_todo, get_todo_list
+from app.models.todo import CreateTodo, PriorityEnum, TodoResponse, TodoUpdate
+from app.routers.todo import create_todo, delete_todo, get_todo, get_todo_list, update_todo
 from app.utils.constants import (
     FAILED_CREATE_TODO,
     FAILED_DELETE_TODO,
+    NO_CHANGES,
     TODO_DELETED_SUCCESSFULLY,
     TODO_NOT_FOUND,
 )
@@ -511,3 +512,87 @@ class TestTodoRouter:
         # Verify it's a 500 error
         assert exc_info.value.status_code == 500
         assert exc_info.value.detail == FAILED_DELETE_TODO
+
+    def test_update_todo_success(self):
+        """Test successful todo update with user-scoped query."""
+        request = Mock(spec=Request)
+        todo_id = PyObjectId("507f1f77bcf86cd799439012")
+        user_id = PyObjectId("507f1f77bcf86cd799439011")
+        request.state.user_id = user_id
+
+        now = datetime.now(UTC)
+        existing_todo = {
+            "_id": todo_id,
+            "title": "Original",
+            "description": "Original description",
+            "due_date": now + timedelta(seconds=60),
+            "priority": "medium",
+            "user_id": user_id,
+            "created_at": now,
+            "updated_at": now,
+        }
+        updated_todo = existing_todo.copy()
+        updated_todo["title"] = "Updated"
+        updated_todo["updatedAt"] = now + timedelta(seconds=30)
+
+        mock_collection = Mock()
+        mock_collection.find_one.side_effect = [existing_todo, updated_todo]
+        mock_result = Mock()
+        mock_result.modified_count = 1
+        mock_collection.update_one.return_value = mock_result
+        request.app.todo = mock_collection
+
+        result = update_todo(todo_id, TodoUpdate(title="Updated"), request)
+
+        assert result.title == "Updated"
+        first_find_query = mock_collection.find_one.call_args_list[0].args[0]
+        second_find_query = mock_collection.find_one.call_args_list[1].args[0]
+        assert first_find_query == {"_id": todo_id, "user_id": user_id}
+        assert second_find_query == {"_id": todo_id, "user_id": user_id}
+        update_filter, update_doc = mock_collection.update_one.call_args.args
+        assert update_filter == {"_id": todo_id, "user_id": user_id}
+        assert update_doc["$set"]["title"] == "Updated"
+        assert "updatedAt" in update_doc["$set"]
+
+    def test_update_todo_not_found(self):
+        """Test update returns 404 when todo does not exist for the user."""
+        request = Mock(spec=Request)
+        todo_id = PyObjectId("507f1f77bcf86cd799439012")
+        request.state.user_id = PyObjectId("507f1f77bcf86cd799439011")
+
+        mock_collection = Mock()
+        mock_collection.find_one.return_value = None
+        request.app.todo = mock_collection
+
+        with pytest.raises(HTTPException) as exc_info:
+            update_todo(todo_id, TodoUpdate(title="Updated"), request)
+
+        assert exc_info.value.status_code == 404
+        assert exc_info.value.detail == TODO_NOT_FOUND
+
+    def test_update_todo_no_changes(self):
+        """Test update rejects empty PATCH payload."""
+        request = Mock(spec=Request)
+        todo_id = PyObjectId("507f1f77bcf86cd799439012")
+        user_id = PyObjectId("507f1f77bcf86cd799439011")
+        request.state.user_id = user_id
+
+        now = datetime.now(UTC)
+        mock_collection = Mock()
+        mock_collection.find_one.return_value = {
+            "_id": todo_id,
+            "title": "Original",
+            "description": "Original description",
+            "due_date": now + timedelta(seconds=60),
+            "priority": "medium",
+            "user_id": user_id,
+            "created_at": now,
+            "updated_at": now,
+        }
+        request.app.todo = mock_collection
+
+        with pytest.raises(HTTPException) as exc_info:
+            update_todo(todo_id, TodoUpdate(), request)
+
+        assert exc_info.value.status_code == 400
+        assert exc_info.value.detail == NO_CHANGES

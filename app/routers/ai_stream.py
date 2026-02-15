@@ -15,6 +15,7 @@ from jose import JWTError, jwt
 from app.config import get_settings
 from app.routers.auth import PASSWORD_ALGORITHM, SECRET_KEY
 from app.utils.metrics import AI_ERRORS_TOTAL, AI_LATENCY_SECONDS, AI_REQUESTS_TOTAL
+from app.utils.security import is_origin_allowed
 from app.utils.user import get_user_by_username
 
 router = APIRouter()
@@ -436,32 +437,52 @@ async def voice_stream(websocket: WebSocket) -> None:
     After authentication, send audio data:
     {"type": "audio", "data": "<base64 PCM audio>"}
     """
+    origin = websocket.headers.get("origin")
+    if not is_origin_allowed(origin, settings.get_cors_origins_list()):
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
     await websocket.accept()
 
-    # Wait for auth message
-    try:
-        auth_msg = await asyncio.wait_for(websocket.receive_json(), timeout=10.0)
-    except asyncio.TimeoutError:
-        await websocket.send_json({"type": "error", "message": "Authentication timeout"})
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        return
-    except Exception:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        return
+    # Authenticate via Cookie (Preferred)
+    token = websocket.cookies.get("access_token")
+    if token:
+        # Create proxy with empty user initially
+        proxy = GeminiLiveProxy(websocket, "", "")
+        if await proxy.authenticate_token(token):
+            logger.info(
+                f"WebSocket voice stream authenticated via Cookie for user {proxy.username}"
+            )
+            # Skip waiting for auth message if cookie is valid
+            pass
+        else:
+            token = None  # Invalid cookie, fall through to message auth
 
-    if auth_msg.get("type") != "auth" or not auth_msg.get("token"):
-        await websocket.send_json({"type": "error", "message": "First message must be auth"})
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        return
+    if not token:
+        # Wait for auth message (Fallback)
+        try:
+            auth_msg = await asyncio.wait_for(websocket.receive_json(), timeout=10.0)
+        except asyncio.TimeoutError:
+            await websocket.send_json({"type": "error", "message": "Authentication timeout"})
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+        except Exception:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
 
-    # Create proxy and authenticate
-    proxy = GeminiLiveProxy(websocket, "", "")
-    if not await proxy.authenticate_token(auth_msg["token"]):
-        await websocket.send_json({"type": "error", "message": "Invalid token"})
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        return
+        if auth_msg.get("type") != "auth" or not auth_msg.get("token"):
+            await websocket.send_json({"type": "error", "message": "First message must be auth"})
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
 
-    logger.info(f"WebSocket voice stream authenticated for user {proxy.username}")
+        token = auth_msg["token"]
+        proxy = GeminiLiveProxy(websocket, "", "")
+        if not await proxy.authenticate_token(token):
+            await websocket.send_json({"type": "error", "message": "Invalid token"})
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+
+        logger.info(f"WebSocket voice stream authenticated via Message for user {proxy.username}")
 
     try:
         await proxy.start()

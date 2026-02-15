@@ -1,18 +1,16 @@
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import APIRouter, HTTPException, Request
 from jose import JWTError, jwt
 from pwdlib import PasswordHash
 from pwdlib.hashers.argon2 import Argon2Hasher
 from pwdlib.hashers.bcrypt import BcryptHasher
 
 if TYPE_CHECKING:
-    from pymongo import MongoClient
+    pass
 
 from app.config import get_settings
-from app.database.dependencies import get_mongodb_client
 from app.models.user import UserInDB
 from app.utils.constants import INVALID_TOKEN
 from app.utils.user import get_user_by_username
@@ -23,7 +21,7 @@ settings = get_settings()
 SECRET_KEY = settings.secret_key
 PASSWORD_ALGORITHM = settings.password_algorithm
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+# oauth2_scheme removed in favor of strict cookie middleware
 # Argon2id primary (first in list), bcrypt for legacy verification
 pwd_hash = PasswordHash([Argon2Hasher(), BcryptHasher()])
 
@@ -47,7 +45,12 @@ def verify_password(plain_password, hashed_password):
     return pwd_hash.verify_and_update(plain_password, hashed_password)
 
 
-def create_token(data: dict, expires_delta: timedelta | None = None, sid: str | None = None):
+def create_token(
+    data: dict,
+    expires_delta: timedelta | None = None,
+    sid: str | None = None,
+    token_type: str | None = None,
+):
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(UTC) + expires_delta
@@ -57,6 +60,8 @@ def create_token(data: dict, expires_delta: timedelta | None = None, sid: str | 
     # Add Session ID (sid) to the token claims
     if sid:
         to_encode.update({"sid": sid})
+    if token_type:
+        to_encode.update({"token_type": token_type})
 
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=PASSWORD_ALGORITHM)
@@ -81,37 +86,45 @@ def authenticate_user(username: str, password: str, client):
     return user, new_hash
 
 
-def get_current_active_user(
-    token: str = Depends(oauth2_scheme),
-    client: "MongoClient" = Depends(get_mongodb_client),
-) -> UserInDB:
-    credentials_exception = HTTPException(
-        status_code=401,
-        detail=INVALID_TOKEN,
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-    except JWTError as e:
-        raise credentials_exception from e
-    user = get_user_by_username(username, client)
+def get_authenticated_user(request: Request) -> UserInDB:
+    """
+    Dependency that retrieves the authenticated user from the request state.
+    This assumes that the `add_user_info_to_request` middleware has already
+    validated the token and populated `request.state`.
+    """
+    if not hasattr(request.state, "user_id") or not request.state.user_id:
+        # Should be caught by middleware, but doubly safe
+        raise HTTPException(
+            status_code=401,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # We could return just the ID, or fetch the full user if needed.
+    # To match previous behavior and ensure user exists in DB at this moment:
+    client = request.app.mongodb_client
+    user = get_user_by_username(request.state.username, client)
     if not user:
-        raise credentials_exception
+        raise HTTPException(
+            status_code=401,
+            detail="User not found",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     return user
 
 
-def get_user_info_from_token(authorization: str = Depends(oauth2_scheme)) -> (str, str):
+def get_user_info_from_token(token: str, expected_type: str = "access") -> (str, str):
     credentials_exception = HTTPException(
         status_code=401,
         detail=INVALID_TOKEN,
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        token = authorization.split(" ")[1] if authorization.startswith("Bearer") else authorization
+        # token = authorization.split(" ")[1] if authorization.startswith("Bearer") else authorization
         payload = jwt.decode(token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
+        token_type: str | None = payload.get("token_type")
+        if token_type != expected_type:
+            raise credentials_exception
         username: str = payload.get("sub")
         user_id: str = payload.get("sub_id")
         if None in (username, user_id):

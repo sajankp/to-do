@@ -2,7 +2,7 @@ from unittest.mock import Mock, patch
 
 from opentelemetry import trace
 
-from app.utils.telemetry import setup_telemetry
+from app.utils.telemetry import add_trace_context, setup_telemetry
 
 
 class TestTelemetry:
@@ -41,7 +41,6 @@ class TestTelemetry:
     def test_trace_context_injected_in_logs(self):
         """Test that trace ID and span ID are injected into log processor"""
         # This tests the custom log processor logic
-        from app.utils.telemetry import add_trace_context
 
         # Mock current span
         mock_span = Mock()
@@ -64,7 +63,6 @@ class TestTelemetry:
 
     def test_trace_context_missing_when_no_span(self):
         """Test seamless handling when no active span exists"""
-        from app.utils.telemetry import add_trace_context
 
         # Use INVALID_SPAN_CONTEXT which acts like a no-op context
         with patch(

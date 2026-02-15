@@ -1,10 +1,9 @@
 from datetime import UTC, datetime
 
-from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.security import OAuth2PasswordBearer
 
 from app.models.todo import CreateTodo, PyObjectId, TodoInDB, TodoResponse, TodoUpdate
+from app.routers.auth import get_authenticated_user
 from app.utils.constants import (
     FAILED_CREATE_TODO,
     FAILED_DELETE_TODO,
@@ -18,8 +17,7 @@ from app.utils.metrics import (
     TODOS_DELETED_TOTAL,
 )
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-router = APIRouter(dependencies=[Depends(oauth2_scheme)])
+router = APIRouter(dependencies=[Depends(get_authenticated_user)])
 
 
 @router.get("/", response_model=list[TodoResponse])
@@ -61,20 +59,14 @@ def create_todo(request: Request, todo: CreateTodo):
 
 @router.patch("/{todo_id}", response_model=TodoResponse)
 def update_todo(
-    todo_id: str,
+    todo_id: PyObjectId,
     todo_update: TodoUpdate,
     request: Request,
 ):
-    existing_todo = request.app.todo.find_one({"_id": ObjectId(todo_id)})
-    user_id = request.state.user_id
+    user_id: PyObjectId = request.state.user_id
+    existing_todo = request.app.todo.find_one({"_id": todo_id, "user_id": user_id})
     if not existing_todo:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=TODO_NOT_FOUND)
-
-    if str(existing_todo.get("user_id")) != str(user_id):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to update this todo",
-        )
 
     update_data = todo_update.model_dump(exclude_unset=True)
 
@@ -83,7 +75,9 @@ def update_todo(
 
     update_data["updatedAt"] = datetime.now(UTC)
 
-    result = request.app.todo.update_one({"_id": ObjectId(todo_id)}, {"$set": update_data})
+    result = request.app.todo.update_one(
+        {"_id": todo_id, "user_id": user_id}, {"$set": update_data}
+    )
 
     if result.modified_count == 0:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=NO_CHANGES)
@@ -92,7 +86,7 @@ def update_todo(
     if update_data.get("completed") is True and not existing_todo.get("completed"):
         TODOS_COMPLETED_TOTAL.inc()
 
-    updated_todo = request.app.todo.find_one({"_id": ObjectId(todo_id)})
+    updated_todo = request.app.todo.find_one({"_id": todo_id, "user_id": user_id})
     todo_db = TodoInDB(**updated_todo)
 
     return TodoResponse.from_db(todo_db)

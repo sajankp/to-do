@@ -8,11 +8,12 @@ from unittest.mock import Mock, patch
 
 import pytest
 from bson import ObjectId
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 
 from app.main import add_user_info_to_request
 from app.models.base import PyObjectId
-from app.models.todo import PriorityEnum
+from app.models.todo import CreateTodo, PriorityEnum
+from app.routers.todo import create_todo, get_todo_list
 
 
 class TestTodoUserIntegration:
@@ -32,7 +33,9 @@ class TestTodoUserIntegration:
         request = Mock(spec=Request)
         request.app = mock_app
         request.url.path = "/todo/"
-        request.headers = {"Authorization": "Bearer valid_token"}
+        request.method = "GET"
+        request.headers = {}
+        request.cookies = {"access_token": "valid_token"}
         request.state = Mock()
         return request
 
@@ -60,7 +63,7 @@ class TestTodoUserIntegration:
 
         # Verify the middleware processed correctly
         assert response.status_code == 200
-        mock_get_user_info.assert_called_once_with("Bearer valid_token")
+        mock_get_user_info.assert_called_once_with("valid_token")
 
     @patch("app.main.get_user_info_from_token")
     @pytest.mark.asyncio
@@ -70,6 +73,7 @@ class TestTodoUserIntegration:
         request = Mock(spec=Request)
         request.url.path = "/todo/"
         request.headers = {}
+        request.cookies = {}  # Fix: Ensure cookies is a dict-like object, not a Mock
 
         async def mock_call_next(request):
             return Mock(status_code=200)
@@ -86,7 +90,6 @@ class TestTodoUserIntegration:
     @pytest.mark.asyncio
     async def test_middleware_handles_invalid_token(self, mock_get_user_info, mock_request):
         """Test that middleware returns 401 when token is invalid"""
-        from fastapi import HTTPException
 
         # Mock token validation to raise HTTPException
         mock_get_user_info.side_effect = HTTPException(status_code=401, detail="Invalid token")
@@ -101,10 +104,43 @@ class TestTodoUserIntegration:
         assert response.status_code == 401
         assert "Invalid token" in str(response.body)
 
+    @patch("app.main.get_user_info_from_token")
+    @pytest.mark.asyncio
+    async def test_middleware_rejects_unsafe_request_without_origin(
+        self, mock_get_user_info, mock_request
+    ):
+        """CSRF protection should block authenticated unsafe methods without Origin."""
+        mock_get_user_info.return_value = ("testuser", "507f1f77bcf86cd799439011")
+        mock_request.method = "POST"
+        mock_request.headers = {}
+
+        async def mock_call_next(request):
+            return Mock(status_code=200)
+
+        response = await add_user_info_to_request(mock_request, mock_call_next)
+
+        assert response.status_code == 403
+        assert "CSRF validation failed" in str(response.body)
+
+    @patch("app.main.get_user_info_from_token")
+    @pytest.mark.asyncio
+    async def test_middleware_allows_unsafe_request_with_trusted_origin(
+        self, mock_get_user_info, mock_request
+    ):
+        """CSRF protection should allow trusted browser origins."""
+        mock_get_user_info.return_value = ("testuser", "507f1f77bcf86cd799439011")
+        mock_request.method = "POST"
+        mock_request.headers = {"origin": "http://localhost:3000"}
+
+        async def mock_call_next(request):
+            return Mock(status_code=200)
+
+        response = await add_user_info_to_request(mock_request, mock_call_next)
+
+        assert response.status_code == 200
+
     def test_todo_creation_with_user_association(self, mock_request):
         """Test complete todo creation flow with user association"""
-        from app.models.todo import CreateTodo
-        from app.routers.todo import create_todo
 
         # Set up request state (simulating middleware)
         user_id = PyObjectId("507f1f77bcf86cd799439011")
@@ -139,7 +175,6 @@ class TestTodoUserIntegration:
 
     def test_todo_listing_with_user_filtering(self, mock_request):
         """Test complete todo listing flow with user filtering"""
-        from app.routers.todo import get_todo_list
 
         # Set up request state (simulating middleware)
         user_id = PyObjectId("507f1f77bcf86cd799439011")
@@ -185,8 +220,6 @@ class TestTodoUserIntegration:
 
     def test_complete_todo_workflow(self, mock_request):
         """Test complete workflow: create todo, then list todos"""
-        from app.models.todo import CreateTodo
-        from app.routers.todo import create_todo, get_todo_list
 
         # Set up request state (simulating middleware)
         user_id = PyObjectId("507f1f77bcf86cd799439011")
@@ -242,7 +275,6 @@ class TestTodoUserIntegration:
 
     def test_user_isolation(self, mock_request):
         """Test that users can only see their own todos"""
-        from app.routers.todo import get_todo_list
 
         # Set up request state for user 1
         user1_id = PyObjectId("507f1f77bcf86cd799439011")
@@ -287,7 +319,9 @@ class TestTodoUserIntegration:
         public_endpoints = [
             "/token",
             "/docs",
+            "/docs/oauth2-redirect",
             "/openapi.json",
+            "/redoc",
             "/",
             "/token/refresh",
             "/health",

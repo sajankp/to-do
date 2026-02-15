@@ -9,7 +9,7 @@ omit =
     app/tests/*
 parallel = true
 source =
-    tests
+    app
 
 
 

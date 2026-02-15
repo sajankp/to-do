@@ -1,3 +1,5 @@
+import json
+import logging
 import uuid
 
 import pytest
@@ -6,8 +8,11 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from structlog.testing import capture_logs
 
+import app.utils.logging as logging_utils
+from app.config import get_settings
 from app.middleware.logging import StructlogMiddleware
 from app.routers.auth import create_token
+from app.utils.logging import setup_logging
 
 # Setup minimal app for testing middleware
 app = FastAPI()
@@ -72,9 +77,6 @@ def test_logging_output_format(capsys, monkeypatch):
     Integration test to verify that logs are actually output as valid JSON
     and not double-encoded JSON strings (e.g. "{\"event\": ...}").
     """
-    import app.utils.logging as logging_utils
-    from app.config import get_settings
-    from app.utils.logging import setup_logging
 
     # Force production mode by replacing the settings object in the module
     # We must construct a settings object that has environment="production"
@@ -97,7 +99,6 @@ def test_logging_output_format(capsys, monkeypatch):
     log_output = captured.out or captured.err
 
     # Assertions
-    import json
 
     try:
         data = json.loads(log_output)
@@ -130,11 +131,6 @@ def test_log_level_applied_to_root_logger(monkeypatch, level_str):
     """
     Verify that the LOG_LEVEL environment variable controls the actual logging level.
     """
-    import logging
-
-    import app.utils.logging as logging_utils
-    from app.config import get_settings
-    from app.utils.logging import setup_logging
 
     # Set LOG_LEVEL
     monkeypatch.setenv("LOG_LEVEL", level_str)

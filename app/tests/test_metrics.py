@@ -1,9 +1,10 @@
+from unittest.mock import Mock
+
 import pytest
-from fastapi.testclient import TestClient
 
 from app.main import app, settings
-
-client = TestClient(app)
+from app.models.user import UserInDB
+from app.utils.metrics import LOGINS_TOTAL
 
 
 @pytest.fixture
@@ -15,14 +16,14 @@ def enable_dev_mode():
     settings.metrics_dev_mode = original_val
 
 
-def test_metrics_endpoint_exists(enable_dev_mode):
+def test_metrics_endpoint_exists(client, enable_dev_mode):
     """Verify that the /metrics endpoint is exposed (in dev mode)."""
     response = client.get("/metrics")
     assert response.status_code == 200
     assert "text/plain" in response.headers["content-type"]
 
 
-def test_metrics_content_format(enable_dev_mode):
+def test_metrics_content_format(client, enable_dev_mode):
     """Verify that the /metrics endpoint returns Prometheus formatted metrics."""
     response = client.get("/health")  # Generate some traffic
     assert response.status_code == 200
@@ -36,7 +37,7 @@ def test_metrics_content_format(enable_dev_mode):
     assert "http_request_duration_seconds" in content
 
 
-def test_custom_metrics_registered(enable_dev_mode):
+def test_custom_metrics_registered(client, enable_dev_mode):
     """Verify that custom metrics are registered and appear in the output."""
     # We expect these metrics to exist even if 0
     response = client.get("/metrics")
@@ -49,12 +50,8 @@ def test_custom_metrics_registered(enable_dev_mode):
     assert "fasttodo_ai_requests_total" in content
 
 
-def test_login_metric_increment(monkeypatch):
+def test_login_metric_increment(client, monkeypatch):
     """Verify fasttodo_logins_total increments on login success and failure."""
-    from unittest.mock import Mock
-
-    from app.models.user import UserInDB
-    from app.utils.metrics import LOGINS_TOTAL
 
     # --- Test successful login ---
     initial_count_success = LOGINS_TOTAL.labels(status="success")._value.get()
@@ -74,7 +71,6 @@ def test_login_metric_increment(monkeypatch):
     monkeypatch.setattr("app.main.authenticate_user", mock_auth_success)
 
     # Mock the database update_one call to avoid DB dependency
-    from app.main import app
 
     mock_update_one = Mock(return_value=None)
 
@@ -113,7 +109,7 @@ def test_login_metric_increment(monkeypatch):
     assert new_count_failed == initial_count_failed + 1
 
 
-def test_metrics_auth():
+def test_metrics_auth(client):
     """Verify metrics authentication logic."""
     # 1. Default state (No token, Dev mode False) -> SHOULD FAIL
     original_dev_mode = settings.metrics_dev_mode

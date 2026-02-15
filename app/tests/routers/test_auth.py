@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from fastapi import HTTPException
@@ -12,21 +12,13 @@ from app.routers.auth import (
     authenticate_user,
     create_jwt_token,
     create_token,
-    get_current_active_user,
+    get_authenticated_user,
     get_user_info_from_token,
     hash_password,
     verify_password,
 )
 from app.utils.constants import INVALID_TOKEN
 from app.utils.jwt import decode_jwt_token
-
-
-@pytest.fixture
-def mock_mongo_client():
-    """Fixture for mock MongoDB client used across auth tests."""
-    from unittest.mock import Mock
-
-    return Mock()
 
 
 class TestDecodeJWTToken:
@@ -48,14 +40,16 @@ class TestDecodeJWTToken:
     def test_valid_token_returns_user_info(self, mock_decode):
         test_username = "test_user"
         test_user_id = "123"
-        test_token = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9"
-        mock_decode.return_value = {"sub": test_username, "sub_id": test_user_id}
+        test_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9"
+        mock_decode.return_value = {
+            "sub": test_username,
+            "sub_id": test_user_id,
+            "token_type": "access",
+        }
 
         username, user_id = get_user_info_from_token(test_token)
 
-        mock_decode.assert_called_once_with(
-            test_token.split(" ")[1], SECRET_KEY, algorithms=[PASSWORD_ALGORITHM]
-        )
+        mock_decode.assert_called_once_with(test_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
         assert username == test_username, "Username does not match expected value."
         assert user_id == test_user_id, "User ID does not match expected value."
 
@@ -89,6 +83,7 @@ class TestTokenExceptions:
         test_token = create_token(
             data={"sub": "test", "sub_id": "123"},
             expires_delta=timedelta(minutes=-30),
+            token_type="access",
         )
 
         with pytest.raises(HTTPException) as exc_info:
@@ -148,6 +143,16 @@ def test_create_token():
     assert payload["exp"] > datetime.now().timestamp()
 
 
+def test_create_token_with_token_type():
+    data = {"sub": "test_user"}
+    expires_delta = timedelta(minutes=30)
+    token = create_token(data, expires_delta, token_type="refresh")
+
+    payload = jwt.decode(token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
+    assert payload["sub"] == "test_user"
+    assert payload["token_type"] == "refresh"
+
+
 def test_create_token_without_expiry():
     data = {"sub": "test_user"}
     token = create_token(data)
@@ -203,7 +208,7 @@ def test_authenticate_user(mock_verify_password, mock_get_user, mock_mongo_clien
     mock_get_user.assert_called_once_with("test_user", mock_mongo_client)
     mock_verify_password.assert_called_once_with("plain_password", "hashed_password")
     assert isinstance(user, UserInDB)
-    assert user.username == "test_user", "Expected username to match 'test_user'."
+    assert user.username == "test_user"
     assert new_hash is None
 
 
@@ -218,84 +223,64 @@ def test_authenticate_user_invalid(mock_get_user, mock_mongo_client):
     assert new_hash is None
 
 
-class TestGetCurrentActiveUser:
+class TestGetAuthenticatedUser:
     @patch("app.routers.auth.get_user_by_username")
-    @patch("jose.jwt.decode")
-    def test_valid_token_returns_user(self, mock_decode, mock_get_user, mock_mongo_client):
+    def test_valid_state_returns_user(self, mock_get_user, mock_mongo_client):
+        # Mock Request and State
+        mock_request = Mock()
+        mock_request.state.user_id = "507f1f77bcf86cd799439011"
+        mock_request.state.username = "test_user"
+        mock_request.app.mongodb_client = mock_mongo_client
+
+        # Mock User DB response
         mock_user = UserInDB(
             username="test_user",
             hashed_password="hashed_password",
             email="email@example.com",
         )
         mock_get_user.return_value = mock_user
-        mock_decode.return_value = {"sub": "test_user"}
-        mock_token = "mock.jwt.token"
 
-        user = get_current_active_user(mock_token, mock_mongo_client)
+        user = get_authenticated_user(mock_request)
 
-        mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
         mock_get_user.assert_called_once_with("test_user", mock_mongo_client)
         assert isinstance(user, UserInDB)
         assert user.username == mock_user.username
 
-    @patch("app.routers.auth.get_user_by_username")
-    @patch("jose.jwt.decode")
-    def test_missing_username_raises_exception(self, mock_decode, mock_get_user, mock_mongo_client):
-        mock_decode.return_value = {"sub": None}
-        mock_get_user.return_value = None
-        mock_token = "mock.jwt.token"
-        credentials_exception = HTTPException(
-            status_code=401,
-            detail=INVALID_TOKEN,
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    def test_missing_state_raises_exception(self):
+        # Mock Request with missing state
+        mock_request = Mock()
+        # Ensure 'user_id' attribute raises AttributeError or is falsy
+        del mock_request.state.user_id
+
+        # Alternatively, strictly mock state as an object that doesn't have user_id
+        # But Mock creates attributes on access.
+        # Better:
+        mock_request = Mock()
+        mock_request.state = Mock(spec=[])  # Empty object
 
         with pytest.raises(HTTPException) as exc_info:
-            get_current_active_user(mock_token, mock_mongo_client)
+            get_authenticated_user(mock_request)
 
-        mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
-        assert exc_info.value.status_code == credentials_exception.status_code
-        assert exc_info.value.detail == credentials_exception.detail
-
-    @patch("app.routers.auth.get_user_by_username")
-    @patch("jose.jwt.decode")
-    def test_invalid_token_raises_exception(self, mock_decode, mock_get_user, mock_mongo_client):
-        mock_decode.side_effect = JWTError
-        mock_get_user.return_value = None
-        mock_token = "mock.jwt.token"
-        credentials_exception = HTTPException(
-            status_code=401,
-            detail=INVALID_TOKEN,
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-        with pytest.raises(HTTPException) as exc_info:
-            get_current_active_user(mock_token, mock_mongo_client)
-
-        mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
-        assert exc_info.value.status_code == credentials_exception.status_code
-        assert exc_info.value.detail == credentials_exception.detail
+        assert exc_info.value.status_code == 401
+        assert exc_info.value.detail == "Not authenticated"
 
     @patch("app.routers.auth.get_user_by_username")
-    @patch("jose.jwt.decode")
-    def test_user_not_found_raises_exception(self, mock_decode, mock_get_user, mock_mongo_client):
-        mock_decode.return_value = {"sub": "nonexistent_user"}
+    def test_user_not_found_raises_exception(self, mock_get_user, mock_mongo_client):
+        # Mock Request
+
+        mock_request = Mock()
+        mock_request.state.user_id = "507f1f77bcf86cd799439011"
+        mock_request.state.username = "test_user"
+        mock_request.app.mongodb_client = mock_mongo_client
+
+        # Mock User not found
         mock_get_user.return_value = None
-        mock_token = "mock.jwt.token"
-        credentials_exception = HTTPException(
-            status_code=401,
-            detail=INVALID_TOKEN,
-            headers={"WWW-Authenticate": "Bearer"},
-        )
 
         with pytest.raises(HTTPException) as exc_info:
-            get_current_active_user(mock_token, mock_mongo_client)
+            get_authenticated_user(mock_request)
 
-        mock_get_user.assert_called_once_with("nonexistent_user", mock_mongo_client)
-
-        mock_decode.assert_called_once_with(mock_token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
-        assert exc_info.value.status_code == credentials_exception.status_code
-        assert exc_info.value.detail == credentials_exception.detail
+        assert exc_info.value.status_code == 401
+        assert exc_info.value.detail == "User not found"
 
 
 @patch("app.routers.auth.get_user_by_username")
@@ -315,3 +300,18 @@ def test_authenticate_user_wrong_password(mock_verify_password, mock_get_user, m
     mock_verify_password.assert_called_once_with("wrong_password", "hashed_password")
     assert user is None, "authenticate_user should return None on wrong password"
     assert new_hash is None
+
+
+@patch("jose.jwt.decode")
+def test_get_user_info_from_token_rejects_wrong_token_type(mock_decode):
+    token = "fake.jwt"
+    mock_decode.return_value = {
+        "sub": "test_user",
+        "sub_id": "507f1f77bcf86cd799439011",
+        "token_type": "refresh",
+    }
+
+    with pytest.raises(HTTPException) as exc_info:
+        get_user_info_from_token(token)
+
+    assert exc_info.value.status_code == 401

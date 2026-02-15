@@ -42,6 +42,20 @@ class Settings(BaseSettings):
     def is_production(self) -> bool:
         return self.environment.lower() == "production"
 
+    @property
+    def cookie_secure(self) -> bool:
+        """Required for SameSite=None, even on localhost."""
+        if self.cookie_samesite.lower() == "none":
+            return True
+        return self.is_production
+
+    cookie_samesite: str = Field(
+        default="none", description="SameSite policy. 'none' required for cross-origin cookies."
+    )
+    cookie_domain: str = Field(
+        default="", description="Cookie domain. Empty = backend origin only."
+    )
+
     # Rate Limiting
     rate_limit_enabled: bool = Field(True, validation_alias="RATE_LIMIT_ENABLED")
     rate_limit_default: str = Field("100/minute", validation_alias="RATE_LIMIT_DEFAULT")
@@ -50,9 +64,11 @@ class Settings(BaseSettings):
 
     # CORS Configuration
     cors_origins: str = Field(
-        "*", validation_alias="CORS_ORIGINS", description="Comma-separated list of allowed origins"
+        "https://sajankp.github.io",
+        validation_alias="CORS_ORIGINS",
+        description="Comma-separated list of allowed origins",
     )
-    cors_allow_credentials: bool = Field(False, validation_alias="CORS_ALLOW_CREDENTIALS")
+    cors_allow_credentials: bool = Field(True, validation_alias="CORS_ALLOW_CREDENTIALS")
     cors_allow_methods: str = Field("*", validation_alias="CORS_ALLOW_METHODS")
     cors_allow_headers: str = Field("*", validation_alias="CORS_ALLOW_HEADERS")
 
