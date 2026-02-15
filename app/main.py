@@ -250,12 +250,14 @@ def login_for_access_token(
         data={"sub": user.username, "sub_id": str(user.id)},
         expires_delta=access_token_expires,
         sid=sid,
+        token_type="access",
     )
     refresh_token_expires = timedelta(seconds=settings.refresh_token_expire_seconds)
     refresh_token = create_token(
         data={"sub": user.username, "sub_id": str(user.id)},
         expires_delta=refresh_token_expires,
         sid=sid,
+        token_type="refresh",
     )
     # Set HttpOnly cookies
     response.set_cookie(
@@ -306,6 +308,12 @@ def refresh_token(request: Request, response: Response):
     username = payload.get("sub")
     user_id = payload.get("sub_id")
     sid = payload.get("sid")  # Extract session ID from refresh token
+    token_type = payload.get("token_type")
+
+    if token_type != "refresh":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+        )
 
     if not username or not user_id:
         raise HTTPException(
@@ -322,6 +330,7 @@ def refresh_token(request: Request, response: Response):
         data={"sub": username, "sub_id": user_id},
         expires_delta=access_token_expires,
         sid=sid,  # Propagate session ID to maintain session tracking
+        token_type="access",
     )
 
     # Set new access token cookie

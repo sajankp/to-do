@@ -45,7 +45,12 @@ def verify_password(plain_password, hashed_password):
     return pwd_hash.verify_and_update(plain_password, hashed_password)
 
 
-def create_token(data: dict, expires_delta: timedelta | None = None, sid: str | None = None):
+def create_token(
+    data: dict,
+    expires_delta: timedelta | None = None,
+    sid: str | None = None,
+    token_type: str | None = None,
+):
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(UTC) + expires_delta
@@ -55,6 +60,8 @@ def create_token(data: dict, expires_delta: timedelta | None = None, sid: str | 
     # Add Session ID (sid) to the token claims
     if sid:
         to_encode.update({"sid": sid})
+    if token_type:
+        to_encode.update({"token_type": token_type})
 
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=PASSWORD_ALGORITHM)
@@ -106,7 +113,7 @@ def get_authenticated_user(request: Request) -> UserInDB:
     return user
 
 
-def get_user_info_from_token(token: str) -> (str, str):
+def get_user_info_from_token(token: str, expected_type: str = "access") -> (str, str):
     credentials_exception = HTTPException(
         status_code=401,
         detail=INVALID_TOKEN,
@@ -115,6 +122,9 @@ def get_user_info_from_token(token: str) -> (str, str):
     try:
         # token = authorization.split(" ")[1] if authorization.startswith("Bearer") else authorization
         payload = jwt.decode(token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
+        token_type: str | None = payload.get("token_type")
+        if token_type != expected_type:
+            raise credentials_exception
         username: str = payload.get("sub")
         user_id: str = payload.get("sub_id")
         if None in (username, user_id):

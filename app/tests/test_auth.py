@@ -63,6 +63,7 @@ class TestAuthCookies:
             data={"sub": "testuser", "sub_id": "507f1f77bcf86cd799439011"},
             expires_delta=timedelta(minutes=10),
             sid="test-session-id",
+            token_type="refresh",
         )
 
         # Set cookie in client

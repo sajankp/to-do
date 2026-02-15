@@ -41,7 +41,11 @@ class TestDecodeJWTToken:
         test_username = "test_user"
         test_user_id = "123"
         test_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9"
-        mock_decode.return_value = {"sub": test_username, "sub_id": test_user_id}
+        mock_decode.return_value = {
+            "sub": test_username,
+            "sub_id": test_user_id,
+            "token_type": "access",
+        }
 
         username, user_id = get_user_info_from_token(test_token)
 
@@ -79,6 +83,7 @@ class TestTokenExceptions:
         test_token = create_token(
             data={"sub": "test", "sub_id": "123"},
             expires_delta=timedelta(minutes=-30),
+            token_type="access",
         )
 
         with pytest.raises(HTTPException) as exc_info:
@@ -136,6 +141,16 @@ def test_create_token():
     payload = jwt.decode(token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
     assert payload["sub"] == "test_user"
     assert payload["exp"] > datetime.now().timestamp()
+
+
+def test_create_token_with_token_type():
+    data = {"sub": "test_user"}
+    expires_delta = timedelta(minutes=30)
+    token = create_token(data, expires_delta, token_type="refresh")
+
+    payload = jwt.decode(token, SECRET_KEY, algorithms=[PASSWORD_ALGORITHM])
+    assert payload["sub"] == "test_user"
+    assert payload["token_type"] == "refresh"
 
 
 def test_create_token_without_expiry():
@@ -285,3 +300,18 @@ def test_authenticate_user_wrong_password(mock_verify_password, mock_get_user, m
     mock_verify_password.assert_called_once_with("wrong_password", "hashed_password")
     assert user is None, "authenticate_user should return None on wrong password"
     assert new_hash is None
+
+
+@patch("jose.jwt.decode")
+def test_get_user_info_from_token_rejects_wrong_token_type(mock_decode):
+    token = "fake.jwt"
+    mock_decode.return_value = {
+        "sub": "test_user",
+        "sub_id": "507f1f77bcf86cd799439011",
+        "token_type": "refresh",
+    }
+
+    with pytest.raises(HTTPException) as exc_info:
+        get_user_info_from_token(token)
+
+    assert exc_info.value.status_code == 401
