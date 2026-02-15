@@ -2,9 +2,9 @@ from datetime import UTC, datetime
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.security import OAuth2PasswordBearer
 
 from app.models.todo import CreateTodo, PyObjectId, TodoInDB, TodoResponse, TodoUpdate
+from app.routers.auth import get_authenticated_user
 from app.utils.constants import (
     FAILED_CREATE_TODO,
     FAILED_DELETE_TODO,
@@ -18,8 +18,7 @@ from app.utils.metrics import (
     TODOS_DELETED_TOTAL,
 )
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-router = APIRouter(dependencies=[Depends(oauth2_scheme)])
+router = APIRouter(dependencies=[Depends(get_authenticated_user)])
 
 
 @router.get("/", response_model=list[TodoResponse])

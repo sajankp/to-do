@@ -32,8 +32,6 @@ class TestMongoCollections:
         return get_settings()
 
     def test_returns_collection_object(self, monkeypatch):
-        from app.config import get_settings
-
         get_settings.cache_clear()
 
         settings = self.get_settings_with_env(
@@ -44,8 +42,6 @@ class TestMongoCollections:
         assert isinstance(collection, Collection)
 
     def test_returns_correct_database(self, monkeypatch):
-        from app.config import get_settings
-
         get_settings.cache_clear()
 
         settings = self.get_settings_with_env(
@@ -56,8 +52,6 @@ class TestMongoCollections:
         assert collection.database.name == self.test_database
 
     def test_returns_correct_collection_name(self, monkeypatch):
-        from app.config import get_settings
-
         get_settings.cache_clear()
 
         settings = self.get_settings_with_env(
@@ -69,7 +63,6 @@ class TestMongoCollections:
 
     def test_uses_environment_variables(self, monkeypatch):
         # Clear the lru_cache to ensure monkeypatch takes effect
-        from app.config import get_settings
 
         get_settings.cache_clear()
 

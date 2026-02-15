@@ -40,9 +40,9 @@
 | TD-003 | Security headers middleware (OWASP) | 4 hours | ✅ |
 | TD-004 | Structured logging (structlog + configurable level) | 1 day | ✅ |
 | TD-005 | Monitoring/Observability (OpenTelemetry + Prometheus) | 3-5 days | ✅ |
-| TD-002 | Database indexes | 1 hour | 🔲 |
+| TD-002 | Database indexes | 1 hour | ✅ |
 | TD-012 | Move password to request body | 2 hours | ✅ |
-| TD-013 | Email uniqueness check | 1 hour | 🔲 |
+| TD-013 | Email uniqueness check | 1 hour | ✅ |
 | TD-006 | Gemini API backend proxy | 2 days | ✅ |
 | TD-011 | Frontend token refresh | 1 day | 🔲 |
 

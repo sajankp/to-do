@@ -1,22 +1,20 @@
 from unittest.mock import Mock, patch
 
 import pytest
-from fastapi.testclient import TestClient
 from slowapi import Limiter
 
 from app.config import Settings
 from app.main import app
+from app.routers.auth import get_authenticated_user
 from app.utils.rate_limiter import limiter
 
-client = TestClient(app)
+# client = TestClient(app) removed
 
 
 @pytest.fixture(autouse=True)
 def reset_limiter():
     # Mock app attributes that are usually set in lifespan
-    app.mongodb_client = Mock()
-    app.todo = Mock()
-    app.user = Mock()
+    # app.mongodb_client is already mocked by conftest.py fixture
     app.settings = Mock()
 
     # Reset limiter storage before each test
@@ -45,13 +43,22 @@ def reset_limiter():
     limiter._default_limits = []
 
 
-def test_auth_rate_limiting():
+def test_auth_rate_limiting(client):
     """Test that auth endpoints are rate limited (5/minute)"""
     # Mock authentication to succeed
     with patch("app.main.authenticate_user") as mock_auth:
         mock_user = Mock()
         mock_user.username = "testuser"
         mock_user.id = "507f1f77bcf86cd799439011"
+        # Add fields required by UserInDB if authenticate_user returns a Pydantic model
+        # But wait, authenticate_user returns a UserInDB object usually.
+        # If the code under test uses the UserInDB model, the mock needs to look like one.
+        # However, the error suggests validation of UserInDB.
+        mock_user.email = "test@example.com"
+        mock_user.hashed_password = "hashed"
+        mock_user.disabled = False
+        mock_user.is_verified = True
+
         mock_auth.return_value = (mock_user, None)  # New signature returns tuple
 
         with patch("app.main.create_token") as mock_token:
@@ -76,31 +83,44 @@ def test_auth_rate_limiting():
             assert "Rate limit exceeded" in response.text
 
 
-def test_todo_rate_limiting():
+def test_todo_rate_limiting(client):
     """Test that todo endpoints are rate limited by default"""
 
     # Mock auth middleware
+    # Mock auth middleware and dependency
+
+    # Mock auth middleware (for user info in request state)
     with patch("app.main.get_user_info_from_token") as mock_info:
         mock_info.return_value = ("testuser", "507f1f77bcf86cd799439013")
 
-        # Mock DB find
-        with patch("app.main.app.todo.find") as mock_find:
-            mock_find.return_value.limit.return_value = []
+        # Override the dependency
+        mock_user = Mock()
+        mock_user.id = "507f1f77bcf86cd799439013"
+        mock_user.username = "testuser"
+        app.dependency_overrides[get_authenticated_user] = lambda: mock_user
 
-            # Make request
-            response = client.get("/todo/", headers={"Authorization": "Bearer token"})
-            assert response.status_code == 200
+        try:
+            # Mock DB find
+            with patch("app.main.app.todo.find") as mock_find:
+                mock_find.return_value.limit.return_value = []
 
-            # Verify that the request was counted against the correct user ID
-            storage = limiter.limiter.storage
-            if hasattr(storage, "storage"):
-                # Storage should contain exactly one entry for this user
-                assert (
-                    len(storage.storage) == 1
-                ), "Rate limiter storage should contain exactly one entry"
+                # Make request
+                # Try manual header if cookies arg fails
+                response = client.get("/todo/", headers={"Cookie": "access_token=token"})
+                assert response.status_code == 200
 
-                # Verify the entry corresponds to the correct user ID
-                storage_keys = list(storage.storage.keys())
-                assert (
-                    "507f1f77bcf86cd799439013" in storage_keys[0]
-                ), "Storage key should contain the user ID"
+                # Verify that the request was counted against the correct user ID
+                storage = limiter.limiter.storage
+                if hasattr(storage, "storage"):
+                    # Storage should contain exactly one entry for this user
+                    assert (
+                        len(storage.storage) == 1
+                    ), "Rate limiter storage should contain exactly one entry"
+
+                    # Verify the entry corresponds to the correct user ID
+                    storage_keys = list(storage.storage.keys())
+                    assert (
+                        "507f1f77bcf86cd799439013" in storage_keys[0]
+                    ), "Storage key should contain the user ID"
+        finally:
+            app.dependency_overrides = {}

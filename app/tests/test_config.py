@@ -3,6 +3,8 @@
 import os
 from unittest.mock import patch
 
+import pytest
+
 from app.config import Settings, get_settings
 
 
@@ -122,8 +124,8 @@ class TestCORSConfiguration:
         assert cors_headers_field is not None
 
         # Verify the default values in the model schema
-        assert cors_origins_field.default == "*"
-        assert cors_credentials_field.default is False  # Secure by default
+        assert cors_origins_field.default == "https://sajankp.github.io"
+        assert cors_credentials_field.default is True  # Secure by default
         assert cors_methods_field.default == "*"
         assert cors_headers_field.default == "*"
 
@@ -180,7 +182,6 @@ class TestMongoConfiguration:
 
     def test_neither_uri_nor_fields_raises_error(self):
         """Test that providing neither MONGO_URI nor individual fields raises ValueError."""
-        import pytest
 
         env_override = {
             "MONGO_URI": "",
@@ -196,7 +197,6 @@ class TestMongoConfiguration:
 
     def test_partial_individual_fields_raises_error(self):
         """Test that providing only some individual fields raises ValueError."""
-        import pytest
 
         env_override = {
             "MONGO_URI": "",
@@ -240,7 +240,6 @@ class TestLogLevelConfiguration:
 
     def test_log_level_invalid(self):
         """Test that invalid log levels raise ValidationError."""
-        import pytest
 
         env_override = {"LOG_LEVEL": "INVALID"}
         with (

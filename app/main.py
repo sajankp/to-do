@@ -6,7 +6,7 @@ from datetime import timedelta
 from typing import Annotated
 
 import pymongo.errors
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -156,11 +156,13 @@ async def add_user_info_to_request(request: Request, call_next):
         "/user",
         "/api/ai/voice/stream",  # WebSocket authenticates via first message
         "/metrics",
+        "/auth/logout",
     ):
         response = await call_next(request)
         return response
     try:
-        token = request.headers.get("Authorization")
+        token = request.cookies.get("access_token")
+
         if not token:
             return JSONResponse(
                 content={"detail": MISSING_TOKEN},
@@ -168,7 +170,7 @@ async def add_user_info_to_request(request: Request, call_next):
                 headers={"WWW-Authenticate": "Bearer"},
             )
         else:
-            username, user_id = get_user_info_from_token(request.headers.get("Authorization"))
+            username, user_id = get_user_info_from_token(token)
             request.state.user_id = PyObjectId(user_id)
             request.state.username = username
             response = await call_next(request)
@@ -181,6 +183,32 @@ async def add_user_info_to_request(request: Request, call_next):
         )
 
 
+@app.post("/auth/logout")
+async def logout(response: Response):
+    """Logout by clearing auth cookies."""
+    response.set_cookie(
+        key="access_token",
+        value="",
+        httponly=True,
+        max_age=0,
+        expires=0,
+        samesite=settings.cookie_samesite,
+        secure=settings.cookie_secure,
+        domain=settings.cookie_domain,
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value="",
+        httponly=True,
+        max_age=0,
+        expires=0,
+        samesite=settings.cookie_samesite,
+        secure=settings.cookie_secure,
+        domain=settings.cookie_domain,
+    )
+    return {"message": "Logged out successfully"}
+
+
 @app.get("/")
 def read_root():
     return {"message": "Hello, World!"}
@@ -189,9 +217,8 @@ def read_root():
 @app.post("/token", response_model=Token)
 @limiter.limit(settings.rate_limit_auth)
 def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()], request: Request
-):
-    # Authenticate user
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()], request: Request, response: Response
+):  # Authenticate user
     user, new_hash = authenticate_user(
         form_data.username, form_data.password, request.app.mongodb_client
     )
@@ -230,17 +257,46 @@ def login_for_access_token(
         expires_delta=refresh_token_expires,
         sid=sid,
     )
+    # Set HttpOnly cookies
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        max_age=settings.access_token_expire_seconds,
+        samesite=settings.cookie_samesite,
+        secure=settings.cookie_secure,
+        domain=settings.cookie_domain,
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        max_age=settings.refresh_token_expire_seconds,
+        samesite=settings.cookie_samesite,
+        secure=settings.cookie_secure,
+        domain=settings.cookie_domain,
+    )
+
+    # Return empty tokens in body, as they are now in HttpOnly cookies
     return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
+        "access_token": None,
+        "refresh_token": None,
         "token_type": "bearer",
     }
 
 
 @app.post("/token/refresh", response_model=Token)
 @limiter.limit(settings.rate_limit_auth)
-def refresh_token(refresh_token: str, request: Request):
-    # Decode the refresh token to extract user info and session ID
+def refresh_token(request: Request, response: Response):
+    # Try getting refresh token from cookie first
+    refresh_token = request.cookies.get("refresh_token")
+    # Fallback to body/query not implemented as per spec we want strict cookie?
+    # Spec says: "Read refresh_token from cookie instead of query param"
+
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token missing"
+        )  # Decode the refresh token to extract user info and session ID
     payload = decode_jwt_token(refresh_token)
     if not payload:
         raise HTTPException(
@@ -268,10 +324,21 @@ def refresh_token(refresh_token: str, request: Request):
         sid=sid,  # Propagate session ID to maintain session tracking
     )
 
+    # Set new access token cookie
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        max_age=settings.access_token_expire_seconds,
+        samesite=settings.cookie_samesite,
+        secure=settings.cookie_secure,
+        domain=settings.cookie_domain,
+    )
+
     return {
-        "access_token": access_token,
+        "access_token": None,
         "token_type": "bearer",
-        "refresh_token": refresh_token,
+        "refresh_token": None,
     }
 
 

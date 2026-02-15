@@ -2,6 +2,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from fastapi import WebSocket, WebSocketDisconnect
+from jose import JWTError
 
 from app.routers.ai_stream import GeminiLiveProxy, voice_stream
 
@@ -29,8 +30,6 @@ class TestGeminiLiveProxy:
     @pytest.mark.asyncio
     @patch("app.routers.ai_stream.jwt.decode")
     async def test_authenticate_token_failure(self, mock_info):
-        from jose import JWTError
-
         mock_info.side_effect = JWTError("Invalid token")
         result = await self.proxy.authenticate_token("invalid")
         assert result is False
@@ -304,6 +303,7 @@ class TestVoiceStreamEndpointDirect:
     @patch("app.routers.ai_stream.GeminiLiveProxy")
     async def test_endpoint_success_flow(self, mock_proxy_cls):
         mock_ws = AsyncMock(spec=WebSocket)
+        mock_ws.cookies = {}
         mock_ws.receive_json.return_value = {"type": "auth", "token": "valid"}
         mock_proxy_inst = AsyncMock()
         mock_proxy_inst.authenticate_token.return_value = True
@@ -318,6 +318,27 @@ class TestVoiceStreamEndpointDirect:
         mock_ws.receive_json.assert_awaited()
         mock_proxy_cls.assert_called_with(mock_ws, "", "")
         mock_proxy_inst.authenticate_token.assert_awaited_with("valid")
+        mock_proxy_inst.start.assert_awaited()
+        mock_proxy_inst.stop.assert_awaited()
+
+    @pytest.mark.asyncio
+    @patch("app.routers.ai_stream.GeminiLiveProxy")
+    async def test_endpoint_success_flow_cookies(self, mock_proxy_cls):
+        mock_ws = AsyncMock(spec=WebSocket)
+        mock_ws.cookies = {"access_token": "valid_cookie_token"}
+
+        mock_proxy_inst = AsyncMock()
+        mock_proxy_inst.authenticate_token.return_value = True
+        mock_proxy_inst.username = "testuser"
+        mock_proxy_cls.return_value = mock_proxy_inst
+
+        await voice_stream(mock_ws)
+
+        mock_ws.accept.assert_awaited()
+        # Should NOT await receive_json because cookie was present
+        mock_ws.receive_json.assert_not_awaited()
+        mock_proxy_cls.assert_called_with(mock_ws, "", "")
+        mock_proxy_inst.authenticate_token.assert_awaited_with("valid_cookie_token")
         mock_proxy_inst.start.assert_awaited()
         mock_proxy_inst.stop.assert_awaited()
 

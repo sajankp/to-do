@@ -42,6 +42,6 @@ class UserResponse(MyBaseModel):
 
 
 class Token(BaseModel):
-    access_token: str
+    access_token: str | None = None
     token_type: str
-    refresh_token: str
+    refresh_token: str | None = None
