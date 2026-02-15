@@ -380,6 +380,8 @@ todos.create_index([("user_id", 1), ("due_date", 1)])
 **Current State:**
 - Access and refresh tokens are now stored in HttpOnly cookies.
 - `/token/refresh` only accepts refresh tokens with `token_type=refresh`.
+- Cookie-auth unsafe flows enforce trusted `Origin` checks (`POST`/`PUT`/`PATCH`/`DELETE`), including `/token/refresh` and `/auth/logout`.
+- AI voice WebSocket handshake validates `Origin` before accepting the connection.
 
 **Risk:**
 - No server-side refresh token revocation list yet.
