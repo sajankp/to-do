@@ -33,9 +33,9 @@ class TestCORSConfiguration:
             settings = Settings()
             origins = settings.get_cors_origins_list()
             assert len(origins) == 3
-            assert "http://localhost:3000" in origins
-            assert "http://localhost:8080" in origins
-            assert "https://example.com" in origins
+            assert any(o == "http://localhost:3000" for o in origins)
+            assert any(o == "http://localhost:8080" for o in origins)
+            assert any(o == "https://example.com" for o in origins)
 
     def test_cors_origins_with_spaces(self):
         """Test CORS origins parsing with extra spaces."""
@@ -44,9 +44,9 @@ class TestCORSConfiguration:
             settings = Settings()
             origins = settings.get_cors_origins_list()
             assert len(origins) == 3
-            assert "http://localhost:3000" in origins
-            assert "http://localhost:8080" in origins
-            assert "https://example.com" in origins
+            assert any(o == "http://localhost:3000" for o in origins)
+            assert any(o == "http://localhost:8080" for o in origins)
+            assert any(o == "https://example.com" for o in origins)
 
     def test_cors_origins_empty_values_filtered(self):
         """Test that empty values are filtered out from origins."""
@@ -55,7 +55,7 @@ class TestCORSConfiguration:
             settings = Settings()
             origins = settings.get_cors_origins_list()
             assert len(origins) == 2
-            assert "" not in origins
+            assert not any(o == "" for o in origins)
 
     def test_cors_origins_complex_parsing(self):
         """Test that URL paths and queries are stripped correctly."""
@@ -87,11 +87,11 @@ class TestCORSConfiguration:
             settings = Settings()
             methods = settings.get_cors_methods_list()
             assert len(methods) == 5
-            assert "GET" in methods
-            assert "POST" in methods
-            assert "PUT" in methods
-            assert "DELETE" in methods
-            assert "OPTIONS" in methods
+            assert any(m == "GET" for m in methods)
+            assert any(m == "POST" for m in methods)
+            assert any(m == "PUT" for m in methods)
+            assert any(m == "DELETE" for m in methods)
+            assert any(m == "OPTIONS" for m in methods)
 
     def test_cors_headers_wildcard(self):
         """Test CORS headers with wildcard configuration."""
@@ -277,6 +277,6 @@ class TestLogLevelConfiguration:
         ):
             settings = Settings()
             origins = settings.get_cors_origins_list()
-            assert "https://valid.com" in origins
-            assert "invalid-url" not in origins
+            assert any(o == "https://valid.com" for o in origins)
+            assert not any(o == "invalid-url" for o in origins)
             assert "Ignoring malformed CORS origin: 'invalid-url'" in caplog.text

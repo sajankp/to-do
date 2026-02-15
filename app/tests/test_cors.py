@@ -30,7 +30,7 @@ class TestCORSMiddleware:
 
         response = client.get("/", headers={"Origin": test_origin})
         assert response.status_code == 200
-        assert "access-control-allow-origin" in response.headers
+        assert any(h.lower() == "access-control-allow-origin" for h in response.headers)
 
     def test_cors_allow_credentials_header_matches_config(self, client, settings):
         """Test that allow-credentials header matches the configured value."""
@@ -66,8 +66,8 @@ class TestCORSMiddleware:
         for origin in test_origins:
             response = client.get("/", headers={"Origin": origin})
             assert response.status_code == 200
-            assert (
-                "access-control-allow-origin" in response.headers
+            assert any(
+                h.lower() == "access-control-allow-origin" for h in response.headers
             ), f"Origin {origin} should be allowed but didn't get CORS headers"
 
     def test_cors_on_public_endpoint(self, client, settings):
@@ -77,7 +77,7 @@ class TestCORSMiddleware:
 
         response = client.get("/", headers={"Origin": test_origin})
         assert response.status_code == 200
-        assert "access-control-allow-origin" in response.headers
+        assert any(h.lower() == "access-control-allow-origin" for h in response.headers)
 
     def test_cors_preflight_request_on_token_endpoint(self, client, settings):
         """Test CORS preflight OPTIONS request on token endpoint."""
@@ -94,8 +94,8 @@ class TestCORSMiddleware:
         )
         # Preflight requests should return 200
         assert response.status_code == 200
-        assert "access-control-allow-origin" in response.headers
-        assert "access-control-allow-methods" in response.headers
+        assert any(h.lower() == "access-control-allow-origin" for h in response.headers)
+        assert any(h.lower() == "access-control-allow-methods" for h in response.headers)
 
     def test_cors_on_user_creation_endpoint(self, client, settings):
         """Test CORS on user creation endpoint (public endpoint)."""
@@ -111,7 +111,7 @@ class TestCORSMiddleware:
             },
         )
         assert response.status_code == 200
-        assert "access-control-allow-origin" in response.headers
+        assert any(h.lower() == "access-control-allow-origin" for h in response.headers)
 
     def test_cors_headers_include_allow_methods(self, client, settings):
         """Test that CORS headers include allowed methods."""
@@ -125,7 +125,7 @@ class TestCORSMiddleware:
                 "Access-Control-Request-Method": "GET",
             },
         )
-        assert "access-control-allow-methods" in response.headers
+        assert any(h.lower() == "access-control-allow-methods" for h in response.headers)
 
     def test_cors_headers_include_allow_headers(self, client, settings):
         """Test that CORS headers include allowed headers."""
@@ -140,7 +140,7 @@ class TestCORSMiddleware:
                 "Access-Control-Request-Headers": "content-type,authorization",
             },
         )
-        assert "access-control-allow-headers" in response.headers
+        assert any(h.lower() == "access-control-allow-headers" for h in response.headers)
 
     def test_cors_on_root_endpoint(self, client, settings):
         """Test CORS on root endpoint."""
@@ -149,7 +149,7 @@ class TestCORSMiddleware:
 
         response = client.get("/", headers={"Origin": test_origin})
         assert response.status_code == 200
-        assert "access-control-allow-origin" in response.headers
+        assert any(h.lower() == "access-control-allow-origin" for h in response.headers)
         assert response.json() == {"message": "Hello, World!"}
 
     def test_cors_without_origin_header(self, client):
@@ -173,7 +173,7 @@ class TestCORSMiddleware:
             },
         )
         assert response.status_code == 200
-        assert "access-control-allow-headers" in response.headers
+        assert any(h.lower() == "access-control-allow-headers" for h in response.headers)
 
     def test_cors_config_strips_path_and_trailing_slash(self, settings):
         """Test that get_cors_origins_list strips paths and trailing slashes."""
