@@ -216,6 +216,7 @@ gh api graphql -f query='
 query {
   repository(owner: "OWNER", name: "REPO") {
     pullRequest(number: PR_NUMBER) {
+      id
       reviewThreads(first: 100) {
         nodes {
           id
@@ -224,9 +225,6 @@ query {
           comments(first: 1) {
             nodes {
               body
-              pullRequest {
-                id
-              }
             }
           }
         }
