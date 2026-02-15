@@ -221,6 +221,15 @@ Beyond standard HTTP metrics, track application-specific KPIs:
 
 ---
 
+## Current Implementation Notes (as of 2026-02-15)
+
+- Health checks (`/health`, `/health/ready`) are implemented.
+- Tracing is enabled when `OTEL_EXPORTER_OTLP_ENDPOINT` is set; sampling is not explicitly configured in the app (defaults to SDK behavior).
+- Metrics are exposed via `prometheus-fastapi-instrumentator` at `/metrics` with a bearer token or dev-mode bypass; it is not restricted to internal networking only.
+- Custom metrics implemented: login/registration counters, todo create/complete/delete counters, and AI request/latency/error metrics.
+- Custom metrics missing or not emitted: `fasttodo_todos_per_user`, DB connection/query metrics, and AI token usage (counter exists but is not incremented).
+- Structured logs include `trace_id` and `span_id`, but logs are not exported via OpenTelemetry to Loki from the app process.
+
 ## Configuration
 
 ### New Environment Variables

@@ -231,6 +231,7 @@ sequenceDiagram
 |--------|----------|------|------------|-------------|
 | POST | `/token` | ❌ | 5/min | Login, sets auth cookies |
 | POST | `/token/refresh` | ❌ | 5/min | Refresh access cookie from refresh cookie |
+| POST | `/auth/logout` | ❌ | 100/min | Clear auth cookies |
 | POST | `/user` | ❌ | 5/min | Register new user |
 | GET | `/user/me` | ✅ | 100/min | Get current user profile |
 | GET | `/todo/` | ✅ | 100/min | List user's todos |
@@ -240,6 +241,8 @@ sequenceDiagram
 | DELETE | `/todo/{id}` | ✅ | 100/min | Delete todo |
 | GET | `/health` | ❌ | - | Liveness probe |
 | GET | `/health/ready` | ❌ | - | Readiness probe |
+| GET | `/metrics` | ❌ (metrics token/dev mode) | 100/min | Prometheus scrape endpoint |
+| WS | `/api/ai/voice/stream` | ✅ | - | Gemini Live voice streaming proxy |
 
 ---
 
@@ -252,7 +255,7 @@ class UserInDB:
     id: ObjectId           # MongoDB _id
     username: str          # Unique, required
     email: EmailStr        # Unique, required
-    hashed_password: str   # bcrypt hash
+    hashed_password: str   # Argon2id hash (bcrypt accepted for legacy verify)
     is_verified: bool      # Email verification status (default: False)
     disabled: bool         # Account status (default: False)
     created_at: datetime   # Auto-set
@@ -269,7 +272,6 @@ class TodoInDB:
     description: str       # 0-500 chars
     due_date: datetime     # Optional, must be future
     priority: Enum         # low | medium | high
-    completed: bool        # Completion status (default: False)
     created_at: datetime   # Auto-set
     updated_at: datetime   # Auto-updated
 ```
@@ -323,8 +325,8 @@ erDiagram
 
 | Endpoint Type | Limit | Strategy |
 |---------------|-------|----------|
-| Auth endpoints | 5/minute | IP-based |
-| API endpoints | 100/minute | IP-based |
+| Auth endpoints | 5/minute | User ID when authenticated, IP fallback |
+| API endpoints | 100/minute | User ID when authenticated, IP fallback |
 | Storage | In-memory (Redis optional) |
 
 ---
@@ -353,24 +355,22 @@ result = request.app.todo.insert_one(todo_dict)  # Blocking!
 
 ---
 
-### 2. (TD-002) No Database Indexes
+### 2. (TD-002) Partial Database Index Coverage
 
 **Current State:**
-- No indexes defined on collections
-- Every query does collection scan
+- `user` collection has unique indexes on `username` and `email`
+- `todo` collection has no indexes for `user_id`, `priority`, or `due_date`
 
 **Risk:**
-- O(n) query time as data grows
-- 10,000+ todos = noticeable latency
+- Todo queries can degrade to collection scans as data grows
+- Sorting/filtering by due date or priority will get slower with scale
 
 **Mitigation:**
 ```python
-# Recommended indexes
+# Recommended todo indexes
 todos.create_index([("user_id", 1)])
 todos.create_index([("user_id", 1), ("priority", 1)])
 todos.create_index([("user_id", 1), ("due_date", 1)])
-users.create_index([("username", 1)], unique=True)
-users.create_index([("email", 1)], unique=True)
 ```
 
 ---
@@ -392,25 +392,14 @@ users.create_index([("email", 1)], unique=True)
 
 ---
 
-### 4. (TD-004) No Email Uniqueness Enforcement
+### 4. (TD-004) Email Uniqueness Enforcement [RESOLVED]
 
 **Current State:**
-```python
-def create_user(username: str, email: str, password: str):
-    # No check for duplicate email
-    user = CreateUser(username=username, email=email, ...)
-    result = request.app.user.insert_one(user.model_dump())
-```
+- Unique indexes on `username` and `email` are created at startup
+- Duplicate insert returns `409 Conflict`
 
-**Risk:**
-- Same email can register multiple times
-- Password reset will be ambiguous
-- Email verification won't work properly
-
-**Mitigation:**
-1. Add unique index on email field
-2. Check before insert, return 409 Conflict
-3. Consider username uniqueness too
+**Residual Risk:**
+- Ensure index creation runs in all deployments
 
 ---
 
@@ -489,14 +478,14 @@ GET /v2/todo/  # New format
 
 
 
-### 11. (TD-005) Missing Monitoring & Observability [RESOLVED]
-**Status:** Implemented (Spec-005)
+### 11. (TD-005) Monitoring & Observability [PARTIAL]
+**Status:** Partially implemented (Spec-005)
 
 **Implementation:**
-- **Metrics:** OpenTelemetry + Prometheus (internal `/metrics`)
-- **Tracing:** OpenTelemetry + Jaeger (sampled at 10%)
-- **Logs:** Structlog + OpenTelemetry + Loki (correlated with traces)
-- **Deployment:** Kubernetes manifests in `k8s/`
+- **Metrics:** `prometheus-fastapi-instrumentator` exposes `/metrics` with bearer token or dev-mode access
+- **Tracing:** OpenTelemetry FastAPI + PyMongo instrumentation with OTLP HTTP export when configured
+- **Logs:** Structlog with `trace_id`/`span_id` enrichment (no OTEL log export to Loki from app)
+- **Deployment:** Kubernetes manifests exist in `k8s/`
 
 
 

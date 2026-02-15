@@ -136,7 +136,7 @@ The backend defines the following tools for the Gemini model:
 1. [x] Create new router: `app/routers/ai_stream.py`
 2. [x] Add `GEMINI_API_KEY` to config.py
 3. [~] ~~Implement `POST /api/ai/voice` endpoint~~ (Implemented then removed - unused)
-4. [x] Add rate limiting (10 req/min per user)
+4. [ ] Add rate limiting (10 req/min per user)
 5. [x] Implement streaming WebSocket endpoint
 6. [ ] Add usage logging (Deferred)
 7. [x] Write unit tests
@@ -154,11 +154,17 @@ The backend defines the following tools for the Gemini model:
 1. [x] Remove `process.env.API_KEY` from vite.config.ts
 2. [x] Remove direct Gemini SDK usage from frontend
 
+## Current Implementation Notes (as of 2026-02-15)
+
+- WebSocket endpoint is implemented at `/api/ai/voice/stream` with cookie-based auth as a preferred path, and auth-message fallback for clients without cookies.
+- Rate limiting for the WebSocket endpoint is not implemented yet; `AI_RATE_LIMIT` exists in config but is not enforced on the WS route.
+- Usage logging remains deferred (no persistence or token usage tracking wired to storage).
+
 ## Test Strategy
 
 ### Unit Tests
 - [x] Endpoint returns valid response
-- [x] Rate limiting triggers at 10 requests
+- [ ] Rate limiting triggers at 10 requests
 - [x] Unauthorized requests rejected
 - [x] Invalid prompts handled gracefully
 
@@ -169,14 +175,14 @@ The backend defines the following tools for the Gemini model:
 
 ### Security Tests
 - [x] API key not exposed in any response
-- [x] Rate limiting enforced per user
+- [ ] Rate limiting enforced per user
 - [x] Unauthorized access blocked
 
 ## Open Questions
 
 - [x] Should we cache AI responses for identical prompts? -> No, conversations are dynamic.
 - [x] What's the token limit per request? -> Governed by Gemini model limits.
-- [x] Should we implement a usage quota per user/day? -> Implemented rate limit (10/min).
+- [x] Should we implement a usage quota per user/day? -> Planned via `AI_RATE_LIMIT` (not enforced yet).
 
 ## Performance Considerations
 
