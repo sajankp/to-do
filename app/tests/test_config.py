@@ -66,10 +66,11 @@ class TestCORSConfiguration:
         with patch.dict(os.environ, {"CORS_ORIGINS": test_origins}):
             settings = Settings()
             origins = settings.get_cors_origins_list()
-            assert len(origins) == 3
-            assert "https://site.com" in origins
-            assert "http://other.org:8080" in origins
-            assert "https://sub.domain.net" in origins
+            assert origins == [
+                "https://site.com",
+                "http://other.org:8080",
+                "https://sub.domain.net",
+            ]
 
     def test_cors_methods_wildcard(self):
         """Test CORS methods with wildcard configuration."""
