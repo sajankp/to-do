@@ -29,21 +29,28 @@ def test_csp_directives_specifics():
         directives[directive] = sources
 
     # Check that directives are correctly formed
-    assert "https://fonts.googleapis.com" in directives["style-src"]
-    assert "https://cdn.jsdelivr.net/npm/" in directives["style-src"]
-    assert "'unsafe-inline'" in directives["style-src"]
-    assert "'self'" in directives["style-src"]
+    # Check that directives are correctly formed
+    # Using set equality avoids CodeQL "Incomplete URL substring sanitization" alerts
+    assert directives["style-src"] == {
+        "'self'",
+        "'unsafe-inline'",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net/npm/",
+    }
 
-    assert "https://cdn.jsdelivr.net/npm/" in directives["script-src"]
-    assert "'unsafe-inline'" in directives["script-src"]
-    assert "'self'" in directives["script-src"]
+    assert directives["script-src"] == {
+        "'self'",
+        "'unsafe-inline'",
+        "https://cdn.jsdelivr.net/npm/",
+    }
 
-    assert "https://fastapi.tiangolo.com" in directives["img-src"]
-    assert "data:" in directives["img-src"]
-    assert "'self'" in directives["img-src"]
+    assert directives["img-src"] == {
+        "'self'",
+        "data:",
+        "https://fastapi.tiangolo.com",
+    }
 
-    assert "https://fonts.gstatic.com" in directives["font-src"]
-    assert "'self'" in directives["font-src"]
+    assert directives["font-src"] == {"'self'", "https://fonts.gstatic.com"}
 
 
 def test_csp_configuration_override():
