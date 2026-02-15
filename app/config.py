@@ -1,4 +1,6 @@
 import functools
+import logging
+from urllib.parse import urlparse
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -71,6 +73,28 @@ class Settings(BaseSettings):
     cors_allow_credentials: bool = Field(True, validation_alias="CORS_ALLOW_CREDENTIALS")
     cors_allow_methods: str = Field("*", validation_alias="CORS_ALLOW_METHODS")
     cors_allow_headers: str = Field("*", validation_alias="CORS_ALLOW_HEADERS")
+
+    # CSP Configuration
+    csp_img_src: str = Field(
+        "https://fastapi.tiangolo.com",
+        validation_alias="CSP_IMG_SRC",
+        description="Content Security Policy img-src directives (space separated)",
+    )
+    csp_style_src: str = Field(
+        "https://fonts.googleapis.com https://cdn.jsdelivr.net/npm/",
+        validation_alias="CSP_STYLE_SRC",
+        description="Content Security Policy style-src directives (space separated)",
+    )
+    csp_script_src: str = Field(
+        "https://cdn.jsdelivr.net/npm/",
+        validation_alias="CSP_SCRIPT_SRC",
+        description="Content Security Policy script-src directives (space separated)",
+    )
+    csp_font_src: str = Field(
+        "https://fonts.gstatic.com",
+        validation_alias="CSP_FONT_SRC",
+        description="Content Security Policy font-src directives (space separated)",
+    )
 
     # AI Configuration (Gemini API Proxy)
     gemini_api_key: str | None = Field(
@@ -159,8 +183,31 @@ class Settings(BaseSettings):
         return [item.strip() for item in value.split(",") if item.strip()]
 
     def get_cors_origins_list(self) -> list[str]:
-        """Parse CORS origins from comma-separated string to list."""
-        return self._parse_comma_separated_config(self.cors_origins)
+        """Parse CORS origins from comma-separated string to list.
+
+        Also strips paths and trailing slashes to ensure only valid origins are returned.
+        Example: 'https://site.com/app/' -> 'https://site.com'
+        """
+        raw_list = self._parse_comma_separated_config(self.cors_origins)
+        clean_list = []
+
+        for origin in raw_list:
+            if origin == "*":
+                clean_list.append("*")
+                continue
+
+            try:
+                parsed = urlparse(origin)
+                # An origin is scheme + netloc. This robustly strips path, query, etc.
+                if parsed.scheme and parsed.netloc:
+                    clean_list.append(f"{parsed.scheme}://{parsed.netloc}")
+                else:
+                    logging.warning(
+                        f"Ignoring malformed CORS origin: '{origin}' (missing scheme or netloc)"
+                    )
+            except Exception as e:
+                logging.warning(f"Error parsing CORS origin '{origin}': {e}")
+        return clean_list
 
     def get_cors_methods_list(self) -> list[str]:
         """Parse CORS methods from comma-separated string to list."""

@@ -2,6 +2,8 @@ from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
+from app.config import get_settings
+
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     def __init__(self, app: ASGIApp):
@@ -23,12 +25,14 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         # CSP: Default to self, allow WebSocket to self (needed for Gemini voice stream)
         # connects to ws:// or wss:// on same origin
+        settings = get_settings()
         csp = (
             "default-src 'self'; "
             "connect-src 'self' ws: wss:; "
-            "img-src 'self' data:; "
-            "style-src 'self' 'unsafe-inline'; "  # unsafe-inline often needed for UI libraries
-            "script-src 'self' 'unsafe-inline'; "  # unsafe-inline needed if Vite injects scripts
+            f"img-src 'self' data: {settings.csp_img_src.replace(';', '')}; "
+            f"style-src 'self' 'unsafe-inline' {settings.csp_style_src.replace(';', '')}; "
+            f"script-src 'self' 'unsafe-inline' {settings.csp_script_src.replace(';', '')}; "
+            f"font-src 'self' {settings.csp_font_src.replace(';', '')}; "
         )
         response.headers["Content-Security-Policy"] = csp.strip()
 
