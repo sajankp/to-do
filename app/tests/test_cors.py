@@ -174,3 +174,19 @@ class TestCORSMiddleware:
         )
         assert response.status_code == 200
         assert "access-control-allow-headers" in response.headers
+
+    def test_cors_config_strips_path_and_trailing_slash(self, settings):
+        """Test that get_cors_origins_list strips paths and trailing slashes."""
+        # Manually set the config to the problematic value reported by user
+        settings.cors_origins = (
+            "https://to-do-4w0k.onrender.com/, https://sajankp.github.io/to-do-frontend/"
+        )
+
+        origins = settings.get_cors_origins_list()
+
+        # This assertions are expected to FAIL currently because the fix is not implemented
+        assert "https://to-do-4w0k.onrender.com" in origins
+        assert "https://to-do-4w0k.onrender.com/" not in origins
+
+        assert "https://sajankp.github.io" in origins
+        assert "https://sajankp.github.io/to-do-frontend/" not in origins

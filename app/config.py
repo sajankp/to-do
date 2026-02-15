@@ -159,8 +159,33 @@ class Settings(BaseSettings):
         return [item.strip() for item in value.split(",") if item.strip()]
 
     def get_cors_origins_list(self) -> list[str]:
-        """Parse CORS origins from comma-separated string to list."""
-        return self._parse_comma_separated_config(self.cors_origins)
+        """Parse CORS origins from comma-separated string to list.
+
+        Also strips paths and trailing slashes to ensure only valid origins are returned.
+        Example: 'https://site.com/app/' -> 'https://site.com'
+        """
+        raw_list = self._parse_comma_separated_config(self.cors_origins)
+        clean_list = []
+        for origin in raw_list:
+            if origin == "*":
+                clean_list.append("*")
+                continue
+
+            # Strip trailing slash
+            cleaned = origin.rstrip("/")
+
+            # If it contains a path after the domain, strip it
+            # e.g. https://site.com/foo -> https://site.com
+            # We look for the third slash (after https://)
+            # Find the start of the path (if any)
+            # Simple heuristic: split by / and take first 3 components (scheme // domain)
+            parts = cleaned.split("/")
+            if len(parts) > 3:
+                cleaned = "/".join(parts[:3])
+
+            clean_list.append(cleaned)
+
+        return clean_list
 
     def get_cors_methods_list(self) -> list[str]:
         """Parse CORS methods from comma-separated string to list."""

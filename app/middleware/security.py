@@ -26,9 +26,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         csp = (
             "default-src 'self'; "
             "connect-src 'self' ws: wss:; "
-            "img-src 'self' data:; "
-            "style-src 'self' 'unsafe-inline'; "  # unsafe-inline often needed for UI libraries
-            "script-src 'self' 'unsafe-inline'; "  # unsafe-inline needed if Vite injects scripts
+            "img-src 'self' data: https://fastapi.tiangolo.com; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "font-src 'self' https://fonts.gstatic.com; "
         )
         response.headers["Content-Security-Policy"] = csp.strip()
 
