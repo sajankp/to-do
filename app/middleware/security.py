@@ -29,10 +29,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         csp = (
             "default-src 'self'; "
             "connect-src 'self' ws: wss:; "
-            f"img-src 'self' data: {settings.csp_img_src}; "
-            f"style-src 'self' 'unsafe-inline' {settings.csp_style_src}; "
-            f"script-src 'self' 'unsafe-inline' {settings.csp_script_src}; "
-            f"font-src 'self' {settings.csp_font_src}; "
+            f"img-src 'self' data: {settings.csp_img_src.replace(';', '')}; "
+            f"style-src 'self' 'unsafe-inline' {settings.csp_style_src.replace(';', '')}; "
+            f"script-src 'self' 'unsafe-inline' {settings.csp_script_src.replace(';', '')}; "
+            f"font-src 'self' {settings.csp_font_src.replace(';', '')}; "
         )
         response.headers["Content-Security-Policy"] = csp.strip()
 

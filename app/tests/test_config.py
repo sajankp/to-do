@@ -1,5 +1,6 @@
 """Tests for application configuration and settings."""
 
+import logging
 import os
 from unittest.mock import patch
 
@@ -264,9 +265,18 @@ class TestLogLevelConfiguration:
         ):
             Settings()
 
-    def test_log_level_default(self):
-        """Test that log level defaults to INFO when not specified."""
-        # .env.test sets LOG_LEVEL=INFO, which tests the default behavior
         settings = Settings()
         assert hasattr(settings, "log_level")
         assert settings.log_level == "INFO"
+
+    def test_cors_origins_logging_malformed(self, caplog):
+        """Test that malformed CORS origins trigger a warning log."""
+        with (
+            patch.dict(os.environ, {"CORS_ORIGINS": "invalid-url, https://valid.com"}),
+            caplog.at_level(logging.WARNING),
+        ):
+            settings = Settings()
+            origins = settings.get_cors_origins_list()
+            assert "https://valid.com" in origins
+            assert "invalid-url" not in origins
+            assert "Ignoring malformed CORS origin: 'invalid-url'" in caplog.text

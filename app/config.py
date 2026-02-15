@@ -1,4 +1,6 @@
 import functools
+import logging
+from urllib.parse import urlparse
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -188,7 +190,6 @@ class Settings(BaseSettings):
         """
         raw_list = self._parse_comma_separated_config(self.cors_origins)
         clean_list = []
-        from urllib.parse import urlparse
 
         for origin in raw_list:
             if origin == "*":
@@ -200,9 +201,12 @@ class Settings(BaseSettings):
                 # An origin is scheme + netloc. This robustly strips path, query, etc.
                 if parsed.scheme and parsed.netloc:
                     clean_list.append(f"{parsed.scheme}://{parsed.netloc}")
-            except ValueError:
-                # Ignore malformed origins. Consider logging a warning.
-                pass
+                else:
+                    logging.warning(
+                        f"Ignoring malformed CORS origin: '{origin}' (missing scheme or netloc)"
+                    )
+            except Exception as e:
+                logging.warning(f"Error parsing CORS origin '{origin}': {e}")
         return clean_list
 
     def get_cors_methods_list(self) -> list[str]:

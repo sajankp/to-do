@@ -8,8 +8,8 @@
 
 ### 1. Update Content Security Policy (CSP)
 Modify `app/middleware/security.py` to allow the following trusted sources:
-*   `style-src`: `https://fonts.googleapis.com` (Google Fonts), `https://cdn.jsdelivr.net` (Swagger UI CSS)
-*   `script-src`: `https://cdn.jsdelivr.net` (Swagger UI/ReDoc JS)
+*   `style-src`: `https://fonts.googleapis.com` (Google Fonts), `https://cdn.jsdelivr.net/npm/` (Swagger UI CSS)
+*   `script-src`: `https://cdn.jsdelivr.net/npm/` (Swagger UI/ReDoc JS)
 *   `img-src`: `https://fastapi.tiangolo.com` (Favicon)
 *   `font-src`: `https://fonts.gstatic.com` (Google Fonts)
 
@@ -26,8 +26,8 @@ None.
 *   **Headers**: The `Content-Security-Policy` header will be updated.
 
 ## Implementation Plan
-1.  **Test (Red)**: Create tests in `app/tests/middleware/test_security.py` asserting that the CSP header contains the required allowed domains.
-2.  **Test (Red)**: Create `app/tests/test_cors.py`.
+1.  **Test (Red)**: Create tests in `app/tests/middleware/test_security_csp.py` asserting that the CSP header contains the required allowed domains.
+2.  **Test (Red)**: Add tests to `app/tests/test_cors.py`.
     *   Test that `https://sajankp.github.io` fails validation if the config is set to `https://sajankp.github.io/to-do-frontend/`.
     *   Test that it passes if we implement the fix.
 3.  **Implement (Green)**:
