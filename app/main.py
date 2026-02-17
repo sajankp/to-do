@@ -237,7 +237,10 @@ def read_root():
 @app.post("/token", response_model=Token)
 @limiter.limit(settings.rate_limit_auth)
 def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()], request: Request, response: Response
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    request: Request,
+    response: Response,
+    remember_me: bool = True,
 ):  # Authenticate user
     user, new_hash = authenticate_user(
         form_data.username, form_data.password, request.app.mongodb_client
@@ -293,7 +296,7 @@ def login_for_access_token(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        max_age=settings.refresh_token_expire_seconds,
+        max_age=settings.refresh_token_expire_seconds if remember_me else None,
         samesite=settings.cookie_samesite,
         secure=settings.cookie_secure,
         domain=settings.cookie_domain,

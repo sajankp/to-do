@@ -136,9 +136,9 @@ The backend defines the following tools for the Gemini model:
 1. [x] Create new router: `app/routers/ai_stream.py`
 2. [x] Add `GEMINI_API_KEY` to config.py
 3. [~] ~~Implement `POST /api/ai/voice` endpoint~~ (Implemented then removed - unused)
-4. [ ] Add rate limiting (10 req/min per user)
+4. [x] Add rate limiting (10 req/min per user)
 5. [x] Implement streaming WebSocket endpoint
-6. [ ] Add usage logging (Deferred)
+6. [x] Add usage logging
 7. [x] Write unit tests
 8. [x] Write integration tests (WebSocket tests)
 
@@ -157,8 +157,8 @@ The backend defines the following tools for the Gemini model:
 ## Current Implementation Notes (as of 2026-02-15)
 
 - WebSocket endpoint is implemented at `/api/ai/voice/stream` with cookie-based auth as a preferred path, and auth-message fallback for clients without cookies.
-- Rate limiting for the WebSocket endpoint is not implemented yet; `AI_RATE_LIMIT` exists in config but is not enforced on the WS route.
-- Usage logging remains deferred (no persistence or token usage tracking wired to storage).
+- Per-user WebSocket rate limiting is enforced using an in-memory sliding window based on `AI_RATE_LIMIT` config (default: 10/minute). Limits are checked after authentication, before starting the Gemini session.
+- Structured usage logging emits session summary (user, duration, message counts) via `logger.info` with `extra` dict on session close.
 
 ## Test Strategy
 

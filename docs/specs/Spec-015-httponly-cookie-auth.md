@@ -101,7 +101,7 @@ cors_allow_credentials: bool = Field(
 
 - Login and refresh set/read HttpOnly cookies for `access_token` and `refresh_token`.
 - `/auth/logout` is implemented and clears both cookies.
-- `remember_me` is not implemented; refresh cookie is always set with standard expiry.
+- `remember_me` is implemented as a query parameter on `/token` (default `True`). When `False`, the refresh cookie is set as a session cookie (no `max_age`), expiring when the browser closes.
 - Auth middleware reads `access_token` from cookies only; `Authorization` header fallback is not implemented.
 - `cookie_secure` is forced `True` when `SameSite=None` (required by browsers), regardless of environment.
 - CSRF mitigation is implemented for cookie-auth state-changing requests:
