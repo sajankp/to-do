@@ -29,6 +29,7 @@ class TodoInput(BaseModel):
     description: str = Field(default="", max_length=500, description="Todo description")
     due_date: datetime | None = Field(default=None, description="Due date for the todo")
     priority: PriorityEnum = Field(default=PriorityEnum.medium, description="Todo priority")
+    completed: bool = Field(default=False, description="Whether the todo is completed")
 
 
 class CreateTodo(TodoInput):
@@ -48,6 +49,7 @@ class TodoUpdate(BaseModel):
     description: str | None = Field(None, max_length=500)
     due_date: datetime | None = Field(default=None)
     priority: PriorityEnum | None = Field(default=None)
+    completed: bool | None = Field(default=None)
 
     @field_validator("due_date")
     @classmethod
@@ -69,6 +71,7 @@ class TodoInDB(MyBaseModel):
     description: str = Field(default="", max_length=500, description="Todo description")
     due_date: datetime | None = Field(default=None, description="Due date for the todo")
     priority: PriorityEnum = Field(default=PriorityEnum.medium, description="Todo priority")
+    completed: bool = Field(default=False, description="Whether the todo is completed")
     user_id: PyObjectId = Field(..., description="ID of the user who owns this todo")
 
     model_config = ConfigDict(
@@ -102,6 +105,7 @@ class TodoResponse(TodoInput):
             description=todo_db.description,
             due_date=todo_db.due_date,
             priority=todo_db.priority,
+            completed=todo_db.completed,
             created_at=todo_db.created_at,
             updated_at=todo_db.updated_at,
         )
