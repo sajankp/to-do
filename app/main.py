@@ -41,7 +41,7 @@ from app.utils.constants import FAILED_TO_CREATE_USER, MISSING_TOKEN
 from app.utils.health import check_app_readiness
 from app.utils.jwt import decode_jwt_token
 from app.utils.logging import setup_logging
-from app.utils.metrics import LOGINS_TOTAL, REGISTRATIONS_TOTAL
+from app.utils.metrics import DB_CONNECTIONS_ACTIVE, LOGINS_TOTAL, REGISTRATIONS_TOTAL
 from app.utils.rate_limiter import limiter
 from app.utils.security import is_origin_allowed
 from app.utils.telemetry import setup_pymongo_telemetry, setup_telemetry
@@ -74,7 +74,13 @@ async def lifespan(application: FastAPI):
     # Create database indexes
     create_indexes(application.mongodb_client)
 
+    # Track MongoDB connection
+    DB_CONNECTIONS_ACTIVE.set(1)
+
     yield
+
+    # Track connection closure
+    DB_CONNECTIONS_ACTIVE.set(0)
     application.mongodb_client.close()
 
 
@@ -231,7 +237,10 @@ def read_root():
 @app.post("/token", response_model=Token)
 @limiter.limit(settings.rate_limit_auth)
 def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()], request: Request, response: Response
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    request: Request,
+    response: Response,
+    remember_me: bool = True,
 ):  # Authenticate user
     user, new_hash = authenticate_user(
         form_data.username, form_data.password, request.app.mongodb_client
@@ -287,7 +296,7 @@ def login_for_access_token(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        max_age=settings.refresh_token_expire_seconds,
+        max_age=settings.refresh_token_expire_seconds if remember_me else None,
         samesite=settings.cookie_samesite,
         secure=settings.cookie_secure,
         domain=settings.cookie_domain,

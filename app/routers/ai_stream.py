@@ -2,6 +2,7 @@
 
 import asyncio
 import base64
+import collections
 import contextlib
 import logging
 import time
@@ -14,13 +15,52 @@ from jose import JWTError, jwt
 
 from app.config import get_settings
 from app.routers.auth import PASSWORD_ALGORITHM, SECRET_KEY
-from app.utils.metrics import AI_ERRORS_TOTAL, AI_LATENCY_SECONDS, AI_REQUESTS_TOTAL
+from app.utils.metrics import (
+    AI_ERRORS_TOTAL,
+    AI_LATENCY_SECONDS,
+    AI_REQUESTS_TOTAL,
+    AI_TOKENS_USED_TOTAL,
+)
 from app.utils.security import is_origin_allowed
 from app.utils.user import get_user_by_username
 
 router = APIRouter()
 settings = get_settings()
 logger = logging.getLogger(__name__)
+
+# In-memory per-user WebSocket connection rate limiter
+_ws_rate_limit_store: dict[str, collections.deque] = {}
+
+
+def _parse_rate_limit(limit_str: str) -> tuple[int, int]:
+    """Parse rate limit string like '10/minute' into (count, window_seconds)."""
+    try:
+        parts = limit_str.split("/")
+        count = int(parts[0])
+        period = parts[1].lower() if len(parts) > 1 else "minute"
+        windows = {"second": 1, "minute": 60, "hour": 3600, "day": 86400}
+        return count, windows.get(period, 60)
+    except (ValueError, IndexError) as e:
+        logger.warning(
+            f"Invalid AI rate limit format: '{limit_str}'. Defaulting to 10/minute. Error: {e}"
+        )
+        return 10, 60
+
+
+def _check_ws_rate_limit(user_id: str) -> bool:
+    """Check if user is within WebSocket connection rate limit. Returns True if allowed."""
+    max_requests, window_seconds = _parse_rate_limit(settings.ai_rate_limit)
+    now = time.time()
+    if user_id not in _ws_rate_limit_store:
+        _ws_rate_limit_store[user_id] = collections.deque()
+    timestamps = _ws_rate_limit_store[user_id]
+    # Remove expired timestamps
+    while timestamps and timestamps[0] < now - window_seconds:
+        timestamps.popleft()
+    if len(timestamps) >= max_requests:
+        return False
+    timestamps.append(now)
+    return True
 
 
 class GeminiLiveProxy:
@@ -34,6 +74,8 @@ class GeminiLiveProxy:
         self.todos: list[dict] = []
         self._running = False
         self._session_start_time: float = 0.0  # Track session duration for latency metric
+        self._input_messages: int = 0  # Track audio chunks sent to Gemini
+        self._output_messages: int = 0  # Track audio chunks received from Gemini
 
     async def authenticate_token(self, token: str) -> bool:
         """Validate JWT token and return True if valid."""
@@ -211,6 +253,7 @@ class GeminiLiveProxy:
                     audio_data = message.get("data")
                     if audio_data and self.gemini_session:
                         chunks_count += 1
+                        self._input_messages += 1
                         if chunks_count % 50 == 0:
                             logger.info(f"Forwarded {chunks_count} audio chunks to Gemini")
 
@@ -270,6 +313,7 @@ class GeminiLiveProxy:
                                             "mime_type": part.inline_data.mime_type,
                                         }
                                     )
+                                    self._output_messages += 1
 
                         # Handle turn complete
                         if sc.turn_complete:
@@ -418,9 +462,28 @@ class GeminiLiveProxy:
             AI_LATENCY_SECONDS.observe(duration)
             logger.info(f"AI session duration: {duration:.2f}s")
 
-        # TODO: Track AI token usage - Gemini Live API doesn't expose token counts
-        # in real-time streaming mode. Consider using Gemini API's usage metadata
-        # from non-streaming endpoints or estimate based on audio duration.
+        # Track AI message usage (proxy for tokens — Gemini Live API
+        # doesn't expose token counts in real-time streaming mode)
+        if self._input_messages > 0:
+            AI_TOKENS_USED_TOTAL.labels(type="input").inc(self._input_messages)
+        if self._output_messages > 0:
+            AI_TOKENS_USED_TOTAL.labels(type="output").inc(self._output_messages)
+
+        # Structured usage log (Spec-002: Usage Logging)
+        if self._session_start_time > 0:
+            logger.info(
+                "AI session usage",
+                extra={
+                    "ai_usage": {
+                        "user_id": self.user_id,
+                        "username": self.username,
+                        "endpoint": "/api/ai/voice/stream",
+                        "duration_seconds": round(time.time() - self._session_start_time, 2),
+                        "input_messages": self._input_messages,
+                        "output_messages": self._output_messages,
+                    }
+                },
+            )
 
         if self.gemini_session:
             with contextlib.suppress(Exception):
@@ -485,6 +548,15 @@ async def voice_stream(websocket: WebSocket) -> None:
         logger.info(f"WebSocket voice stream authenticated via Message for user {proxy.username}")
 
     try:
+        # Enforce rate limit before starting expensive Gemini session
+        if not _check_ws_rate_limit(proxy.user_id):
+            logger.warning(f"Rate limit exceeded for user {proxy.username}")
+            await websocket.send_json(
+                {"type": "error", "message": "Rate limit exceeded. Try again later."}
+            )
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+
         await proxy.start()
     except WebSocketDisconnect:
         logger.info(f"WebSocket disconnected for user {proxy.username}")
