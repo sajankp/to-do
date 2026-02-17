@@ -34,11 +34,17 @@ _ws_rate_limit_store: dict[str, collections.deque] = {}
 
 def _parse_rate_limit(limit_str: str) -> tuple[int, int]:
     """Parse rate limit string like '10/minute' into (count, window_seconds)."""
-    parts = limit_str.split("/")
-    count = int(parts[0])
-    period = parts[1].lower() if len(parts) > 1 else "minute"
-    windows = {"second": 1, "minute": 60, "hour": 3600, "day": 86400}
-    return count, windows.get(period, 60)
+    try:
+        parts = limit_str.split("/")
+        count = int(parts[0])
+        period = parts[1].lower() if len(parts) > 1 else "minute"
+        windows = {"second": 1, "minute": 60, "hour": 3600, "day": 86400}
+        return count, windows.get(period, 60)
+    except (ValueError, IndexError) as e:
+        logger.warning(
+            f"Invalid AI rate limit format: '{limit_str}'. Defaulting to 10/minute. Error: {e}"
+        )
+        return 10, 60
 
 
 def _check_ws_rate_limit(user_id: str) -> bool:
