@@ -1,3 +1,4 @@
+import time
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -12,9 +13,11 @@ from app.utils.constants import (
     TODO_NOT_FOUND,
 )
 from app.utils.metrics import (
+    DB_QUERY_DURATION_SECONDS,
     TODOS_COMPLETED_TOTAL,
     TODOS_CREATED_TOTAL,
     TODOS_DELETED_TOTAL,
+    TODOS_PER_USER,
 )
 
 router = APIRouter(dependencies=[Depends(get_authenticated_user)])
@@ -22,8 +25,12 @@ router = APIRouter(dependencies=[Depends(get_authenticated_user)])
 
 @router.get("/", response_model=list[TodoResponse])
 def get_todo_list(request: Request):
+    start_time = time.time()
     todos = list(request.app.todo.find({"user_id": request.state.user_id}).limit(100))
+    DB_QUERY_DURATION_SECONDS.labels(operation="find").observe(time.time() - start_time)
+
     todos = [TodoResponse.from_db(TodoInDB(**todo)) for todo in todos]
+    TODOS_PER_USER.observe(len(todos))
     return todos
 
 

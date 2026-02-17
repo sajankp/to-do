@@ -41,7 +41,7 @@ from app.utils.constants import FAILED_TO_CREATE_USER, MISSING_TOKEN
 from app.utils.health import check_app_readiness
 from app.utils.jwt import decode_jwt_token
 from app.utils.logging import setup_logging
-from app.utils.metrics import LOGINS_TOTAL, REGISTRATIONS_TOTAL
+from app.utils.metrics import DB_CONNECTIONS_ACTIVE, LOGINS_TOTAL, REGISTRATIONS_TOTAL
 from app.utils.rate_limiter import limiter
 from app.utils.security import is_origin_allowed
 from app.utils.telemetry import setup_pymongo_telemetry, setup_telemetry
@@ -74,7 +74,13 @@ async def lifespan(application: FastAPI):
     # Create database indexes
     create_indexes(application.mongodb_client)
 
+    # Track MongoDB connection
+    DB_CONNECTIONS_ACTIVE.set(1)
+
     yield
+
+    # Track connection closure
+    DB_CONNECTIONS_ACTIVE.set(0)
     application.mongodb_client.close()
 
 
