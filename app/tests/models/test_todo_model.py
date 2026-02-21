@@ -152,3 +152,40 @@ def test_todo_update_rejects_system_fields():
     assert not hasattr(update, "_id")
     assert not hasattr(update, "created_at")
     assert not hasattr(update, "updated_at")
+
+
+# ── Completed field tests (Spec-001) ──────────────────────────────
+
+
+def test_todo_input_completed_default_false():
+    """TodoInput should default completed to False."""
+    todo = TodoInput(title="Test Task")
+    assert todo.completed is False
+
+
+def test_todo_input_completed_true():
+    """TodoInput should accept completed=True."""
+    todo = TodoInput(title="Done Task", completed=True)
+    assert todo.completed is True
+
+
+def test_todo_update_completed_optional():
+    """TodoUpdate should allow completed as an optional field."""
+    update = TodoUpdate(completed=True)
+    assert update.completed is True
+    # When not set, should remain None
+    update_empty = TodoUpdate(title="Updated")
+    assert update_empty.completed is None
+
+
+def test_todo_indb_completed_default_false():
+    """TodoInDB should default completed to False."""
+    user_id = PyObjectId("507f1f77bcf86cd799439011")
+    t = TodoInDB(title="X", description="D", user_id=user_id)
+    assert t.completed is False
+
+
+def test_create_todo_completed_default_false():
+    """CreateTodo should default completed to False."""
+    todo = CreateTodo(title="New Task")
+    assert todo.completed is False

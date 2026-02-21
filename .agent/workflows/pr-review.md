@@ -51,43 +51,23 @@ For PRs implementing features (not Dependabot/minor fixes), confirm:
 
 ## Step 1: List Open PRs
 
-```bash
-gh pr list --state open
-```
+Retrieve the list of open pull requests in the repository to identify which ones need review or processing. Use the GitHub MCP tool (e.g., `mcp_github-mcp-server_list_pull_requests`) if available, otherwise fall back to the `gh` CLI (e.g., `gh pr list --state open`).
 
 ## Step 2: Wait for AI Review
 
 > [!IMPORTANT]
-> Ensure `gemini-code-assist` has reviewed the PR before proceeding.
+> Ensure `gemini-code-assist` (or other required AI reviewers) has reviewed the PR before proceeding.
 
-// turbo
-```bash
-# Check specifically for gemini-code-assist review
-gh api repos/:owner/:repo/pulls/<PR_NUMBER>/reviews \
-  --jq '[.[] | select(.user.login == "gemini-code-assist" and .state != "PENDING")] | length'
-
-# Also check for any inline or general comments
-gh api repos/:owner/:repo/pulls/<PR_NUMBER>/comments --jq 'length'
-gh api repos/:owner/:repo/issues/<PR_NUMBER>/comments --jq 'length'
-```
-
-- If all counts are 0: **WAIT**.
-- If any count > 0: Proceed to Step 2.1.
+Check for formal reviews, inline code comments, or general conversation comments from the AI reviewer.
+- If no feedback or review exists: **WAIT**.
+- If there is feedback or a review: Proceed to Step 2.1.
 
 ### Step 2.1: Fetch Feedback Details
 
-If feedback exists, fetch the details to analyze:
-
-```bash
-# 1. Fetch Formal Reviews (Approve/Request Changes)
-gh api repos/:owner/:repo/pulls/<PR_NUMBER>/reviews --jq '.[] | {state: .state, author: .user.login, body: .body}'
-
-# 2. Fetch Inline Code Comments
-gh api repos/:owner/:repo/pulls/<PR_NUMBER>/comments --jq '.[] | {path: .path, line: .line, author: .user.login, body: .body}'
-
-# 3. Fetch General Conversation Comments
-gh api repos/:owner/:repo/issues/<PR_NUMBER>/comments --jq '.[] | {author: .user.login, body: .body}'
-```
+If feedback exists, meticulously retrieve and analyze all feedback components:
+1. Formal Reviews (e.g., Approve, Request Changes)
+2. Inline Code Comments tied to specific files and lines
+3. General Conversation Comments on the PR issue
 
 ### Step 2.2: Critically Evaluate Feedback
 
@@ -139,14 +119,7 @@ Document your reasoning and decision before making changes.
 
 ### Step 2.3: Get Review Comments (If Needed)
 
-To retrieve specific review comments programmatically:
-
-```bash
-# Get all review comments with IDs for replies
-gh api repos/OWNER/REPO/pulls/<PR_NUMBER>/comments --jq '.[] | {id: .id, path: .path, line: .line, body: .body}'
-```
-
-This is useful when you need comment IDs to reply to specific feedback.
+Retrieve specific review comments programmatically to understand the context or reply to a thread. Use the GitHub MCP tool (e.g., `mcp_github-mcp-server_pull_request_read` with method `get_review_comments`) if available, or fall back to the `gh` CLI/API.
 
 ### Step 2.4: Address Feedback and Commit
 
@@ -192,105 +165,25 @@ This is useful when you need comment IDs to reply to specific feedback.
 
 ### Step 2.5: Reply to Review Comments
 
-After addressing feedback, document what was done by replying to each comment thread:
-
-**Reply to a specific review comment:**
-```bash
-# Get comment ID from the PR discussion threads
-gh pr view <PR_NUMBER> --comments
-
-# Reply to specific comment
-gh api repos/OWNER/REPO/pulls/<PR_NUMBER>/comments/<COMMENT_ID>/replies \
-  -X POST \
-  -f body="✅ Fixed: [Description]
-  - Change 1
-  - Change 2
-  See commit: [sha]"
-```
-
-**Mark conversations as resolved** (after fixing the issues):
-
-```bash
-# Step 1: Get review thread IDs
-gh api graphql -f query='
-query {
-  repository(owner: "OWNER", name: "REPO") {
-    pullRequest(number: PR_NUMBER) {
-      id
-      reviewThreads(first: 100) {
-        nodes {
-          id
-          isResolved
-          isOutdated
-          comments(first: 1) {
-            nodes {
-              body
-            }
-          }
-        }
-      }
-    }
-  }
-}'
-
-# Step 2: Add a reply comment documenting your fix (RECOMMENDED)
-gh api graphql -f query='
-mutation {
-  addPullRequestReviewThreadReply(input: {
-    pullRequestId: "PR_ID_from_step_1"
-    threadId: "PRRT_xxxxx"
-    body: "✅ Fixed: [Brief description of fix]
-
-- Change 1
-- Change 2
-
-See commit: [sha]"
-  }) {
-    comment {
-      id
-    }
-  }
-}'
-
-# Step 3: Resolve each thread by ID
-gh api graphql -f query='
-mutation {
-  resolveReviewThread(input: {threadId: "PRRT_xxxxx"}) {
-    thread {
-      id
-      isResolved
-    }
-  }
-}'
-```
+After addressing feedback, document what was done by replying to each comment thread and explicitly resolving it.
 
 > [!TIP]
 > **Best Practice:**
-> 1. Run the query to get thread IDs and PR ID (look for `"id": "PRRT_xxxxx"` and `pullRequest.id`)
-> 2. **Add a reply comment** to each thread explaining what you fixed and referencing the commit SHA
-> 3. Then resolve the thread
-> 4. The `isOutdated: true` flag indicates the code has changed since the comment
-> 5. After resolving all threads, the PR should be mergeable
+> 1. Retrieve the thread IDs (e.g., using MCP `get_review_comments` or `gh api`).
+> 2. **Add a reply comment** to each thread explaining what you fixed and referencing the commit SHA.
+> 3. Resolve the thread using the available tool (MCP `mcp_github-mcp-server_pull_request_review_write` or GitHub UI/CLI).
+> 4. The `isOutdated: true` flag indicates the code has changed since the comment.
+> 5. After resolving all threads, the PR should be mergeable.
 
 
 
 ### Step 2.6: Request Re-Review (After Addressing Feedback)
 
-After fixing issues identified by `gemini-code-assist`, request a fresh review:
+After fixing issues identified by the AI reviewer, explicitly request a fresh review to ensure your changes are validated.
 
-**Option A: GitHub UI (Recommended)**
-- Go to PR page → "Reviewers" sidebar → Click ↻ next to `gemini-code-assist`
-- This is the native GitHub re-request review feature
-
-**Option B: Command Line with `/gemini review`**
-```bash
-gh pr comment <PR_NUMBER> --body "/gemini review"
-```
-
-**Option C: GitHub CLI re-request** (if gemini-code-assist is a formal reviewer)
-```bash
-gh pr edit <PR_NUMBER> --add-reviewer gemini-code-assist
-```
+You can do this by:
+- Re-requesting a review from the reviewer directly (e.g. via UI).
+- Adding a comment such as `/gemini review` if the bot supports slash commands.
 
 > [!TIP]
 > Option A (UI) is cleanest. The `/gemini review` command also works and explicitly requests a new review.
@@ -303,29 +196,23 @@ Wait for the new review before proceeding to merge.
 
 ## Step 3: Check Status
 
-// turbo
-```bash
-gh pr view <PR_NUMBER> --json title,state,statusCheckRollup,comments,reviews --jq '{
-  title: .title,
-  checks: [.statusCheckRollup[] | {name: .name, status: .status, conclusion: .conclusion}],
-  commentCount: (.comments | length),
-  reviewCount: (.reviews | length)
-}'
-```
+Retrieve the current status of the pull request. Pay close attention to:
+- The overall state (Open, Closed, Merged)
+- Status checks and their conclusions (Success, Failure, Pending)
+- The total number of comments and reviews
 
 ## Step 4: Check Logs BEFORE Rebasing
 
 > [!CAUTION]
-> **NEVER trigger `@dependabot rebase` without first checking failure logs.**
+> **NEVER trigger a dependabot rebase without first checking failure logs.**
 
-// turbo
-```bash
-gh pr checks <PR_NUMBER> --log | tail -50
-```
+Examine the CI/CD pipeline failure logs for the pull request to diagnose the root cause of the failure before attempting a rebase.
 
 ## Step 5: Process PR
 
 ### If CI Passed and No Open Comments
+
+For Dependabot PRs or other PRs with green CI and no open/blocking comments (e.g., prior comments instructing to skip a major version upgrade):
 
 > [!CAUTION]
 > **NEVER merge without explicit user approval.**
@@ -342,21 +229,14 @@ gh pr checks <PR_NUMBER> --log | tail -50
    ```
 
 2. **Only merge after explicit approval**:
-   ```bash
-   gh pr merge <PR_NUMBER> --merge
-   ```
+   Execute the merge action for the pull request.
 
 3. **Verify merge succeeded**:
-   ```bash
-   gh pr view <PR_NUMBER> --json state --jq '.state'
-   # Should output: MERGED
-   ```
+   Confirm the pull request state is now "Merged".
 
 ### If CI Failed Due to Old Base Branch
 
-```bash
-gh pr comment <PR_NUMBER> --body "@dependabot rebase"
-```
+Trigger a rebase by commenting on the PR (e.g., `@dependabot rebase`) or performing the rebase action.
 
 ### If CI Failed Due to Code Issues
 
@@ -370,23 +250,14 @@ gh pr comment <PR_NUMBER> --body "@dependabot rebase"
 2. Create tracking issue
 3. Close PR
 
-```bash
-# Create GitHub issue to track the blocked upgrade
-gh issue create --title "Blocked: <package> <old> → <new>" \
-  --body "## Problem
-<description>
+**Track the blocked upgrade:**
+- Create a new issue titled "Blocked: <package> <old> → <new>".
+- Ensure the issue body describes the problem, the anticipated fix path, and links to the closed PR.
+- Add appropriate labels like `dependencies` and `blocked`.
 
-## Fix Path
-<steps>
-
-## Related
-- Closed PR #<N>" \
-  --label "dependencies,blocked"
-
-# Then close the PR
-gh pr comment <PR_NUMBER> --body "Closing this PR as the issue is now tracked in #<ISSUE_NUMBER>."
-gh pr close <PR_NUMBER>
-```
+**Close the PR:**
+- Post a comment on the PR indicating it is being closed and linking to the tracking issue.
+- Execute the close action on the pull request.
 
 ## Step 6: Post-Merge Cleanup
 

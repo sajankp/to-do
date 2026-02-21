@@ -94,7 +94,7 @@ class TestTodoUserAssociation:
         request.app.todo = mock_collection
 
         # Call the function
-        result = get_todo_list(request)
+        result = get_todo_list(request, completed=None)
 
         # Critical assertion: verify filtering by user_id
         mock_collection.find.assert_called_once_with({"user_id": user_id})
@@ -136,7 +136,7 @@ class TestTodoUserAssociation:
         request.app.todo = mock_collection
 
         # Call the function
-        result = get_todo_list(request)
+        result = get_todo_list(request, completed=None)
 
         # Critical assertion: verify query filters by user_id
         mock_collection.find.assert_called_once_with({"user_id": user_id})
@@ -250,7 +250,7 @@ class TestTodoUserAssociation:
         mock_collection.find.return_value = mock_cursor
 
         # Step 3: List todos and verify the created todo appears
-        todos = get_todo_list(request)
+        todos = get_todo_list(request, completed=None)
 
         assert len(todos) == 1
         assert str(todos[0].id) == str(todo_id)
@@ -341,7 +341,7 @@ class TestTodoRouter:
         request.app.todo = mock_collection
 
         # Call the function
-        result = get_todo_list(request)
+        result = get_todo_list(request, completed=None)
 
         # Assertions
         assert len(result) == 2
@@ -596,3 +596,178 @@ class TestTodoRouter:
 
         assert exc_info.value.status_code == 400
         assert exc_info.value.detail == NO_CHANGES
+
+
+class TestTodoCompletionFeature:
+    """Tests for Spec-001: Todo Completion Status"""
+
+    def test_create_todo_defaults_completed_false(self):
+        """Newly created todos should have completed=False."""
+        request = Mock(spec=Request)
+        request.state.user_id = PyObjectId("507f1f77bcf86cd799439011")
+
+        mock_collection = Mock()
+        mock_result = Mock()
+        mock_result.acknowledged = True
+        mock_result.inserted_id = ObjectId("507f1f77bcf86cd799439012")
+        mock_collection.insert_one.return_value = mock_result
+        request.app.todo = mock_collection
+
+        todo_data = CreateTodo(
+            title="New Task",
+            due_date=datetime.now(UTC) + timedelta(seconds=60),
+        )
+
+        result = create_todo(request, todo_data)
+
+        assert result.completed is False
+
+        # Verify completed=False is stored in DB
+        call_args = mock_collection.insert_one.call_args[0][0]
+        assert call_args["completed"] is False
+
+    def test_get_todo_list_filter_completed_true(self):
+        """GET /todo/?completed=true should only return completed todos."""
+        request = Mock(spec=Request)
+        user_id = PyObjectId("507f1f77bcf86cd799439011")
+        request.state.user_id = user_id
+
+        now = datetime.now(UTC)
+        completed_todos = [
+            {
+                "_id": ObjectId("507f1f77bcf86cd799439012"),
+                "title": "Done Task",
+                "description": "",
+                "due_date": now,
+                "priority": "medium",
+                "user_id": user_id,
+                "completed": True,
+                "created_at": now,
+                "updated_at": now,
+            },
+        ]
+
+        mock_collection = Mock()
+        mock_cursor = Mock()
+        mock_cursor.limit.return_value = completed_todos
+        mock_collection.find.return_value = mock_cursor
+        request.app.todo = mock_collection
+
+        result = get_todo_list(request, completed=True)
+
+        # Should filter by both user_id and completed
+        mock_collection.find.assert_called_once_with({"user_id": user_id, "completed": True})
+        assert len(result) == 1
+        assert result[0].completed is True
+
+    def test_get_todo_list_filter_completed_false(self):
+        """GET /todo/?completed=false should only return active todos."""
+        request = Mock(spec=Request)
+        user_id = PyObjectId("507f1f77bcf86cd799439011")
+        request.state.user_id = user_id
+
+        now = datetime.now(UTC)
+        active_todos = [
+            {
+                "_id": ObjectId("507f1f77bcf86cd799439012"),
+                "title": "Active Task",
+                "description": "",
+                "due_date": now,
+                "priority": "medium",
+                "user_id": user_id,
+                "completed": False,
+                "created_at": now,
+                "updated_at": now,
+            },
+        ]
+
+        mock_collection = Mock()
+        mock_cursor = Mock()
+        mock_cursor.limit.return_value = active_todos
+        mock_collection.find.return_value = mock_cursor
+        request.app.todo = mock_collection
+
+        result = get_todo_list(request, completed=False)
+
+        mock_collection.find.assert_called_once_with({"user_id": user_id, "completed": False})
+        assert len(result) == 1
+        assert result[0].completed is False
+
+    def test_get_todo_list_no_filter_returns_all(self):
+        """GET /todo/ (no param) should return all todos."""
+        request = Mock(spec=Request)
+        user_id = PyObjectId("507f1f77bcf86cd799439011")
+        request.state.user_id = user_id
+
+        now = datetime.now(UTC)
+        all_todos = [
+            {
+                "_id": ObjectId("507f1f77bcf86cd799439012"),
+                "title": "Active",
+                "description": "",
+                "due_date": now,
+                "priority": "medium",
+                "user_id": user_id,
+                "completed": False,
+                "created_at": now,
+                "updated_at": now,
+            },
+            {
+                "_id": ObjectId("507f1f77bcf86cd799439013"),
+                "title": "Done",
+                "description": "",
+                "due_date": now,
+                "priority": "high",
+                "user_id": user_id,
+                "completed": True,
+                "created_at": now,
+                "updated_at": now,
+            },
+        ]
+
+        mock_collection = Mock()
+        mock_cursor = Mock()
+        mock_cursor.limit.return_value = all_todos
+        mock_collection.find.return_value = mock_cursor
+        request.app.todo = mock_collection
+
+        result = get_todo_list(request, completed=None)
+
+        mock_collection.find.assert_called_once_with({"user_id": user_id})
+        assert len(result) == 2
+
+    def test_update_todo_mark_completed(self):
+        """PATCH /todo/{id} with completed=true should mark todo completed."""
+        request = Mock(spec=Request)
+        todo_id = PyObjectId("507f1f77bcf86cd799439012")
+        user_id = PyObjectId("507f1f77bcf86cd799439011")
+        request.state.user_id = user_id
+
+        now = datetime.now(UTC)
+        existing_todo = {
+            "_id": todo_id,
+            "title": "Task",
+            "description": "",
+            "due_date": now + timedelta(seconds=60),
+            "priority": "medium",
+            "user_id": user_id,
+            "completed": False,
+            "created_at": now,
+            "updated_at": now,
+        }
+        updated_todo = existing_todo.copy()
+        updated_todo["completed"] = True
+        updated_todo["updatedAt"] = now + timedelta(seconds=30)
+
+        mock_collection = Mock()
+        mock_collection.find_one.side_effect = [existing_todo, updated_todo]
+        mock_result = Mock()
+        mock_result.modified_count = 1
+        mock_collection.update_one.return_value = mock_result
+        request.app.todo = mock_collection
+
+        result = update_todo(todo_id, TodoUpdate(completed=True), request)
+
+        assert result.completed is True
+        update_doc = mock_collection.update_one.call_args.args[1]
+        assert update_doc["$set"]["completed"] is True

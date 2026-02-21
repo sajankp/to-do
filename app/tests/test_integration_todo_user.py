@@ -210,7 +210,7 @@ class TestTodoUserIntegration:
         mock_request.app.todo.find.return_value = mock_cursor
 
         # Get todo list
-        result = get_todo_list(mock_request)
+        result = get_todo_list(mock_request, completed=None)
 
         # Verify filtering and results
         mock_request.app.todo.find.assert_called_once_with({"user_id": user_id})
@@ -262,7 +262,7 @@ class TestTodoUserIntegration:
         mock_cursor.limit.return_value = [created_todo_dict]
         mock_request.app.todo.find.return_value = mock_cursor
 
-        todos = get_todo_list(mock_request)
+        todos = get_todo_list(mock_request, completed=None)
 
         # Verify the created todo appears in the list
         assert len(todos) == 1
@@ -301,7 +301,7 @@ class TestTodoUserIntegration:
         mock_request.app.todo.find.return_value = mock_cursor
 
         # Get todos for user1
-        result = get_todo_list(mock_request)
+        result = get_todo_list(mock_request, completed=None)
 
         # Verify only user1's todos are returned
         mock_request.app.todo.find.assert_called_once_with({"user_id": user1_id})

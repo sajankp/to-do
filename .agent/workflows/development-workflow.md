@@ -204,14 +204,15 @@ Based on the spec's **Test Strategy** section:
    - If tests pass without implementation, they're useless
 
 ```bash
-# Run tests - they SHOULD fail
-pytest app/tests/path/to/test_file.py -v
+# Run tests - they SHOULD fail (use appropriate runner)
+# Backend: pytest app/tests/path/to/test_file.py -v
+# Frontend: npm run test -- path/to/test_file.tsx
 
 # Expected output: FAILED (red phase)
 ```
 
 > [!TIP]
-> Use the `/tdd-fastapi` skill for FastAPI-specific testing patterns.
+> Use the `/tdd-fastapi` skill for FastAPI-specific testing patterns, or adapt for frontend (Vitest).
 
 ### Step 2.4: CHECKPOINT - Review Test Cases
 
@@ -255,8 +256,9 @@ git status  # Should be clean
 3. **Run tests frequently** - After each significant change
 
 ```bash
-# Run tests - work until they pass
-pytest app/tests/path/to/test_file.py -v
+# Run tests - work until they pass (use appropriate runner)
+# Backend: pytest app/tests/path/to/test_file.py -v
+# Frontend: npm run test -- path/to/test_file.tsx
 
 # Expected output: PASSED (green phase)
 ```
@@ -309,8 +311,9 @@ With tests green, improve code quality:
 ### Step 4.2: Keep Tests Green
 
 ```bash
-# After each refactor, verify tests still pass
-pytest app/tests/path/to/test_file.py -v
+# After each refactor, verify tests still pass (use appropriate runner)
+# Backend: pytest app/tests/path/to/test_file.py -v
+# Frontend: npm run test -- path/to/test_file.tsx
 ```
 
 ### Step 4.3: CHECKPOINT - Pre-Commit Approval (If Changes Made)
@@ -335,8 +338,9 @@ Message: "Ready to commit refactoring with message:
 ### Step 5.1: Run Full Test Suite
 
 ```bash
-# All tests, with coverage
-pytest --cov=app --cov-report=term-missing app/tests/
+# All tests, with coverage (use appropriate runner)
+# Backend: pytest --cov=app --cov-report=term-missing app/tests/
+# Frontend: npm run test:coverage
 ```
 
 All tests must pass. Coverage should meet project threshold.
@@ -375,9 +379,7 @@ git push -u origin feat/descriptive-name
 
 ### Step 6.2: Create PR
 
-```bash
-gh pr create --title "feat: [description]" --body "Closes #issue"
-```
+Create a pull request for the feature branch. Ensure the title follows the conventional commits format (e.g., "feat: [description]") and the body references any issues it closes (e.g., "Closes #123").
 
 ### Step 6.3: Fill Post-Deployment Checklist
 
