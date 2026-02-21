@@ -152,7 +152,9 @@ async def add_user_info_to_request(request: Request, call_next):
         response = await call_next(request)
         return response
 
-    if request.url.path in (
+    normalized_path = request.url.path.rstrip("/") or "/"
+
+    if normalized_path in (
         "/token",
         "/docs",
         "/openapi.json",
@@ -165,7 +167,7 @@ async def add_user_info_to_request(request: Request, call_next):
         "/api/ai/voice/stream",  # WebSocket authenticates via first message
         "/metrics",
         "/auth/logout",
-    ) or request.url.path.startswith("/docs/"):
+    ) or normalized_path.startswith("/docs/"):
         response = await call_next(request)
         return response
     try:
@@ -204,7 +206,7 @@ async def add_user_info_to_request(request: Request, call_next):
         )
 
 
-@app.post("/auth/logout")
+@app.post("/auth/logout/")
 async def logout(request: Request, response: Response):
     """Logout by clearing auth cookies."""
     if settings.cookie_samesite.lower() == "none" and not is_origin_allowed(
@@ -234,7 +236,7 @@ def read_root():
     return {"message": "Hello, World!"}
 
 
-@app.post("/token", response_model=Token)
+@app.post("/token/", response_model=Token)
 @limiter.limit(settings.rate_limit_auth)
 def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
@@ -310,7 +312,7 @@ def login_for_access_token(
     }
 
 
-@app.post("/token/refresh", response_model=Token)
+@app.post("/token/refresh/", response_model=Token)
 @limiter.limit(settings.rate_limit_auth)
 def refresh_token(request: Request, response: Response):
     if settings.cookie_samesite.lower() == "none" and not is_origin_allowed(
@@ -382,7 +384,7 @@ def refresh_token(request: Request, response: Response):
     }
 
 
-@app.post("/user", response_model=bool)
+@app.post("/user/", response_model=bool)
 @limiter.limit(settings.rate_limit_auth)
 def create_user(user_in: UserRegistration, request: Request):
     hashed_password = hash_password(user_in.password)
