@@ -53,8 +53,10 @@ def setup_telemetry(app: FastAPI, settings: Any) -> None:
     # Initialize tracer provider
     tracer_provider = _init_tracer_provider(service_name, otel_endpoint)
 
-    # Instrument FastAPI
-    FastAPIInstrumentor.instrument_app(app, tracer_provider=tracer_provider)
+    # Instrument FastAPI, ignoring noisy infrastructure endpoints
+    FastAPIInstrumentor.instrument_app(
+        app, tracer_provider=tracer_provider, excluded_urls="health,health/ready,metrics"
+    )
 
     # Instrument logging
     LoggingInstrumentor().instrument(tracer_provider=tracer_provider)
