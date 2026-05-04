@@ -7,7 +7,7 @@
 -r requirements.txt
 
 # Security scanning
-bandit>=1.7.0          # Python security linter
+bandit>=1.9.4          # Python security linter
 safety>=2.3.0          # Dependency vulnerability scanner
 
 # Code quality (if not using pre-commit)
