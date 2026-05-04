@@ -12,4 +12,4 @@ safety>=2.3.0          # Dependency vulnerability scanner
 
 # Code quality (if not using pre-commit)
 mypy>=1.0.0            # Static type checking
-types-requests>=2.31   # Type stubs for requests
+types-requests>=2.33.0.20260503   # Type stubs for requests
