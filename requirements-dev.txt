@@ -11,5 +11,5 @@ bandit>=1.7.0          # Python security linter
 safety>=2.3.0          # Dependency vulnerability scanner
 
 # Code quality (if not using pre-commit)
-mypy>=1.0.0            # Static type checking
+mypy>=1.20.2            # Static type checking
 types-requests>=2.31   # Type stubs for requests
